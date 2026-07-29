@@ -99,22 +99,23 @@
         var theta = Math.PI * (1 + Math.sqrt(5)) * i;
         var sx = cx + Math.sin(phi) * Math.cos(theta) * r * 0.35;
         var sy = cy + Math.sin(phi) * Math.sin(theta) * r * 0.35;
-        var sz = Math.cos(phi);
         c.beginPath();
         c.arc(sx, sy, dotRadius * 0.6, 0, Math.PI * 2);
         c.fillStyle = cols.inkDim;
         c.fill();
       }
-      // 扫描经线
-      var scanAngle = (t * 1.2) % (Math.PI * 2);
-      for (var j = 0; j < dots / 3; j++) {
-        var p = phi = Math.acos(1 - 2 * (j + 0.5) / (dots / 3));
-        var sx2 = cx + Math.sin(p) * Math.cos(scanAngle) * r * 0.38;
-        var sy2 = cy + Math.sin(p) * Math.sin(scanAngle) * r * 0.38;
-        c.beginPath();
-        c.arc(sx2, sy2, dotRadius * 0.8, 0, Math.PI * 2);
-        c.fillStyle = cols.ink;
-        c.fill();
+      // 扫描经线（3 条，间隔 120°，速度提高）
+      for (var beam = 0; beam < 3; beam++) {
+        var scanAngle = (t * 3.0 + beam * Math.PI * 2 / 3) % (Math.PI * 2);
+        for (var j = 0; j < 8; j++) {
+          var phi2 = Math.acos(1 - 2 * (j + 0.5) / 8);
+          var sx2 = cx + Math.sin(phi2) * Math.cos(scanAngle) * r * 0.38;
+          var sy2 = cy + Math.sin(phi2) * Math.sin(scanAngle) * r * 0.38;
+          c.beginPath();
+          c.arc(sx2, sy2, dotRadius * 0.9, 0, Math.PI * 2);
+          c.fillStyle = cols.ink;
+          c.fill();
+        }
       }
     }
 
@@ -172,7 +173,7 @@
         return;
       }
       if (!offscreen && !paused) {
-        t += 0.016 * speedMultiplier;
+        t += 0.028 * speedMultiplier;
       }
       drawFrame(t);
       animId = requestAnimationFrame(frame);
