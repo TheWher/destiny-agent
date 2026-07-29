@@ -1,0 +1,43 @@
+# Changelog
+
+记录对用户或架构有影响的变化。不记录每个 commit。
+
+## 2026-07-29 — 项目记忆基建
+- **新增** `docs/adr/` — 5 条架构决策记录（符号/LLM分层、JSON知识库、Vanilla JS、SSE、PythonAnywhere）
+- **新增** `CHANGELOG.md`
+- **更新** `AGENTS.md` 加架构状态章节
+- **更新** `README.md` 反映当前架构
+
+## 2026-07-25 — 模块化重构
+- `app.py` 1942→20 行，拆为 `routes/`(5) + `services/`(5) + `utils/`(6)
+- `analysis_service.py` 1531→56 行，变为向后兼容的 re-export shim
+- `index.html` 2024→256 行，CSS/JS 外部化到 `static/style.css` + `static/app.js`
+- 删除 `knowledge_base/error_patterns.json`、`geju_rules.json`（零引用）
+- 脚本统一到 `scripts/`
+- **零用户影响**：所有路由 URL 不变
+
+## 2026-07-23 — 紫微验盘闭环
+- **新增** 6 级信号优先级表（S ±1年 ~ E ±3年）→ 注入 Agent prompt
+- **新增** `stop_sequences=['【验盘完毕】']` 截停验盘阶段
+- **新增** 前端逐条确认面板：✓正确 / ✗错误 / △部分对 + 错误原因下拉
+- **新增** 反馈保存端点 `/api/ziwei/verify` + 聚合分析脚本 `scripts/evaluate_ziwei_verify.py`
+- **新增** 在线报告端点 `/api/ziwei/feedback/report`（ADMIN_TOKEN 保护 + HTML 渲染）
+- **新增** 会话磁盘持久化（`sessions/` 目录）+ 报告页会话切换器 + 重命名/删除
+- **新增** 报告页复制链接按钮
+
+## 2026-07-21 — 紫微 SSE 流式解读
+- 分析从阻塞等待（干等 2-4 分钟）改为 SSE 逐字推送
+- **新增** 三点脉冲加载动画 + "深度分析约需 2~4 分钟"提示
+- 分析完成后自动平滑滚动到分析区
+
+## 2026-07-20 之前 — 紫微 v8 + 八字验盘
+- 紫微 Agent v8：10 步推理链 · 四层四化权重 · 24 格局三列核验 · 破格五层穿透
+- 十二长生角标 + 杂曜全量展示 + 飞星标记
+- 三层叠盘（大限+流年+流月可叠加）+ 叠盘 AI 分析
+- 三合四正连线（hover 高亮）
+- 报告页格子三层垂直分区（楷体主星 + 四化色块 + 辅星吉凶）
+- 输入页就地渲染 + 确认卡片 5 锚点
+- 八字→紫微交叉验证
+- 地理编码自动补全 + 真太阳时校正
+- 水墨宣纸风全站统一 + 暗色主题
+- 输入页历史会话从服务端 API 加载
