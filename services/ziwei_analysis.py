@@ -10,7 +10,7 @@ import os
 import re
 import time
 
-from services.kb_loader import _KB_DIR, _kb_cache, _load_json_kb, KB_PATH, KB_EXTENDED_PATH
+from services.kb_loader import _KB_DIR, _kb_cache, _load_json_kb, KB_PATH, KB_EXTENDED_PATH, retrieve_kb, extract_ziwei_keywords
 from services.llm_client import API_CONFIG, _call_api, _call_api_stream
 
 # Agent 定义文件
@@ -20,11 +20,6 @@ ZIWEI_AGENT_PATH = os.path.join(_ROOT, ".claude", "agents", "ziwei-master.md")
 
 # 紫微斗数分析
 # ============================================================
-
-ZIWEI_AGENT_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    ".claude", "agents", "ziwei-master.md",
-)
 
 
 def _load_ziwei_system_prompt() -> str:
@@ -41,9 +36,8 @@ def _load_ziwei_system_prompt() -> str:
         if end != -1:
             content = content[end + 3:].strip()
 
-    # 追加星曜参考（精简表 + 星×宫位全量）
+    # 追加星曜参考（精简表，~2KB）
     stars_kb = _load_json_kb("ziwei_stars.json")
-    star_palace = _load_json_kb("ziwei_star_palace.json")
     if stars_kb:
         main = stars_kb.get("main_stars", {})
         if main:
@@ -56,7 +50,7 @@ def _load_ziwei_system_prompt() -> str:
                 lines.append("\n**六吉**：" + "、".join(f"{k}({v.get('meaning','')})" for k, v in aus.items()))
                 lines.append("**六煞**：" + "、".join(f"{k}({v.get('meaning','')})" for k, v in mal.items()))
             content += "\n".join(lines)
-    # 星×宫位关键解读（仅命宫/夫妻/财帛/官禄，控制token）
+    # 注：ziwei_star_palace.json 不在此处加载，由 _build_ziwei_user_message 按需检索
 
     # 追加四化参考（精简表）
     hua_kb = _load_json_kb("ziwei_hua.json")
@@ -225,70 +219,21 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
     parts.append("**⛔ 以上所有干支、四化均为排盘引擎精确计算结果。不要自行推算干支，不要编造年份。直接引用上表。**")
     parts.append("")
 
-    # ═══ 中州派辅佐煞曜选择性注入 ═══
-    fuzuo_kb = _load_json_kb("ziwei_fuzuo.json")
-    if fuzuo_kb:
-        relevant_entries = []
-        BRANCH_ORDER = '子丑寅卯辰巳午未申酉戌亥'
-        for pal in plate_dict.get('palaces', []):
-            pname = pal.get('name', '')
-            tags = pal.get('tags', [])
-            if '命宫' in tags:
-                pri = 3
-            elif '身宫' in tags:
-                pri = 3
-            elif pname in ('迁移', '夫妻', '財帛', '官祿', '疾厄'):
-                pri = 2
-            else:
-                pri = 1
-            for s in pal.get('minor_stars', []):
-                name = s.get('name', '')
-                if name not in fuzuo_kb:
-                    continue
-                star_data = fuzuo_kb[name]
-                if '分宫' in star_data and pname in star_data['分宫']:
-                    entry = star_data['分宫'][pname]
-                    if entry and entry != '—':
-                        relevant_entries.append((pri, f"- {name}在{pname}：{entry}"))
-                if '组合' in star_data:
-                    for combo_key, combo_desc in star_data['组合'].items():
-                        if _match_combo(combo_key, pal, plate_dict, BRANCH_ORDER):
-                            relevant_entries.append((2, f"- 组合：{combo_key}——{combo_desc}"))
-        relevant_entries.sort(key=lambda x: -x[0])
-        top = [text for _, text in relevant_entries[:6]]
-        if top:
-            parts.append("\n## 中州派辅佐煞曜参考（按命盘实际星曜引用）")
-            parts.extend(top)
+    # ═══ 中州派辅佐煞曜按需检索 ═══
+    keywords = extract_ziwei_keywords(plate_dict)
+    fuzuo_text = retrieve_kb(keywords, "ziwei_fuzuo.json", top_k=8)
+    if fuzuo_text:
+        parts.append("\n## 中州派辅佐煞曜参考（按命盘星曜检索）")
+        parts.append(fuzuo_text)
 
-    # 古籍引用（格局→原文 + 全本匹配）
+    # 古籍引用（格局→原文按需检索）
     patterns = plate_dict.get('patterns', [])
     if patterns:
-        classics = _load_json_kb("ziwei_classics.json")
-        full_classics = _load_json_kb("ziwei_classics_full.json")
-        pat_refs = classics.get("patterns", {}) if classics else {}
-        lines = ["## 📜 古籍引用（按需参考）", ""]
-        added = set()
-        for pat in patterns:
-            name = pat.get('name', '')
-            if name in pat_refs and name not in added:
-                lines.append(f"- **{name}**：{pat_refs[name]}")
-                added.add(name)
-        # 全本匹配：搜古籍原文中含格局关键词的段落
-        if full_classics and len(lines) < 8:
-            full_paras = full_classics.get("paragraphs", [])
-            for pat in patterns[:4]:
-                name = pat.get('name', '')
-                # 切掉格/同宫等后缀做关键词
-                kw = name.replace('格','').replace('同宫','').replace('在命','')
-                matches = [p for p in full_paras if kw[:2] in p.get('text','')][:2]
-                for p in matches:
-                    k = p.get('text','')[:60]
-                    if k not in added:
-                        src = p.get('source','')
-                        lines.append(f"- 《{'骨髓赋' if src=='gusuifu' else '紫微全集' if src=='quanji' else '紫微全书'}》：{p.get('text','')[:80]}...")
-                        added.add(k)
-        if len(lines) > 2:
-            parts.extend(lines)
+        pat_kw = [p.get('name', '') for p in patterns]
+        classics_text = retrieve_kb(pat_kw, "ziwei_classics.json", top_k=5)
+        if classics_text:
+            parts.append("## 📜 古籍引用（按格局检索）")
+            parts.append(classics_text)
             parts.append("")
     # ═══ 八字参考注入 ═══
     if bazi_ref:
