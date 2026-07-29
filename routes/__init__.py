@@ -69,8 +69,6 @@ def create_app():
     # 启动时加载紫微会话
     from routes.ziwei import _ziwei_sessions, _load_sessions_from_disk
     _load_sessions_from_disk()
-    if _ziwei_sessions:
-        print(f"[启动] 已恢复 {len(_ziwei_sessions)} 个紫微会话")
 
     return app
 

@@ -153,9 +153,7 @@ def _save_session_to_disk(sid):
     except Exception as e:
         print(f"[会话] 保存失败 {sid}: {e}")
 
-# 启动时恢复会话
-_load_sessions_from_disk()
-
+# 会话由 create_app() 统一恢复，此处不重复调用
 
 
 def _render_feedback_html(report: dict) -> str:
