@@ -131,10 +131,11 @@ async function verifyConfirm() {
 async function startAnalysisFull() {
   var area = document.getElementById('analysis-text');
   if (!area) return;
-  area.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:16px;padding:40px 20px">' +
-    '<div style="display:flex;gap:6px"><span class="load-dot" style="animation-delay:0s"></span><span class="load-dot" style="animation-delay:.2s"></span><span class="load-dot" style="animation-delay:.4s"></span></div>' +
+  area.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:12px;padding:40px 20px">' +
+    '<div id="loading-orb-full"></div>' +
     '<div style="font-size:16px;font-weight:700;color:var(--ink)">正在深度解读</div>' +
-    '<div style="font-size:12px;color:var(--ink-soft);width:300px;line-height:1.7">已校准验盘事件，正在生成完整分析<br>约需 2~4 分钟</div></div>';
+    '<div style="font-size:12px;color:var(--ink-soft);width:300px;line-height:1.7;text-align:center">已校准验盘事件，正在生成完整分析<br>约需 2~4 分钟</div></div>';
+  setTimeout(function(){ var el=document.getElementById("loading-orb-full"); if(el) createThinkingOrb({state:"working",size:64,container:el}); },100);
   try {
     var body = { plate: plateData, password: reportPw || '' };
     if (verifiedEvents) { body.verified_events = verifiedEvents; }
