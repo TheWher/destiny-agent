@@ -417,6 +417,8 @@ def api_ziwei_analyze():
             "model": result.get("model", ""),
             "usage": result.get("usage", {}),
         }
+        if result.get("verification"):
+            response_data["verification"] = result["verification"]
         if cache_key:
             _cache_set(cache_key, response_data)
         return jsonify(response_data)

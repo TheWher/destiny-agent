@@ -1153,7 +1153,7 @@ async function startAnalysis(plate, password){
       const d = await r.json();
       if(d.success && d.analysis){
         sessionStorage.setItem('ziwei_pw', pw || '');
-        if(d.analysis.includes('验盘完毕') || d.analysis.includes('命盘验证') || d.analysis.includes('验盘环节')){
+        if(d.verification || d.analysis.includes('## 命盘验证') || d.analysis.includes('验盘环节')){
           renderVerification(d.analysis);
           await fetch('/api/ziwei/sessions/'+sid, {
             method:'PATCH', headers:{'Content-Type':'application/json'},
