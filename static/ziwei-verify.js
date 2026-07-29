@@ -57,15 +57,45 @@ function verifyMark(index, label) {
   var el = document.getElementById('vi-' + index);
   if (!el || !verificationData) return;
   verificationData.predictions[index].label = label;
+  // 重置所有按钮样式
+  var btns = el.querySelectorAll('button');
+  btns.forEach(function(b) {
+    b.style.background = 'transparent';
+    b.style.color = b.classList.contains('btn-' + label) ? '' : '';
+  });
+  // 高亮选中的按钮
+  var colors = {correct: 'var(--jade)', wrong: 'var(--vermillion)', partial: 'var(--ink-soft)'};
+  var bgColors = {correct: 'rgba(74,124,78,0.12)', wrong: 'rgba(193,67,47,0.10)', partial: 'rgba(107,102,96,0.08)'};
+  var labels = {correct: '✓', wrong: '✗', partial: '△'};
+  btns.forEach(function(b) {
+    var isTarget = b.textContent.indexOf(labels[label]) === 0 || b.textContent === ({correct:'正确',wrong:'错误',partial:'部分对'}[label]);
+    if (isTarget) {
+      b.style.background = bgColors[label];
+      b.style.fontWeight = '700';
+    } else {
+      b.style.background = 'transparent';
+      b.style.fontWeight = '400';
+    }
+  });
+  // 更明显的年份标识
   if (label === 'correct') {
     el.querySelector('strong').style.color = 'var(--jade)';
-    // 移除错误原因选择器
+    el.querySelector('strong').textContent = el.querySelector('strong').textContent.replace(/^[✓✗△]\s*/, '');
+    el.querySelector('strong').textContent = '✓ ' + el.querySelector('strong').textContent;
+    el.style.borderLeft = '3px solid var(--jade)';
     var er = el.querySelector('.error-reason-row');
     if (er) er.style.display = 'none';
   } else {
-    if (label === 'wrong') el.querySelector('strong').style.color = 'var(--vermillion)';
-    else el.querySelector('strong').style.color = 'var(--ink-soft)';
-    // 显示错误原因下拉
+    var prefix = {wrong: '✗', partial: '△'}[label] || '△';
+    el.querySelector('strong').textContent = el.querySelector('strong').textContent.replace(/^[✓✗△]\s*/, '');
+    el.querySelector('strong').textContent = prefix + ' ' + el.querySelector('strong').textContent;
+    if (label === 'wrong') {
+      el.querySelector('strong').style.color = 'var(--vermillion)';
+      el.style.borderLeft = '3px solid var(--vermillion)';
+    } else {
+      el.querySelector('strong').style.color = 'var(--ink-soft)';
+      el.style.borderLeft = '3px solid var(--ink-soft)';
+    }
     var er = el.querySelector('.error-reason-row');
     if (!er) {
       er = document.createElement('div');
@@ -74,7 +104,7 @@ function verifyMark(index, label) {
       er.innerHTML = '<span style="color:var(--ink-soft)">错误原因：</span>' +
         '<select class="err-reason-sel" style="font-size:11px;padding:2px 4px;border:1px solid var(--line-soft);border-radius:2px;background:var(--paper);color:var(--ink);font-family:inherit;margin-left:4px">' +
         '<option value="">选择原因</option>' +
-        '<option value="time_shift">时间偏移(&gt;3年)</option>' +
+        '<option value="time_shift">时间偏移(>3年)</option>' +
         '<option value="type_confusion">事件类型混淆</option>' +
         '<option value="intensity_wrong">强度过高/过低</option>' +
         '<option value="signal_invalid">信号不存在/错读</option>' +
@@ -84,6 +114,13 @@ function verifyMark(index, label) {
       el.appendChild(er);
     }
     er.style.display = 'block';
+  }
+  // 更新确认按钮文案
+  var marked = verificationData.predictions.filter(function(p) { return p.label !== 'pending'; }).length;
+  var total = verificationData.predictions.length;
+  var btn = document.getElementById('btn-verify-confirm');
+  if (btn) {
+    btn.textContent = '确认并正式解读（' + marked + '/' + total + '）';
   }
 }
 
