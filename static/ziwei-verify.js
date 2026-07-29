@@ -15,9 +15,12 @@ function renderVerification(analysisText) {
     if (line.includes('命盘验证') || line.includes('验盘') || line.includes('验盘环节')) { inVer = true; continue; }
     if (line.includes('验盘完毕')) break;
     if (!inVer) continue;
-    const m = line.match(/(\d{4})\s*年.*?[：:]\s*(.+)/);
+    const m = line.match(/(\d{4})\s*年/);
     if (m) {
-      items.push({ year: m[1], desc: m[2].trim().substring(0, 100), label: 'pending' });
+      // 提取年份后的描述（跳过**标记和空格）
+      var afterYear = line.substring(line.indexOf(m[0]) + m[0].length);
+      var desc = afterYear.replace(/^[^：:]*[：:]\s*/, '').replace(/\*\*/g, '').trim().substring(0, 100);
+      items.push({ year: m[1], desc: desc || '(无描述)', label: 'pending' });
     }
   }
   verificationData = { predictions: items, rawText: analysisText };
