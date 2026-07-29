@@ -42,7 +42,6 @@
     var t = 0;
     var paused = false;
     var reducedMotion = false;
-    var offscreen = false;
     var speedMultiplier = options.speed || 1;
 
     // 主题颜色
@@ -67,14 +66,6 @@
     motionQuery.addEventListener('change', function(e) {
       reducedMotion = e.matches;
     });
-
-    // offscreen detection
-    if (window.IntersectionObserver) {
-      var observer = new IntersectionObserver(function(entries) {
-        offscreen = !entries[0].isIntersecting;
-      });
-      observer.observe(canvas);
-    }
 
     function drawWorking(c, t, r) {
       var cols = getColors();
@@ -168,12 +159,8 @@
     };
 
     function frame(ts) {
-      if (reducedMotion) {
-        drawFrame(0);
-        return;
-      }
-      if (!offscreen && !paused) {
-        t += 0.028 * speedMultiplier;
+      if (!paused) {
+        t += reducedMotion ? 0 : 0.035 * speedMultiplier;
       }
       drawFrame(t);
       animId = requestAnimationFrame(frame);
@@ -188,6 +175,7 @@
 
     canvas.start = function() {
       paused = false;
+      drawFrame(0);  // 立即画一帧，避免空白
       if (!animId) animId = requestAnimationFrame(frame);
     };
 
