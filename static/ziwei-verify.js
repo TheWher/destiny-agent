@@ -53,6 +53,18 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function onReasonChange(sel) {
+  var row = sel.parentElement;
+  var other = row.querySelector('.err-reason-other');
+  if (sel.value === 'other') {
+    other.style.display = 'inline-block';
+    other.focus();
+  } else {
+    other.style.display = 'none';
+    other.value = '';
+  }
+}
+
 function verifyMark(index, label) {
   var el = document.getElementById('vi-' + index);
   if (!el || !verificationData) return;
@@ -102,7 +114,7 @@ function verifyMark(index, label) {
       er.className = 'error-reason-row';
       er.style.cssText = 'margin-top:6px;font-size:12px';
       er.innerHTML = '<span style="color:var(--ink-soft)">错误原因：</span>' +
-        '<select class="err-reason-sel" style="font-size:11px;padding:2px 4px;border:1px solid var(--line-soft);border-radius:2px;background:var(--paper);color:var(--ink);font-family:inherit;margin-left:4px">' +
+        '<select class="err-reason-sel" onchange="onReasonChange(this)" style="font-size:11px;padding:2px 4px;border:1px solid var(--line-soft);border-radius:2px;background:var(--paper);color:var(--ink);font-family:inherit;margin-left:4px">' +
         '<option value="">选择原因</option>' +
         '<option value="time_shift">时间偏移(>3年)</option>' +
         '<option value="type_confusion">事件类型混淆</option>' +
@@ -110,7 +122,8 @@ function verifyMark(index, label) {
         '<option value="signal_invalid">信号不存在/错读</option>' +
         '<option value="user_memory">用户记忆偏差</option>' +
         '<option value="other">其他</option>' +
-        '</select>';
+        '</select>' +
+        '<input class="err-reason-other" placeholder="请说明" style="display:none;font-size:11px;padding:2px 6px;border:1px solid var(--line-soft);border-radius:2px;background:var(--paper);color:var(--ink);font-family:inherit;margin-left:4px;width:120px">';
       el.appendChild(er);
     }
     er.style.display = 'block';
@@ -146,7 +159,12 @@ async function verifyConfirm() {
       var el = document.getElementById('vi-' + verificationData.predictions.indexOf(p));
       if (el) {
         var sel = el.querySelector('.err-reason-sel');
-        fb.error_reason = sel ? sel.value : '';
+        var reason = sel ? sel.value : '';
+        if (reason === 'other') {
+          var otherInp = el.querySelector('.err-reason-other');
+          reason = otherInp ? ('other: ' + (otherInp.value || '未填写')) : 'other';
+        }
+        fb.error_reason = reason;
       }
     }
     feedbackPredictions.push(fb);
