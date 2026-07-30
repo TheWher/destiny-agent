@@ -37,7 +37,7 @@
     var W = size;
     var cx = W / 2, cy = W / 2;
     var dots = state === 'searching' ? 24 : 18;
-    var dotRadius = size > 40 ? 2 : 1.2;
+    var dotRadius = size > 40 ? 2.5 : 1.5;
     var animId = null;
     var t = 0;
     var paused = false;
@@ -54,13 +54,13 @@
         isDark = html.getAttribute('data-theme') === 'dark';
       }
       return {
-        ink: isDark ? 'rgba(224,216,207,0.8)' : 'rgba(43,40,37,0.8)',
-        inkDim: isDark ? 'rgba(224,216,207,0.15)' : 'rgba(43,40,37,0.15)',
+        ink: isDark ? 'rgba(224,216,207,0.9)' : 'rgba(43,40,37,0.9)',
+        inkDim: isDark ? 'rgba(224,216,207,0.2)' : 'rgba(43,40,37,0.2)',
         bg: 'transparent'
       };
     }
 
-    // reduced motion
+    // reduced motion — 降级为呼吸脉冲而非完全静止
     var motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     reducedMotion = motionQuery.matches;
     motionQuery.addEventListener('change', function(e) {
@@ -160,9 +160,14 @@
 
     function frame(ts) {
       if (!paused) {
-        t += reducedMotion ? 0 : 0.035 * speedMultiplier;
+        t += 0.035 * speedMultiplier;
       }
       drawFrame(t);
+      if (reducedMotion) {
+        // 降低帧率，用呼吸脉冲代替连续动画
+        var alpha = 0.4 + 0.3 * Math.sin(t * 0.8);
+        canvas.style.opacity = alpha;
+      }
       animId = requestAnimationFrame(frame);
     }
 
