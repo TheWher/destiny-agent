@@ -472,7 +472,10 @@ def api_ziwei_analyze_continue():
         return jsonify({"error": "缺少 messages 或 reply"}), 400
 
     from analysis_service import continue_ziwei_analysis
-    result = continue_ziwei_analysis(messages, reply, timeout=300)
+    try:
+        result = continue_ziwei_analysis(messages, reply, timeout=300)
+    except Exception as e:
+        return jsonify({"success": False, "error": f"分析异常: {str(e)}"}), 500
 
     if result["success"]:
         return jsonify({"success": True, "analysis": result["analysis"]})
