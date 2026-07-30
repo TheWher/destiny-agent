@@ -1239,30 +1239,37 @@ async function sendChat(){
   const s = await r.json();
   const msgs = s.messages || [];
   try{
-    const res = await fetch('/api/ziwei/analyze/continue', {
+    let res = await fetch('/api/ziwei/analyze/continue', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({messages: msgs, reply, password: reportPw})
     });
-    const d = await res.json();
-    if(res.status === 403 && !reportPw){
-      reportPw = await new Promise(resolve => {
-        const ov = document.createElement('div');
-        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;font-family:Noto Serif SC,serif';
-        ov.innerHTML = '<div style="background:var(--paper-card);border:1px solid var(--line);padding:24px;width:320px;text-align:center;border-radius:4px"><h3 style="font-size:14px;color:var(--ink);margin-bottom:8px">🔐 需要密码</h3><input type="password" id="sc-pw-inp" placeholder="请输入密码" style="width:90%;padding:8px;font-size:.9em;border:1px solid var(--line-soft);border-radius:2px;margin-bottom:10px;background:var(--paper);color:var(--ink);font-family:inherit"><div style="display:flex;gap:8px"><button id="sc-pw-cancel" style="flex:1;padding:6px;border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:2px;font-family:inherit">取消</button><button id="sc-pw-ok" style="flex:1;padding:6px;background:var(--ink);color:var(--paper);border:none;cursor:pointer;border-radius:2px;font-family:inherit">确认</button></div></div>';
-        document.body.appendChild(ov);
-        const inp = ov.querySelector('#sc-pw-inp'); inp.focus();
-        ov.querySelector('#sc-pw-ok').onclick = () => { ov.remove(); resolve(inp.value); };
-        ov.querySelector('#sc-pw-cancel').onclick = () => { ov.remove(); resolve(null); };
-        inp.onkeydown = e => { if(e.key==='Enter') ov.querySelector('#sc-pw-ok').click(); };
-      });
-      if(!reportPw){ input.disabled = false; $('btn-chat').disabled = false; return; }
-      sessionStorage.setItem('ziwei_pw', reportPw);
-      res = await fetch('/api/ziwei/analyze/continue', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({messages: msgs, reply, password: reportPw})
-      });
-      d = await res.json();
+    if(res.status === 403){
+      const err = await res.json().catch(()=>({}));
+      if(!reportPw && err.need_password){
+        reportPw = await new Promise(resolve => {
+          const ov = document.createElement('div');
+          ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;font-family:Noto Serif SC,serif';
+          ov.innerHTML = '<div style="background:var(--paper-card);border:1px solid var(--line);padding:24px;width:320px;text-align:center;border-radius:4px"><h3 style="font-size:14px;color:var(--ink);margin-bottom:8px">🔐 需要密码</h3><input type="password" id="sc-pw-inp" placeholder="请输入密码" style="width:90%;padding:8px;font-size:.9em;border:1px solid var(--line-soft);border-radius:2px;margin-bottom:10px;background:var(--paper);color:var(--ink);font-family:inherit"><div style="display:flex;gap:8px"><button id="sc-pw-cancel" style="flex:1;padding:6px;border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:2px;font-family:inherit">取消</button><button id="sc-pw-ok" style="flex:1;padding:6px;background:var(--ink);color:var(--paper);border:none;cursor:pointer;border-radius:2px;font-family:inherit">确认</button></div></div>';
+          document.body.appendChild(ov);
+          const inp = ov.querySelector('#sc-pw-inp'); inp.focus();
+          ov.querySelector('#sc-pw-ok').onclick = () => { ov.remove(); resolve(inp.value); };
+          ov.querySelector('#sc-pw-cancel').onclick = () => { ov.remove(); resolve(null); };
+          inp.onkeydown = e => { if(e.key==='Enter') ov.querySelector('#sc-pw-ok').click(); };
+        });
+        if(!reportPw){ input.disabled = false; $('btn-chat').disabled = false; return; }
+        sessionStorage.setItem('ziwei_pw', reportPw);
+        res = await fetch('/api/ziwei/analyze/continue', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({messages: msgs, reply, password: reportPw})
+        });
+      } else {
+        chatArea.innerHTML += '<div style="color:var(--vermillion);font-size:11px">'+(err.error||'权限不足')+'</div>';
+        input.disabled = false; $('btn-chat').disabled = false;
+        return;
+      }
     }
+    if(!res.ok){ chatArea.innerHTML += '<div style="color:var(--vermillion);font-size:11px">请求失败: HTTP '+res.status+'</div>'; input.disabled = false; $('btn-chat').disabled = false; return; }
+    const d = await res.json();
     if(d.success){
       chatArea.innerHTML += `<div class="chat-msg agent"><div class="who">Agent</div>${d.analysis.replace(/\n/g,'<br>')}</div>`;
       // 追加到 session
