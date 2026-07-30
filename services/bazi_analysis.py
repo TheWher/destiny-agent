@@ -10,6 +10,7 @@ import json
 import os
 import re
 import time
+import requests
 
 from bazi_calculator import get_shishen, CANG_GAN
 from services.kb_loader import _WX_GAN, _WX_ZHI, _KB_DIR, _kb_cache, _load_json_kb, _load_knowledge_base, KB_PATH, KB_EXTENDED_PATH

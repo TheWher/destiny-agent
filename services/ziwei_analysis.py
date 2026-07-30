@@ -9,6 +9,7 @@ import json
 import os
 import re
 import time
+import requests
 
 from services.kb_loader import _KB_DIR, _kb_cache, _load_json_kb, KB_PATH, KB_EXTENDED_PATH, retrieve_kb, extract_ziwei_keywords
 from services.llm_client import API_CONFIG, _call_api, _call_api_stream
