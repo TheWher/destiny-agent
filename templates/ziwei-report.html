@@ -1271,7 +1271,7 @@ async function sendChat(){
     if(!res.ok){ chatArea.innerHTML += '<div style="color:var(--vermillion);font-size:11px">请求失败: HTTP '+res.status+'</div>'; input.disabled = false; $('btn-chat').disabled = false; return; }
     const d = await res.json();
     if(d.success){
-      chatArea.innerHTML += `<div class="chat-msg agent"><div class="who">Agent</div>${d.analysis.replace(/\n/g,'<br>')}</div>`;
+      chatArea.innerHTML += `<div class="chat-msg agent"><div class="who">Agent</div>${formatText(d.analysis)}</div>`;
       // 追加到 session
       msgs.push({role:'user', content: reply});
       msgs.push({role:'assistant', content: d.analysis});
