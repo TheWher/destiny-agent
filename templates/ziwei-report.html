@@ -464,12 +464,15 @@ document.addEventListener('DOMContentLoaded',function(){ document.getElementById
 const $ = id => document.getElementById(id);
 const sid = window.location.pathname.split('/').pop();
 let plateData = null;
+// auth
+const _ziweiToken = localStorage.getItem('ziwei_token');
+const _authHdrs = function(){ return _ziweiToken ? {'Authorization':'Bearer '+_ziweiToken} : {}; };
 // reportPw declared in ziwei-verify.js
 
 // ── 加载数据 ──
 async function load(){
   try{
-    const r = await fetch(`/api/ziwei/sessions/${sid}`);
+    const r = await fetch(`/api/ziwei/sessions/${sid}`,{headers:_authHdrs()});
     if(!r.ok){ $('grid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-soft)">报告未找到或已过期</div>'; return }
     const s = await r.json();
     plateData = s.plate_data || null;
@@ -1235,12 +1238,12 @@ async function sendChat(){
   chatArea.innerHTML += `<div class="chat-msg user"><div class="who">你</div>${reply}</div>`;
   input.value = '';
   // 获取当前 messages
-  const r = await fetch(`/api/ziwei/sessions/${sid}`);
+  const r = await fetch(`/api/ziwei/sessions/${sid}`,{headers:_authHdrs()});
   const s = await r.json();
   const msgs = s.messages || [];
   try{
     let res = await fetch('/api/ziwei/analyze/continue', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()),
       body:JSON.stringify({messages: msgs, reply, password: reportPw})
     });
     if(res.status === 403){
@@ -1259,7 +1262,7 @@ async function sendChat(){
         if(!reportPw){ input.disabled = false; $('btn-chat').disabled = false; return; }
         sessionStorage.setItem('ziwei_pw', reportPw);
         res = await fetch('/api/ziwei/analyze/continue', {
-          method:'POST', headers:{'Content-Type':'application/json'},
+          method:'POST', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()),
           body:JSON.stringify({messages: msgs, reply, password: reportPw})
         });
       } else {
@@ -1276,7 +1279,7 @@ async function sendChat(){
       msgs.push({role:'user', content: reply});
       msgs.push({role:'assistant', content: d.analysis});
       await fetch(`/api/ziwei/sessions/${sid}`, {
-        method:'PATCH', headers:{'Content-Type':'application/json'},
+        method:'PATCH', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()),
         body:JSON.stringify({messages: msgs})
       });
     }

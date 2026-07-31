@@ -487,13 +487,32 @@ def api_ziwei_analyze_continue():
 # 紫微会话管理
 # ============================================================
 import uuid as _uuid
-_ziwei_sessions = {}  # {session_id: {id, title, messages, plate_data, plate_summary, created_at}}
+_ziwei_sessions = {}  # {session_id: {id, title, messages, plate_data, plate_summary, created_at, user_id}}
+
+def _get_auth_user():
+    """Extract user_id from Authorization Bearer token, or None."""
+    import re as _re
+    header = request.headers.get("Authorization", "")
+    m = _re.match(r"^Bearer\s+(.+)$", header)
+    if not m:
+        return None
+    from models.user import verify_token
+    payload = verify_token(m.group(1))
+    return payload["user_id"] if payload else None
 
 @ziwei_bp.route("/sessions", methods=["GET", "POST"])
 def api_ziwei_sessions():
     """会话列表 / 创建"""
+    user_id = _get_auth_user()
     if request.method == "GET":
-        items = [{"id": s["id"], "title": s.get("title",""), "plate_summary": s.get("plate_summary",""), "created_at": s.get("created_at",""), "message_count": len(s.get("messages",[]))} for s in _ziwei_sessions.values()]
+        items = []; uid = user_id
+        for s in _ziwei_sessions.values():
+            if uid and s.get("user_id") and s["user_id"] != uid:
+                continue  # 已登录用户只看到自己的会话
+            if not uid and s.get("user_id"):
+                continue  # 匿名用户看不到已绑定的会话
+            items.append({"id": s["id"], "title": s.get("title",""), "plate_summary": s.get("plate_summary",""),
+                         "created_at": s.get("created_at",""), "message_count": len(s.get("messages",[]))})
         return jsonify(sorted(items, key=lambda x: x["created_at"], reverse=True))
 
     data = request.get_json(force=True) if request.method == "POST" else {}
@@ -504,6 +523,7 @@ def api_ziwei_sessions():
         "plate_data": data.get("plate_data", {}),
         "plate_summary": data.get("plate_summary", ""),
         "created_at": datetime.now().isoformat(timespec="seconds"),
+        "user_id": user_id,
     }
     _save_session_to_disk(sid)
     return jsonify(_ziwei_sessions[sid])
