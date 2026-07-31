@@ -413,6 +413,7 @@
     <button onclick="renameCurrentSession()" title="重命名当前会话" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px;color:var(--ink-soft)">✏</button>
     <button onclick="deleteCurrentSession()" title="删除当前会话" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px;color:var(--ink-soft)">✕</button>
     <button onclick="copyReportLink()" title="复制链接" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 4px;color:var(--ink-soft)">🔗</button>
+    <a href="/ziwei" id="link-interactive" class="btn-back" style="font-size:11px;text-decoration:none">🔮 交互盘</a>
     <button class="btn-theme" id="btn-theme" onclick="toggleTheme()">🌙</button>
     <span id="rp-auth-placeholder" style="margin-left:8px;display:flex;gap:4px">
       <button class="btn-back" onclick="showRptAuth('login')" style="font-size:11px;padding:3px 10px">登录</button>
@@ -529,6 +530,13 @@ function toggleTheme(){ var n=document.documentElement.getAttribute('data-theme'
 document.addEventListener('DOMContentLoaded',function(){ document.getElementById('btn-theme').textContent=document.documentElement.getAttribute('data-theme')==='dark'?'☀️':'🌙'; });
 const $ = id => document.getElementById(id);
 const sid = window.location.pathname.split('/').pop();
+// 更新交互盘链接
+(function(){var l=$('link-interactive');if(l)l.href='/ziwei?sid='+encodeURIComponent(sid);})();
+function copyReportLink(){
+    const url=location.origin+'/ziwei/report/'+sid;
+    if(navigator.clipboard){navigator.clipboard.writeText(url).catch(()=>prompt('复制链接:',url))}
+    else{prompt('复制链接:',url)}
+}
 let plateData = null;
 // auth
 let _ziweiToken = localStorage.getItem('ziwei_token');

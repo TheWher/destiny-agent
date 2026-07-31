@@ -373,6 +373,7 @@ body::after{
     <div class="sticky-actions">
 
         <button id="btn-render" class="btn btn-accent">🔮 排盘</button>
+        <button id="btn-share" class="btn" onclick="shareChart()" style="display:none" title="分享命盘">🔗 分享</button>
 
     </div>
 
@@ -472,7 +473,7 @@ const GAN_ARR=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const ZHI_ARR=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 const GAN_SIHUA={'甲':['廉贞','破军','武曲','太阳'],'乙':['天机','天梁','紫微','太阴'],'丙':['天同','天机','文昌','廉贞'],'丁':['太阴','天同','天机','巨门'],'戊':['贪狼','太阴','右弼','天机'],'己':['武曲','贪狼','天梁','文曲'],'庚':['太阳','武曲','太阴','天同'],'辛':['巨门','太阳','文曲','文昌'],'壬':['天梁','紫微','左辅','武曲'],'癸':['破军','巨门','太阴','贪狼']};
 const LIMIT_NAMES=['命宫','兄弟','夫妻','子女','财帛','疾厄','迁移','交友','官禄','田宅','福德','父母'];
-let scope={decade:null,yearly:null,monthly:null,dayOnly:null};
+let scope={decade:null,yearly:null,monthly:null,dayOnly:null};let _shareSid=null;
 let horoscopeData=null;
 
 
@@ -587,7 +588,7 @@ $('btn-render').addEventListener('click',()=>{
 
     fetch('/api/ziwei/paipan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year:b.y,month:b.m,day:b.d,hour:hh,minute:mm,gender:b.gender,is_lunar:b.cal==='lunar',longitude:parseFloat($('longitude').value)||120,location:$('location').value||''})})
 
-    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d)})
+    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d)})
 
     .catch(()=>{$('loading-section').innerHTML='<p style="color:#ef5350;font-family:serif">排盘失败</p>'});
 
@@ -768,6 +769,46 @@ function renderConfirm(plate){
 }
 
 
+
+// ── 分享命盘 ──
+
+async function createShareSession(plate){
+    if(_shareSid)return;
+    try{
+        const title=(document.getElementById('y').value||'')+'-'+(document.getElementById('m').value||'')+'-'+(document.getElementById('d').value||'');
+        const r=await fetch('/api/ziwei/sessions',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({title,plate_data:plate,plate_summary:title})});
+        const d=await r.json();
+        _shareSid=d.id;
+        const btn=$('btn-share');if(btn)btn.style.display='';
+    }catch(e){console.warn('createShareSession failed',e)}
+}
+
+function shareChart(){
+    if(!_shareSid){alert('请先排盘');return}
+    const url=location.origin+'/ziwei/report/'+_shareSid;
+    if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>{const t=$('btn-share');t.textContent='✓ 已复制';setTimeout(()=>t.textContent='🔗 分享',2000)}).catch(()=>prompt('复制链接:',url))}
+    else{prompt('复制链接:',url)}
+}
+
+// ── URL参数自动加载（?sid=xxx）──
+
+(async function autoLoadFromURL(){
+    const p=new URLSearchParams(location.search);
+    const sid=p.get('sid');
+    if(!sid)return;
+    try{
+        const r=await fetch('/api/ziwei/sessions/'+sid);
+        if(!r.ok)return;
+        const s=await r.json();
+        if(!s.plate_data||!s.plate_data.palaces)return;
+        $('loading-section').classList.add('hidden');
+        $('result-section').classList.remove('hidden');
+        plateData=s.plate_data;
+        renderInPlace(plateData);
+        _shareSid=sid;
+        const btn=$('btn-share');if(btn)btn.style.display='';
+    }catch(e){console.warn('autoLoadFromURL failed',e)}
+})();
 
 // ── 命盘解读触发 → 创建 session + SSE → 跳转报告页 ──
 
