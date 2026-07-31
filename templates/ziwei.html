@@ -233,9 +233,13 @@ body{font-family:"Noto Serif SC","Source Han Serif SC","STSong","PingFang SC",se
 
 @media(max-width:860px){.app-layout{flex-direction:column}.app-sidebar{width:100%;min-width:0;height:auto;position:static;border-right:none;border-bottom:1px solid var(--line-soft);padding:20px 16px 16px}.app-main{padding:20px 16px 80px}.sticky-actions{width:100%}.ziwei-grid{height:380px}.palace .star-name{font-size:11px}.palace .p-aux{font-size:8px}.palace .p-stars{gap:0}.center-palace .c-ming-star{font-size:18px}.center-palace .c-ju{font-size:11px}.center-palace .c-anchor{font-size:10px}.confirm-card .cc-grid{grid-template-columns:1fr 1fr}}
 
+@media(max-width:480px){.app-sidebar{padding:14px 10px 12px}.app-main{padding:14px 10px 72px}.app-sidebar .app-header h1{font-size:1.2rem}.sticky-actions{padding:8px 10px 10px;gap:4px}.sticky-actions .btn{font-size:.74em;padding:6px 10px}.form-grid{grid-template-columns:1fr}.form-group.form-wide{grid-column:span 1}.quick-input{font-size:.9em;letter-spacing:2px;padding:8px 10px}.radio-group{gap:8px}.radio-label{font-size:.74em}.ziwei-grid{height:300px;gap:1px}.palace{padding:2px 3px;font-size:7px}.palace .star-name{font-size:9px}.palace .p-dizhi{font-size:9px}.palace .p-gong{font-size:8px}.palace .p-aux{font-size:7px}.palace .p-fly{font-size:6px}.center-palace{padding:6px 8px}.center-palace .c-ming-star{font-size:14px}.center-palace .c-ju{font-size:9px;letter-spacing:2px}.center-palace .c-anchor{font-size:8px}.center-palace .c-current{font-size:8px;padding:2px 4px}.chart-wrapper{padding:10px}.floating-bar{margin-bottom:10px;padding:8px 10px;font-size:.82em}.a-card{padding:14px 16px}.analysis-content{font-size:.8rem;line-height:1.7}.confirm-card .cc-grid{grid-template-columns:1fr}.confirm-card .cc-item{font-size:.78em}.btn-back{padding:3px 10px;font-size:11px}}
+
 
 
 </style>
+
+<script src="/static/tier.js"></script>
 
 </head>
 
@@ -262,6 +266,7 @@ body{font-family:"Noto Serif SC","Source Han Serif SC","STSong","PingFang SC",se
             <span id="auth-tier" style="font-size:.7em;padding:1px 6px;border-radius:3px;background:var(--gold);color:#fff"></span>
             <button class="btn" onclick="logout()" style="font-size:.75em;padding:2px 10px">退出</button>
           </span>
+          <span id="auth-claim-hint" class="hidden" style="font-size:.7em;color:var(--vermillion);cursor:pointer;margin-left:4px" onclick="checkClaimable()">📋 认领旧会话</span>
         </div>
 
         <h1 onclick="location='/'">紫微斗数 <button id="btn-theme" onclick="event.stopPropagation();toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;line-height:1;vertical-align:middle;margin-left:4px">🌙</button></h1>
@@ -387,6 +392,21 @@ body{font-family:"Noto Serif SC","Source Han Serif SC","STSong","PingFang SC",se
   </div>
 </div>
 
+<!-- 会话认领弹窗 -->
+<div id="claim-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--card-bg);border:1px solid var(--border-light);border-radius:var(--radius);padding:28px 32px;width:400px;max-width:90vw;max-height:80vh;overflow-y:auto">
+    <h2 style="font-size:1.05rem;margin-bottom:6px;color:var(--text)">📋 发现之前的会话</h2>
+    <p id="claim-matched-msg" style="font-size:.8em;color:var(--text-muted);margin-bottom:4px"></p>
+    <p id="claim-orphans-msg" style="font-size:.78em;color:var(--vermillion);margin-bottom:12px;display:none"></p>
+    <div id="claim-orphan-list" style="max-height:200px;overflow-y:auto;margin-bottom:14px;font-size:.82em;display:none"></div>
+    <div style="display:flex;gap:8px">
+      <button id="claim-submit" class="btn btn-gold" style="flex:1;padding:8px;font-size:.9em" onclick="doClaim()">确认认领</button>
+      <button class="btn" style="flex:1;padding:8px;font-size:.9em" onclick="closeClaim()">稍后再说</button>
+    </div>
+    <p id="claim-result" style="text-align:center;margin-top:10px;font-size:.78em;display:none"></p>
+  </div>
+</div>
+
 <main class="app-main">
 
     
@@ -423,7 +443,7 @@ function toggleTheme(){const n=document.documentElement.getAttribute('data-theme
 
 // ── 加载历史会话 ──
 function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-(async function loadHistorySessions(){
+async function loadSessions(){
   try{
     const r=await fetch('/api/ziwei/sessions',{headers:authHeaders()});
     const list=await r.json();
@@ -438,7 +458,8 @@ function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
       return '<div style="padding:3px 0;border-bottom:1px solid var(--line-faint);display:flex;align-items:center;gap:4px" data-sid="'+s.id+'"><span style="flex:1;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="window.location.href=\'/ziwei/report/'+s.id+'\'">'+(date?date+' ':'')+'<span class="sess-title" data-sid="'+s.id+'">'+escHtml(title.slice(0,20))+'</span></span><span style="color:var(--ink-faint);font-size:.75em;flex-shrink:0">'+(mc?'💬'+mc:'新')+'</span><button onclick="event.stopPropagation();renameSession(\''+s.id+'\')" title="重命名" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✏</button><button onclick="event.stopPropagation();deleteSession(\''+s.id+'\')" title="删除" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✕</button></div>';
     }).join('');
   }catch(e){}
-})();
+}
+loadSessions();
 
 async function renameSession(sid){
   const span=document.querySelector('.sess-title[data-sid="'+sid+'"]');
@@ -729,9 +750,17 @@ async function confirmAnalyze(){
   };
   $('btn-confirm-analyze').addEventListener('click',confirmAnalyze);
 
+  // ---------- Device Fingerprint ----------
+  var _deviceId=localStorage.getItem('ziwei_device_id');
+  if(!_deviceId){_deviceId=crypto.randomUUID();localStorage.setItem('ziwei_device_id',_deviceId)}
+
   // ---------- Auth ----------
   var _authMode='login', _authToken=localStorage.getItem('ziwei_token');
-  function authHeaders(){return _authToken?{Authorization:'Bearer '+_authToken}:{}}
+  function authHeaders(){
+    var h=_authToken?{Authorization:'Bearer '+_authToken}:{};
+    if(_deviceId)h['X-Device-Id']=_deviceId;
+    return h
+  }
   function $id(id){return document.getElementById(id)}
   function showAuthModal(mode){_authMode=mode;$id('auth-title').textContent=mode==='login'?'登录':'注册';$id('auth-submit').textContent=mode==='login'?'登录':'注册';$id('auth-switch').textContent=mode==='login'?'没有账号？立即注册':'已有账号？去登录';$id('auth-error').style.display='none';$id('auth-email-inp').value='';$id('auth-pw-inp').value='';$id('auth-overlay').style.display='flex'}
   function closeAuthModal(){$id('auth-overlay').style.display='none'}
@@ -747,9 +776,11 @@ async function confirmAnalyze(){
       if(!r.ok){err.style.display='block';err.textContent=d.error||'请求失败';return}
       _authToken=d.token;localStorage.setItem('ziwei_token',d.token);
       updateAuthUI(d.user);closeAuthModal();
+      checkClaimable();
+      loadSessions();
     }catch(ex){err.style.display='block';err.textContent='网络错误'}
   }
-  function logout(){_authToken='';localStorage.removeItem('ziwei_token');updateAuthUI(null)}
+  function logout(){_authToken='';localStorage.removeItem('ziwei_token');updateAuthUI(null);loadSessions()}
   function updateAuthUI(user){
     if(user&&_authToken){
       $id('auth-placeholder').classList.add('hidden');$id('auth-user').classList.remove('hidden');
@@ -761,9 +792,70 @@ async function confirmAnalyze(){
     }
   }
   async function checkAuth(){try{var r=await fetch('/api/auth/me',{headers:{Authorization:'Bearer '+_authToken}});if(r.ok){var d=await r.json();updateAuthUI(d.user)}else{updateAuthUI(null)}}catch(e){}}
-  if(_authToken)checkAuth();
+  if(_authToken){checkAuth().then(function(){if(_authToken)checkClaimable()})}
   document.getElementById('auth-overlay').addEventListener('click',function(ev){if(ev.target===this)closeAuthModal()});
   document.getElementById('auth-pw-inp').addEventListener('keydown',function(ev){if(ev.key==='Enter')doAuth()});
+
+  // ---------- Session Claim ----------
+  var _claimData=null;
+  async function checkClaimable(){
+    if(!_authToken||!_deviceId)return;
+    try{
+      var r=await fetch('/api/ziwei/sessions/claimable',{headers:authHeaders()});
+      if(!r.ok)return;
+      _claimData=await r.json();
+      var m=_claimData.matched||0,o=_claimData.orphans||0;
+      if(m===0&&o===0){$id('auth-claim-hint').classList.add('hidden');return}
+      $id('auth-claim-hint').classList.remove('hidden');
+      $id('auth-claim-hint').textContent='📋 认领旧会话 ('+(m+o)+'条)';
+      if(m>0||o>0)showClaimModal()
+    }catch(e){}
+  }
+  function showClaimModal(){
+    var m=_claimData.matched||0,o=_claimData.orphans||0,orphans=_claimData.orphan_list||[];
+    $id('claim-matched-msg').textContent=m>0?'检测到 '+m+' 条可自动匹配归属的会话':'没有可自动匹配的会话';
+    if(o>0){
+      $id('claim-orphans-msg').style.display='block';
+      $id('claim-orphans-msg').textContent='另有 '+o+' 条旧会话无法识别，需手动认领：';
+      var html='';
+      for(var i=0;i<orphans.length;i++){
+        var orp=orphans[i];
+        html+='<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border-light);cursor:pointer"><input type="checkbox" class="claim-ck" value="'+orp.id+'" checked> <span>'+escHtml(orp.title||'新会话')+'</span><span style="color:var(--text-muted);font-size:.75em">'+escHtml(orp.created_at||'')+'</span></label>';
+      }
+      $id('claim-orphan-list').innerHTML=html;
+      $id('claim-orphan-list').style.display='block';
+    }else{
+      $id('claim-orphans-msg').style.display='none';
+      $id('claim-orphan-list').style.display='none';
+    }
+    $id('claim-result').style.display='none';
+    $id('claim-overlay').style.display='flex';
+  }
+  function closeClaim(){$id('claim-overlay').style.display='none'}
+  async function doClaim(){
+    var btn=$id('claim-submit');btn.disabled=true;btn.textContent='处理中...';
+    var cks=document.querySelectorAll('.claim-ck:checked');
+    var ids=[];cks.forEach(function(c){ids.push(c.value)});
+    try{
+      var r=await fetch('/api/ziwei/sessions/migrate',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({migrate_matched:true,orphan_ids:ids})});
+      var d=await r.json();
+      $id('claim-result').style.display='block';
+      $id('claim-result').style.color='var(--accent)';
+      $id('claim-result').textContent='✅ 已归属 '+d.migrated+' 条会话';
+      $id('claim-matched-msg').textContent='';
+      $id('claim-orphans-msg').style.display='none';
+      $id('claim-orphan-list').style.display='none';
+      $id('auth-claim-hint').classList.add('hidden');
+      loadSessions();
+      setTimeout(closeClaim,1500);
+    }catch(e){
+      $id('claim-result').style.display='block';
+      $id('claim-result').style.color='var(--vermillion)';
+      $id('claim-result').textContent='操作失败，请重试';
+    }
+    btn.disabled=false;btn.textContent='确认认领';
+  }
+  document.getElementById('claim-overlay').addEventListener('click',function(ev){if(ev.target===this)closeClaim()});
 
 </script>
 

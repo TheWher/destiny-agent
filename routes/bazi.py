@@ -13,6 +13,7 @@ import requests
 from bazi_calculator import paipan
 from city_coords import search_city
 from utils.auth import check_password, check_rate_limit, check_conv_rate_limit, check_global_ip_limit, WEB_PASSWORD, ADMIN_TOKEN
+from utils.tier import resolve_user_from_request, get_rate_limit
 from utils.cache import _make_cache_key, _cache_get, _make_ziwei_cache_key, _cache_set
 from utils.feedback import save_feedback_log
 from utils.plate import plate_to_dict, SHICHEN_NAMES
@@ -130,8 +131,12 @@ def api_analyze():
     if cached:
         return jsonify({**cached, "cached": True})
 
-    if not check_rate_limit(ip, max_requests=3, window_minutes=60):
-        return jsonify({"error": "请求过于频繁，请稍后再试（每小时限 3 次）"}), 429
+    user_id, tier = resolve_user_from_request(request)
+    limit = get_rate_limit(tier, "bazi_read") or 3
+    if limit and not check_rate_limit(f"{ip}:bazi_read", max_requests=limit, window_minutes=60, user_id=user_id):
+        msg = (f"免费版每小时 {limit} 次。"
+               f"升级 Pro 解锁 20 次/时") if tier == "free" else "请求过于频繁，请稍后再试"
+        return jsonify({"error": msg, "rate_limited": True, "tier": tier, "redirect_auth": tier == "free"}), 429
 
     # 调用 LLM 分析（使用惰性导入避免循环依赖）
     from analysis_service import analyze_bazi
@@ -212,8 +217,12 @@ def api_analyze_stream():
     if cached:
         return jsonify({**cached, "cached": True})
 
-    if not check_rate_limit(ip, max_requests=3, window_minutes=60):
-        return jsonify({"error": "请求过于频繁，请稍后再试（每小时限 3 次）"}), 429
+    user_id, tier = resolve_user_from_request(request)
+    limit = get_rate_limit(tier, "bazi_read") or 3
+    if limit and not check_rate_limit(f"{ip}:bazi_read", max_requests=limit, window_minutes=60, user_id=user_id):
+        msg = (f"免费版每小时 {limit} 次。"
+               f"升级 Pro 解锁 20 次/时") if tier == "free" else "请求过于频繁，请稍后再试"
+        return jsonify({"error": msg, "rate_limited": True, "tier": tier, "redirect_auth": tier == "free"}), 429
 
     from three_channel import three_channel_analyze
     import json as _json
@@ -267,15 +276,19 @@ def api_analyze_stream_continue():
     if pw_err:
         return jsonify({"error": pw_err, "need_password": True}), 403
 
-    if not check_rate_limit(ip, max_requests=30, window_minutes=60):
-        return jsonify({"error": "请求过于频繁，请稍后再试"}), 429
+    user_id, tier = resolve_user_from_request(request)
+    conv_limit = get_rate_limit(tier, "conv_message") or 30
+    if conv_limit and not check_rate_limit(f"{ip}:conv_message", max_requests=conv_limit, window_minutes=60, user_id=user_id):
+        msg = (f"免费版每小时 {conv_limit} 次。"
+               f"升级 Pro 解锁 100 次/时") if tier == "free" else "请求过于频繁，请稍后再试"
+        return jsonify({"error": msg, "rate_limited": True, "tier": tier, "redirect_auth": tier == "free"}), 429
 
     # 对话粒度限流 + IP 全局兜底
     conv_id = data.get("conversation_id", "")
     if conv_id:
-        if not check_conv_rate_limit(ip, conv_id, max_requests=30):
+        if not check_conv_rate_limit(ip, conv_id, max_requests=conv_limit, user_id=user_id):
             return jsonify({"error": "该对话请求过于频繁，请稍后再试"}), 429
-        if not check_global_ip_limit(ip, max_requests=100):
+        if not check_global_ip_limit(ip, max_requests=get_rate_limit(tier, "global_ip") or 100, user_id=user_id):
             return jsonify({"error": "全局请求过于频繁，请稍后再试"}), 429
 
     if "messages" not in data or "reply" not in data:
@@ -349,15 +362,19 @@ def api_analyze_continue():
     if pw_err:
         return jsonify({"error": pw_err, "need_password": True}), 403
 
-    if not check_rate_limit(ip, max_requests=30, window_minutes=60):
-        return jsonify({"error": "请求过于频繁，请稍后再试"}), 429
+    user_id, tier = resolve_user_from_request(request)
+    conv_limit = get_rate_limit(tier, "conv_message") or 30
+    if conv_limit and not check_rate_limit(f"{ip}:conv_message", max_requests=conv_limit, window_minutes=60, user_id=user_id):
+        msg = (f"免费版每小时 {conv_limit} 次。"
+               f"升级 Pro 解锁 100 次/时") if tier == "free" else "请求过于频繁，请稍后再试"
+        return jsonify({"error": msg, "rate_limited": True, "tier": tier, "redirect_auth": tier == "free"}), 429
 
     # 对话粒度限流 + IP 全局兜底
     conv_id = data.get("conversation_id", "")
     if conv_id:
-        if not check_conv_rate_limit(ip, conv_id, max_requests=30):
+        if not check_conv_rate_limit(ip, conv_id, max_requests=conv_limit, user_id=user_id):
             return jsonify({"error": "该对话请求过于频繁，请稍后再试"}), 429
-        if not check_global_ip_limit(ip, max_requests=100):
+        if not check_global_ip_limit(ip, max_requests=get_rate_limit(tier, "global_ip") or 100, user_id=user_id):
             return jsonify({"error": "全局请求过于频繁，请稍后再试"}), 429
 
     if "messages" not in data or "reply" not in data:

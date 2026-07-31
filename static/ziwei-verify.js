@@ -242,7 +242,9 @@ async function startAnalysisFull() {
 // 会话列表加载（供报告页使用）
 async function loadSessionList() {
   try {
-    var r = await fetch('/api/ziwei/sessions');
+    var token = localStorage.getItem('ziwei_token') || '';
+    var hdrs = token ? {'Authorization':'Bearer '+token} : {};
+    var r = await fetch('/api/ziwei/sessions',{headers:hdrs});
     var list = await r.json();
     var sel = document.getElementById('session-switcher');
     if (!sel) return;

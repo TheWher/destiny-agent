@@ -13,6 +13,7 @@ import requests
 from bazi_calculator import paipan, get_shishen
 from ziwei_calculator import ziwei_paipan, plate_to_dict as ziwei_plate_to_dict, get_horoscope
 from utils.auth import check_password, check_rate_limit, check_conv_rate_limit, check_global_ip_limit, WEB_PASSWORD, ADMIN_TOKEN
+from utils.tier import resolve_user_from_request, get_rate_limit, TIER_FREE
 from utils.cache import _make_cache_key, _cache_get, _make_ziwei_cache_key, _cache_set
 from utils.feedback import save_feedback_log
 
@@ -277,8 +278,12 @@ def api_ziwei_analyze_yearly():
     except (ValueError, TypeError, KeyError) as e:
         return jsonify({"error": f"参数错误: {e}"}), 400
 
-    if not check_rate_limit(ip, max_requests=3, window_minutes=60):
-        return jsonify({"error": "请求过于频繁，请稍后再试"}), 429
+    user_id, tier = resolve_user_from_request(request)
+    limit = get_rate_limit(tier, "ziwei_read") or 3
+    if limit and not check_rate_limit(f"{ip}:ziwei_read", max_requests=limit, window_minutes=60, user_id=user_id):
+        msg = (f"免费版每小时 {limit} 次。"
+               f"<a href='#' onclick='document.getElementById(\"authModal\").style.display=\"flex\";return false'>升级 Pro</a> 解锁 20 次/时") if tier == "free" else "请求过于频繁，请稍后再试"
+        return jsonify({"error": msg, "rate_limited": True, "tier": tier, "redirect_auth": tier == "free"}), 429
 
     try:
         # 本命盘
@@ -399,8 +404,12 @@ def api_ziwei_analyze():
     if cached:
         return jsonify({**cached, "cached": True})
 
-    if not check_rate_limit(ip, max_requests=3, window_minutes=60):
-        return jsonify({"error": "请求过于频繁，请稍后再试（每小时限 3 次）"}), 429
+    user_id2, tier2 = resolve_user_from_request(request)
+    limit2 = get_rate_limit(tier2, "ziwei_read") or 3
+    if limit2 and not check_rate_limit(f"{ip}:ziwei_read", max_requests=limit2, window_minutes=60, user_id=user_id2):
+        msg = (f"免费版每小时 {limit2} 次。"
+               f"<a href='#' onclick='document.getElementById(\"authModal\").style.display=\"flex\";return false'>升级 Pro</a> 解锁 20 次/时") if tier2 == "free" else "请求过于频繁，请稍后再试"
+        return jsonify({"error": msg, "rate_limited": True, "tier": tier2, "redirect_auth": tier2 == "free"}), 429
 
     try:
         from analysis_service import analyze_ziwei
@@ -437,8 +446,12 @@ def api_ziwei_analyze_stream():
     plate_dict = data["plate"]
     bazi_ref = _compute_bazi_ref(plate_dict)
 
-    if not check_rate_limit(ip, max_requests=3, window_minutes=60):
-        return jsonify({"error": "请求过于频繁（3次/时）"}), 429
+    user_id3, tier3 = resolve_user_from_request(request)
+    limit3 = get_rate_limit(tier3, "ziwei_read") or 3
+    if limit3 and not check_rate_limit(f"{ip}:ziwei_read", max_requests=limit3, window_minutes=60, user_id=user_id3):
+        msg = (f"免费版每小时 {limit3} 次。"
+               f"升级 Pro 解锁 20 次/时") if tier3 == "free" else "请求过于频繁（{limit3}次/时）"
+        return jsonify({"error": msg, "rate_limited": True, "tier": tier3, "redirect_auth": tier3 == "free"}), 429
 
     from flask import Response
     from analysis_service import _load_ziwei_system_prompt, _build_ziwei_user_message, _call_api_stream
@@ -516,6 +529,7 @@ def api_ziwei_sessions():
         return jsonify(sorted(items, key=lambda x: x["created_at"], reverse=True))
 
     data = request.get_json(force=True) if request.method == "POST" else {}
+    device_fp = (request.headers.get("X-Device-Id") or "").strip() or None
     sid = str(_uuid.uuid4())[:8]
     _ziwei_sessions[sid] = {
         "id": sid, "title": data.get("title", "新会话"),
@@ -524,6 +538,7 @@ def api_ziwei_sessions():
         "plate_summary": data.get("plate_summary", ""),
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "user_id": user_id,
+        "device_fingerprint": device_fp,
     }
     _save_session_to_disk(sid)
     return jsonify(_ziwei_sessions[sid])
@@ -557,6 +572,59 @@ def api_ziwei_session(sid):
             if os.path.exists(fp):
                 os.remove(fp)
         return jsonify({"ok": True})
+
+# ═══ 会话归属迁移 ═══
+@ziwei_bp.route("/sessions/claimable", methods=["GET"])
+def api_ziwei_session_claimable():
+    """查询可认领的匿名会话。Header: Authorization Bearer + X-Device-Id"""
+    user_id = _get_auth_user()
+    if not user_id:
+        return jsonify({"error": "请先登录"}), 401
+    device_fp = (request.headers.get("X-Device-Id") or "").strip() or None
+    
+    matched = 0
+    orphans = []
+    for s in _ziwei_sessions.values():
+        if s.get("user_id"):
+            continue  # 已归属
+        if device_fp and s.get("device_fingerprint") == device_fp:
+            matched += 1
+        elif not s.get("device_fingerprint"):
+            # 部署前旧会话，无指纹
+            orphans.append({
+                "id": s["id"],
+                "title": s.get("title", ""),
+                "created_at": s.get("created_at", ""),
+                "plate_summary": s.get("plate_summary", ""),
+            })
+    return jsonify({"matched": matched, "orphans": len(orphans), "orphan_list": orphans})
+
+
+@ziwei_bp.route("/sessions/migrate", methods=["POST"])
+def api_ziwei_session_migrate():
+    """执行会话归属迁移。"""
+    user_id = _get_auth_user()
+    if not user_id:
+        return jsonify({"error": "请先登录"}), 401
+    device_fp = (request.headers.get("X-Device-Id") or "").strip() or None
+    data = request.get_json(silent=True) or {}
+    migrate_matched = data.get("migrate_matched", True)
+    orphan_ids = data.get("orphan_ids", [])
+    if not isinstance(orphan_ids, list):
+        orphan_ids = []
+
+    count = 0
+    for s in _ziwei_sessions.values():
+        if s.get("user_id"):
+            continue
+        matched = device_fp and migrate_matched and s.get("device_fingerprint") == device_fp
+        orphan_match = s["id"] in orphan_ids
+        if matched or orphan_match:
+            s["user_id"] = user_id
+            _save_session_to_disk(s["id"])
+            count += 1
+    return jsonify({"migrated": count})
+
 
 # ═══ 验盘反馈保存 ═══
 _FEEDBACK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'feedback', 'ziwei')

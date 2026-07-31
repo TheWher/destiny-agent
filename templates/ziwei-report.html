@@ -358,7 +358,50 @@
     .center-palace .c-ju { font-size: 11px; }
     .center-palace .c-anchor { font-size: 10px; }
     .strip-row { grid-template-columns: repeat(5, 1fr); overflow-x: auto; }
-    .strip-cell:nth-child(n+6) { display: flex !important; }  /* 杀掉裁剪，改为横向滚动 */
+    .strip-cell:nth-child(n+6) { display: flex !important; }
+  }
+
+  @media (max-width: 480px) {
+    .report { padding: 8px; }
+    .nav-bar { flex-direction: column; gap: 8px; align-items: flex-start; }
+    .nav-bar .title { font-size: 15px; }
+    .ziwei-grid { height: 320px; gap: 0; }
+    .palace { font-size: 8px; padding: 2px 3px; }
+    .palace .p-head { gap: 2px; padding-bottom: 2px; margin-bottom: 2px; }
+    .palace .p-dizhi { font-size: 9px; }
+    .palace .p-gong { font-size: 8px; }
+    .palace .star-name { font-size: 10px; }
+    .palace .p-aux { font-size: 7px; }
+    .palace .p-daxian { font-size: 7px; }
+    .palace .p-fly { font-size: 7px; }
+    .center-palace { padding: 8px 10px; }
+    .center-palace .c-ming-star { font-size: 15px; }
+    .center-palace .c-ju { font-size: 9px; letter-spacing: 2px; }
+    .center-palace .c-anchor { font-size: 8px; }
+    .center-palace .c-current { font-size: 8px; padding: 2px 6px; }
+    .yun-overview { gap: 6px; font-size: 10px; padding: 6px 10px; }
+    .yun-decade .dec-cell { padding: 3px 1px; font-size: 7px; }
+    .yun-decade .dec-cell .d-gz { font-size: 9px; }
+    .yun-decade .dec-cell .d-ages { font-size: 7px; }
+    .yun-focus .focus-pill { padding: 5px 6px; }
+    .yun-focus .fp-label { font-size: 8px; }
+    .yun-focus .fp-value { font-size: 9px; }
+    .yun-drill .drill-cell { font-size: 7px; padding: 3px 1px; }
+    .yun-drill .drill-cell .dc-gz { font-size: 9px; }
+    .scope-status { font-size: 9px; padding: 4px 8px; gap: 4px; }
+    .scope-status .ss-chip { font-size: 8px; padding: 1px 5px; }
+    .analysis-area { padding: 12px 14px; margin-bottom: 10px; }
+    .analysis-area h2 { font-size: 13px; margin: 12px 0 8px; }
+    .analysis-area h3 { font-size: 11px; }
+    .analysis-text { font-size: 12px; line-height: 1.7; }
+    .analysis-text ul, .analysis-text ol { padding-left: 14px; }
+    .chat-msg { font-size: 11px; padding: 6px 10px; }
+    .chat-input-row { gap: 4px; }
+    .chat-input-row textarea { font-size: 11px; padding: 6px 8px; }
+    .chat-input-row button { font-size: 11px; padding: 4px 12px; }
+    .star-dialog { padding: 16px 18px; font-size: 11px; }
+    .info-bar { gap: 4px; padding: 8px 10px; }
+    .btn-accent { font-size: 10px; padding: 2px 8px; }
   }
 </style>
 </head>
@@ -373,6 +416,30 @@
     <button onclick="deleteCurrentSession()" title="删除当前会话" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px;color:var(--ink-soft)">✕</button>
     <button onclick="copyReportLink()" title="复制链接" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 4px;color:var(--ink-soft)">🔗</button>
     <button class="btn-theme" id="btn-theme" onclick="toggleTheme()">🌙</button>
+    <span id="rp-auth-placeholder" style="margin-left:8px;display:flex;gap:4px">
+      <button class="btn-back" onclick="showRptAuth('login')" style="font-size:11px;padding:3px 10px">登录</button>
+      <button class="btn-back" onclick="showRptAuth('register')" style="font-size:11px;padding:3px 10px;border-color:var(--vermillion);color:var(--vermillion)">注册</button>
+    </span>
+    <span id="rp-auth-user" class="hidden" style="margin-left:8px;display:none;align-items:center;gap:6px;font-size:11px">
+      <span id="rp-auth-email" style="color:var(--ink);font-weight:600"></span>
+      <span id="rp-auth-tier" style="font-size:10px;padding:1px 5px;border-radius:2px;background:var(--ink-faint);color:#fff"></span>
+      <a href="#" onclick="rptLogout();return false" style="color:var(--ink-soft);font-size:10px">退出</a>
+    </span>
+  </div>
+
+  <!-- 登录弹窗 -->
+  <div id="rpt-auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center">
+    <div style="background:var(--paper-card);border:1px solid var(--line-soft);padding:28px 32px;width:360px;max-width:90vw">
+      <h2 id="rpt-auth-title" style="font-size:1.05rem;margin-bottom:14px;color:var(--ink)">登录</h2>
+      <input id="rpt-auth-email" type="email" placeholder="邮箱" style="width:100%;padding:10px 12px;border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);outline:none;margin-bottom:8px;font-family:inherit;font-size:13px">
+      <input id="rpt-auth-pw" type="password" placeholder="密码" style="width:100%;padding:10px 12px;border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);outline:none;margin-bottom:12px;font-family:inherit;font-size:13px">
+      <div id="rpt-auth-error" style="color:var(--vermillion);font-size:12px;margin-bottom:8px;display:none"></div>
+      <div style="display:flex;gap:8px">
+        <button id="rpt-auth-submit" class="btn-back" onclick="doRptAuth()" style="flex:1;padding:8px;font-size:13px;border-color:var(--vermillion);color:var(--vermillion);cursor:pointer">登录</button>
+        <button class="btn-back" onclick="closeRptAuth()" style="flex:1;padding:8px;font-size:13px;cursor:pointer">取消</button>
+      </div>
+      <p id="rpt-auth-switch" style="text-align:center;margin-top:10px;font-size:11px;color:var(--ink-soft);cursor:pointer" onclick="switchRptAuth()">没有账号？立即注册</p>
+    </div>
   </div>
 
   <!-- 命盘概要 -->
@@ -454,6 +521,7 @@
   </div>
 </div>
 
+<script src="/static/tier.js"></script>
 <script src="/static/thinking-orbs.js"></script>
 <script src="/static/ziwei-verify.js"></script>
 <script>
@@ -465,9 +533,47 @@ const $ = id => document.getElementById(id);
 const sid = window.location.pathname.split('/').pop();
 let plateData = null;
 // auth
-const _ziweiToken = localStorage.getItem('ziwei_token');
+let _ziweiToken = localStorage.getItem('ziwei_token');
 const _authHdrs = function(){ return _ziweiToken ? {'Authorization':'Bearer '+_ziweiToken} : {}; };
 // reportPw declared in ziwei-verify.js
+
+// ── Report Auth ──
+var _rptAuthMode='login';
+function updateRptAuthUI(){
+  if(_ziweiToken){
+    $('rp-auth-placeholder').style.display='none';$('rp-auth-user').style.display='flex';
+    try{
+      var payload=JSON.parse(atob(_ziweiToken.split('.')[1]));
+      $('rp-auth-email').textContent=payload.email||'';
+      var tier=payload.tier||'free';
+      $('rp-auth-tier').textContent=tier==='free'?'免费':tier==='pro'?'Pro':'基础';
+      $('rp-auth-tier').style.background=tier==='pro'?'linear-gradient(135deg,#d4a843,#b8860b)':'var(--ink-faint)';
+    }catch(e){}
+  }else{
+    $('rp-auth-placeholder').style.display='flex';$('rp-auth-user').style.display='none';
+  }
+}
+function showRptAuth(mode){_rptAuthMode=mode;$('rpt-auth-title').textContent=mode==='login'?'登录':'注册';$('rpt-auth-submit').textContent=mode==='login'?'登录':'注册';$('rpt-auth-switch').textContent=mode==='login'?'没有账号？立即注册':'已有账号？去登录';$('rpt-auth-error').style.display='none';$('rpt-auth-email').value='';$('rpt-auth-pw').value='';$('rpt-auth-overlay').style.display='flex'}
+function closeRptAuth(){$('rpt-auth-overlay').style.display='none'}
+function switchRptAuth(){showRptAuth(_rptAuthMode==='login'?'register':'login')}
+async function doRptAuth(){
+  var e=$('rpt-auth-email').value.trim(),p=$('rpt-auth-pw').value.trim(),err=$('rpt-auth-error');
+  if(!e||!p){err.style.display='block';err.textContent='请填写邮箱和密码';return}
+  err.style.display='none';
+  var url='/api/auth/'+(_rptAuthMode==='login'?'login':'register');
+  try{
+    var r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
+    var d=await r.json();
+    if(!r.ok){err.style.display='block';err.textContent=d.error||'请求失败';return}
+    _ziweiToken=d.token;localStorage.setItem('ziwei_token',d.token);
+    updateRptAuthUI();closeRptAuth();
+    loadSessionList();
+  }catch(ex){err.style.display='block';err.textContent='网络错误'}
+}
+function rptLogout(){_ziweiToken='';localStorage.removeItem('ziwei_token');updateRptAuthUI();loadSessionList()}
+$('rpt-auth-pw').addEventListener('keydown',function(ev){if(ev.key==='Enter')doRptAuth()});
+$('rpt-auth-overlay').addEventListener('click',function(ev){if(ev.target===this)closeRptAuth()});
+updateRptAuthUI();
 
 // ── 加载数据 ──
 async function load(){
@@ -1119,6 +1225,7 @@ async function analyzeScope(){
       document.getElementById('analysis-text').innerHTML += '<hr style="border:none;border-top:1px dashed var(--line-faint);margin:14px 0"><h2>\ud83d\udcdc 叠盘分析</h2>' + formatText(d.analysis);
       document.getElementById('analysis-text').scrollIntoView({behavior:'smooth',block:'start'});
     } else {
+      if(d.rate_limited){showUpgradeToast(d.error,d.tier);btn.disabled=false;btn.textContent='📜 叠盘分析';return;}
       alert('叠盘分析失败: '+(d.error||'未知错误'));
     }
   }catch(e){ alert('网络错误: '+e.message); }
@@ -1154,7 +1261,10 @@ async function startAnalysis(plate, password){
         reportPw=pw; sessionStorage.setItem('ziwei_pw',pw);
         continue;
       }
-      if(!r.ok){ area.innerHTML='<span style="color:var(--vermillion)">请求失败: HTTP '+r.status+'</span>'; return; }
+      if(!r.ok){ 
+        var _hd=await handleApiError(r);
+        if(_hd){area.innerHTML='<span style="color:var(--vermillion)">已达使用限额</span>';return;}
+        area.innerHTML='<span style="color:var(--vermillion)">请求失败: HTTP '+r.status+'</span>'; return; }
       const d = await r.json();
       if(d.success && d.analysis){
         sessionStorage.setItem('ziwei_pw', pw || '');
@@ -1271,7 +1381,7 @@ async function sendChat(){
         return;
       }
     }
-    if(!res.ok){ chatArea.innerHTML += '<div style="color:var(--vermillion);font-size:11px">请求失败: HTTP '+res.status+'</div>'; input.disabled = false; $('btn-chat').disabled = false; return; }
+    if(!res.ok){ var _hd2=await handleApiError(res); if(_hd2){chatArea.innerHTML+='<div style="color:var(--vermillion);font-size:11px">已达使用限额</div>';input.disabled=false;$('btn-chat').disabled=false;return;} chatArea.innerHTML += '<div style="color:var(--vermillion);font-size:11px">请求失败: HTTP '+res.status+'</div>'; input.disabled = false; $('btn-chat').disabled = false; return; }
     const d = await res.json();
     if(d.success){
       chatArea.innerHTML += `<div class="chat-msg agent"><div class="who">Agent</div>${formatText(d.analysis)}</div>`;

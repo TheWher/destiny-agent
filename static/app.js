@@ -812,6 +812,7 @@ async function doAnalyze(isRetry = false) {
         if (!d.success) {
             if (d.need_password) { clearPassword(); clearPendingAnalysis(); showError(d.error); return; }
             clearPendingAnalysis();
+            if (d.rate_limited) { showUpgradeToast(d.error, d.tier); hideLoading(); elBtnAnalyze.disabled = false; analysisInProgress = false; showDefaultStep(); return; }
             showError(d.error || '分析失败');
             return;
         }
@@ -1105,6 +1106,7 @@ elBtnChatSend.addEventListener('click', async () => {
             if (!r.ok) {
                 const d = await r.json().catch(()=>({}));
                 if (d.need_password) { clearPassword(); clearPendingAnalysis(); showError(d.error); hideLoading(); elBtnChatSend.disabled=false; elChatInput.disabled=false; analysisInProgress=false; return; }
+                if (d.rate_limited) { showUpgradeToast(d.error, d.tier); hideLoading(); elBtnChatSend.disabled=false; elChatInput.disabled=false; analysisInProgress=false; return; }
                 lastError = d.error||`HTTP ${r.status}`;
                 if (attempt===0) { await new Promise(r=>setTimeout(r,3000)); continue; }
                 showError(lastError); clearPendingAnalysis(); hideLoading(); elBtnChatSend.disabled=false; elChatInput.disabled=false; analysisInProgress=false; return;
@@ -1483,6 +1485,7 @@ async function doZiweiAnalyze() {
             return doZiweiAnalyze(); // retry
         }
         if (!d.success) {
+            if (d.rate_limited) { showUpgradeToast(d.error, d.tier); ziweiAnalysisInProgress = false; elBtnZiweiAnalyze.disabled = false; elBtnZiweiAnalyze.textContent = '🧠 开始解读'; return; }
             elZiweiAnalysisContent.innerHTML = `<p style="color:red">分析失败: ${d.error||'未知错误'}</p>`;
             ziweiAnalysisInProgress = false;
             elBtnZiweiAnalyze.disabled = false;

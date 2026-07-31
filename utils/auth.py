@@ -30,6 +30,22 @@ if os.path.exists(CONFIG_LOCAL):
 # 限流存储
 _rate_limit_store = defaultdict(list)
 
+# ---- Tier-aware rate limit helpers ----
+
+def check_rate_limit(key: str, max_requests: int = 3, window_minutes: int = 60,
+                     user_id: str | None = None) -> bool:
+    """简易限流。key 可以是 IP 或 IP:action。
+    如果传了 user_id，key 合成为 user:{user_id}:{key}，保证不同 action 独立计数。"""
+    actual_key = f"user:{user_id}:{key}" if user_id else key
+    import time as _t
+    now = _t.time(); window = window_minutes * 60
+    _rate_limit_store[actual_key] = [t for t in _rate_limit_store[actual_key] if now - t < window]
+    if len(_rate_limit_store[actual_key]) >= max_requests:
+        return False
+    _rate_limit_store[actual_key].append(now)
+    return True
+
+
 def check_password(ip: str, data: dict) -> str | None:
     """检查深度分析密码，含防爆破锁。返回 None 表示通过，返回字符串表示错误信息。"""
     if not WEB_PASSWORD:
@@ -57,23 +73,15 @@ def check_password(ip: str, data: dict) -> str | None:
 
 # ============================================================
 
-def check_rate_limit(key: str, max_requests: int = 3, window_minutes: int = 60) -> bool:
-    """简易限流。key 可以是 IP 或 IP:conv_id 组合。"""
-    now = _time.time(); window = window_minutes * 60
-    _rate_limit_store[key] = [t for t in _rate_limit_store[key] if now - t < window]
-    if len(_rate_limit_store[key]) >= max_requests:
-        return False
-    _rate_limit_store[key].append(now)
-    return True
-
-
-def check_conv_rate_limit(ip: str, conv_id: str, max_requests: int = 30, window_minutes: int = 60) -> bool:
+def check_conv_rate_limit(ip: str, conv_id: str, max_requests: int = 30, window_minutes: int = 60,
+                          user_id: str | None = None) -> bool:
     """按对话粒度限流。同一 IP 不同对话互不影响。"""
-    return check_rate_limit(f"{ip}:conv:{conv_id}", max_requests, window_minutes)
+    return check_rate_limit(f"{ip}:conv:{conv_id}", max_requests, window_minutes, user_id=user_id)
 
 
-def check_global_ip_limit(ip: str, max_requests: int = 100, window_minutes: int = 60) -> bool:
+def check_global_ip_limit(ip: str, max_requests: int = 100, window_minutes: int = 60,
+                          user_id: str | None = None) -> bool:
     """IP 全局兜底 —— 防止单 IP 无限开对话绕开限流。"""
-    return check_rate_limit(f"{ip}:global", max_requests, window_minutes)
+    return check_rate_limit(f"{ip}:global", max_requests, window_minutes, user_id=user_id)
 
 # ============================================================

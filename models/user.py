@@ -49,6 +49,11 @@ def init_db():
             created_at    TEXT NOT NULL
         );
     """)
+    # 迁移：旧 users 表可能缺少 tier 列
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN tier TEXT NOT NULL DEFAULT 'free'")
+    except sqlite3.OperationalError:
+        pass  # 列已存在
     conn.commit()
     conn.close()
 

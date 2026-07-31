@@ -575,6 +575,31 @@ a, button, input, select, textarea, .card, .form-section { transition: all 0.3s 
     .charts-row { gap: 16px; }
 }
 
+@media (max-width: 480px) {
+    .app-sidebar { padding: 16px 12px 24px; }
+    .app-sidebar .form-grid { grid-template-columns: 1fr; }
+    .app-sidebar .form-group.form-wide { grid-column: span 1; }
+    .app-main { padding: 16px 12px 60px; }
+    .form-section { padding: 16px 14px; }
+    .container { padding: 24px 12px 48px; }
+    .app-header { padding: 24px 0 32px; }
+    .app-header h1 { font-size: 1.6rem; }
+    .app-header .subtitle { font-size: 0.8rem; }
+    .btn-lg { font-size: 0.9em; padding: 10px 18px; }
+    .analysis-content { max-width: 100%; font-size: 0.85rem; }
+    .bento-card { padding: 14px 16px; }
+    .chart-box svg { max-height: 260px; }
+    .location-row { flex-direction: column; gap: 6px; }
+    .location-row .btn { width: 100%; }
+    .sticky-actions { flex-wrap: wrap; gap: 6px; }
+    .sticky-actions .btn { flex: 1 1 auto; min-width: 0; font-size: 0.76em; padding: 7px 10px; }
+    .floating-bar { margin: -10px -8px 12px; padding: 8px 12px; font-size: 0.82em; }
+    .floating-bar .bar-title { font-size: 0.85em; }
+    .history-section { font-size: 0.8em; }
+    .quick-input { font-size: 0.85em; padding: 8px 12px; }
+    .quick-hint { font-size: 0.7em; }
+}
+
 /* ---- Password Modal ---- */
 .pw-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.4);
