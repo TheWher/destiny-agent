@@ -32,23 +32,12 @@ from services.bazi_analysis import _load_system_prompt, _build_user_message, _ve
 # Analysis Channel（隐藏推理层）
 # ============================================================
 
-ANALYSIS_PROMPT = """## 内部推理任务（此内容对用户不可见）
+ANALYSIS_PROMPT = """你是八字命理分析引擎。你的唯一任务是根据用户提供的命盘数据，输出以下 JSON。
+不要输出任何 JSON 以外的内容——不要问候、不要解释、不要验盘、不要追问。
+如果数据不足以判断某项，使用合理默认值，不要省略字段。
 
-你正在进行八字命盘的内部推理分析。请严格按照以下 JSON Schema 输出结构化决策，
-不要输出任何 JSON 以外的内容。
+## 输出 JSON Schema（必须严格遵循）
 
-### 分析步骤
-
-1. **调候优先**：检查夏冬出生 → 寒暖燥湿 → 调候用神
-2. **格局判定**：从月令出发 → 定格 → 成败 → 救应
-3. **旺衰评估**：得令/得地/得势 → 旺衰层次
-4. **用神选取**：基于调候+格局+旺衰 → 用神/喜神/忌神/闲神
-5. **病药分析**：命局病症 → 解药 → 有病有药/无药可救
-6. **流年信号**：扫描已走过的大运 → S/A/B级关键年份
-
-### 输出格式（严格 JSON）
-
-```json
 {
   "tiaohou": {
     "season": "春/夏/秋/冬",
@@ -97,14 +86,23 @@ ANALYSIS_PROMPT = """## 内部推理任务（此内容对用户不可见）
   "extreme_features": ["金独旺", "火土成势"],
   "total_tokens_estimate": 0
 }
-```
 
-### 约束
+## 分析步骤（按顺序执行，每步对应一个 JSON 字段）
 
-- `extreme_score`: 0=均衡, 1=略偏, 2=明显偏枯, 3=极端命局（某五行>=4字或某五行0字）
-- `extreme_features`: 描述极端特征的字符串列表
-- `liunian_signals`: 只列 S/A 级事件（天克地冲/日柱伏吟/大运交接），至少 5 条
-- 所有 reasoning 字段限 1-2 句中文，精炼准确"""
+1. tiaohou: 检查夏冬出生 → 寒暖燥湿 → 调候用神
+2. geju: 从月令出发 → 定格 → 成败 → 救应
+3. wangsan: 得令/得地/得势 → 旺衰层次
+4. yongshen: 基于调候+格局+旺衰 → 用神/喜神/忌神/闲神
+5. bingyao: 命局病症 → 解药 → 有病有药/无药可救
+6. liunian_signals: 扫描已走过的大运 → S/A/B级关键年份
+
+## 约束
+
+- extreme_score: 0=均衡, 1=略偏, 2=明显偏枯, 3=极端命局（某五行>=4字或某五行0字）
+- extreme_features: 描述极端特征的字符串列表
+- liunian_signals: 只列 S/A 级事件（天克地冲/日柱伏吟/大运交接），至少 5 条
+- 所有 reasoning 字段限 1-2 句中文，精炼准确
+- 输出纯 JSON，不要用 Markdown 代码块包裹"""
 
 
 def analysis_channel(plate_dict: dict, timeout: int = 60) -> dict:
@@ -118,11 +116,9 @@ def analysis_channel(plate_dict: dict, timeout: int = 60) -> dict:
     if not API_CONFIG.get("api_key"):
         return {"success": False, "error": "未配置 API Key"}
 
-    system_prompt = _load_system_prompt() + "\n\n" + ANALYSIS_PROMPT
+    # 独立 system prompt，不复用主分析叙事框架
+    system_prompt = ANALYSIS_PROMPT
     user_message = _build_user_message(plate_dict)
-
-    # 在 user_message 末尾追加 JSON 输出指令
-    user_message += "\n\n⚠️ 请只输出上述 JSON Schema 格式的结构化数据，不要输出任何其他内容。不要用 Markdown 代码块包裹。"
 
     result = _call_api(
         system_prompt,
