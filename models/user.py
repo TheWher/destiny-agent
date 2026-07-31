@@ -88,7 +88,20 @@ def verify_password(password: str, hash_str: str) -> bool:
 # ------------------------------------------------------------
 # JWT (HMAC-SHA256, sym, no library needed)
 # ------------------------------------------------------------
-_JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret-change-in-production-@2026")
+_JWT_SECRET = os.environ.get("JWT_SECRET")
+if not _JWT_SECRET:
+    _CONFIG_LOCAL = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.local.py")
+    if os.path.exists(_CONFIG_LOCAL):
+        try:
+            import importlib.util as _iu
+            _spec = _iu.spec_from_file_location("config_local", _CONFIG_LOCAL)
+            _cfg = _iu.module_from_spec(_spec)
+            _spec.loader.exec_module(_cfg)
+            _JWT_SECRET = getattr(_cfg, "JWT_SECRET", "")
+        except Exception:
+            pass
+    if not _JWT_SECRET:
+        _JWT_SECRET = "dev-secret-change-in-production-@2026"
 _JWT_ALGO = "HS256"
 _JWT_EXP_HOURS = 72  # 3 days
 
