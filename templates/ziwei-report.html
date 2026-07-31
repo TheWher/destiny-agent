@@ -820,12 +820,11 @@ function renderFlowYears(){
     yg.appendChild(div);
   }
   const inp = plateData?.input || {};
-  const birthDt = inp.birth_datetime || '';
-  const birthM = parseInt(birthDt.split('-')[1]) || 1;
-  const birthH = parseInt(birthDt.split(' ')[1]?.split(':')[0]) || 0;
-  const sc = Math.floor((birthH + 1) / 2) % 12;
   const yearIdx = (ty - 4) % 12;
-  const dj = (((yearIdx - (birthM - 1)) % 12 + 12) % 12 + sc) % 12;
+  const hi = horoscopeData;
+  const dj = (hi && hi.monthly_palace_index >= 0 && hi.monthly_palace_index < 12)
+    ? hi.monthly_palace_index
+    : yearIdx;  // fallback: 流年地支索引
   const mg = $('drill-month-grid');
   mg.innerHTML = '';
   const ygan = GAN_ARR[(ty-4)%10];
@@ -882,6 +881,7 @@ async function toggleScope(kind, data){
   // 拉取流年数据
   if(kind === 'yearly' && scope.yearly){
     await fetchHoroscope(scope.yearly.year);
+    renderFlowYears();  // 用后端 monthly_palace_index 刷新流月选择器
   }
   if(kind === 'monthly' && scope.monthly){
     if(!horoscopeData) await fetchHoroscope(new Date().getFullYear());
