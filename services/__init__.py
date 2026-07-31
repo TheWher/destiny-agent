@@ -2,6 +2,7 @@
 
 from services.orchestrator import (
     AnalysisOrchestrator,
+    FunctionCallingLoop,
     IntentRouter,
     ToolRegistry,
     CapabilityRegistry,

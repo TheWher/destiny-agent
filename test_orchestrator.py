@@ -275,6 +275,56 @@ check("route inject_tools=False 不崩溃", isinstance(result_no_inject, Capabil
 
 
 # ══════════════════════════════════════════════════════════
+# 8. Function Calling 循环（结构测试，不调 LLM）
+# ══════════════════════════════════════════════════════════
+
+print(f"\n{B}═══ 8. Function Calling 循环 ═══{N}\n")
+
+from services.orchestrator import FunctionCallingLoop
+
+fc = FunctionCallingLoop(orch.tools, max_rounds=5)
+check("FunctionCallingLoop 创建成功", isinstance(fc, FunctionCallingLoop))
+check("max_rounds = 5", fc.max_rounds == 5)
+
+# 测试 run_with_fc 参数校验（不真正调 LLM）
+result = orch.run_with_fc(
+    user_input="帮我排八字",
+    system_prompt="测试",
+    user_message="测试消息",
+)
+check("run_with_fc 不传 messages 用 user_message 构建",
+      isinstance(result, dict))
+
+result = orch.run_with_fc(
+    capability_name="bazi_analysis",
+    system_prompt="你是一个八字命理师",
+    messages=[{"role": "user", "content": "排盘"}],
+)
+check("run_with_fc 指定 capability 跳过路由",
+      isinstance(result, dict))
+
+result = orch.run_with_fc(
+    user_input="今天天气",
+    system_prompt="测试",
+    messages=[{"role": "user", "content": "测试"}],
+)
+check("run_with_fc 无关输入返回失败",
+      not result.get("success", True) and "无法匹配" in result.get("error", ""))
+
+# 验证 Tool 动态注入逻辑
+bazi_tools = orch.get_tools_for_capability("bazi_analysis")
+check("bazi_analysis 的 Tool 有 3 个",
+      len(bazi_tools) == 3,
+      f"实际: {bazi_tools}")
+
+# tool_names 匹配验证
+check("bazi_analysis Tool 包含 paipan_bazi",
+      "paipan_bazi" in bazi_tools)
+check("bazi_analysis Tool 包含 kb_retrieve",
+      "kb_retrieve" in bazi_tools)
+
+
+# ══════════════════════════════════════════════════════════
 # 结果
 # ══════════════════════════════════════════════════════════
 

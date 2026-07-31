@@ -58,6 +58,8 @@ class CapabilityResult:
     usage: dict = field(default_factory=dict) # token usage
 
 
+
+
 # ── 注册表 ──────────────────────────────────────────────
 
 class ToolRegistry:
@@ -169,6 +171,196 @@ class CapabilityRegistry:
             elapsed = (time.perf_counter() - t0) * 1000
             traceback.print_exc()
             return CapabilityResult(success=False, error=f"{e}", elapsed_ms=elapsed)
+
+
+# ── Function Calling 多轮执行循环 ──────────────────────
+
+class FunctionCallingLoop:
+    """多轮 Tool 调用执行循环
+
+    真正的价值不在单次注入，而在多轮执行：
+      LLM 调 Tool → 看结果 → 判断要不要再调 → 直到分析完整
+
+    双保险终止条件：
+      1. LLM 不再请求 tool_use → 分析完成
+      2. round >= max_rounds → 硬截断
+    """
+
+    def __init__(self, tools: ToolRegistry, max_rounds: int = 10):
+        self.tools = tools
+        self.max_rounds = max_rounds
+
+    def run(self,
+            system_prompt: str,
+            messages: list[dict],
+            tool_names: list[str],
+            max_tokens: int = 16384,
+            temperature: float = 0.7,
+            timeout: int = 120) -> dict:
+        """执行多轮 function calling 循环
+
+        Args:
+            system_prompt: 系统提示词
+            messages: 用户消息列表 [{"role": "user", "content": "..."}]
+            tool_names: 本轮可用的 Tool 名称列表
+            max_tokens: 每轮 API 最大 token
+            temperature: 温度
+            timeout: 每轮超时
+
+        Returns:
+            {
+                "success": bool,
+                "text": str,              # 最终分析文本
+                "rounds": int,            # 总轮数
+                "tool_calls": [...],      # 所有 Tool 调用记录
+                "usage": {"input_tokens": ..., "output_tokens": ...},
+                "finish_reason": str,     # "stop" | "max_rounds"
+                "messages": [...],        # 完整对话历史
+            }
+        """
+        from services.llm_client import API_CONFIG
+        import requests
+
+        if not API_CONFIG.get("api_key"):
+            return {"success": False, "error": "未配置 API Key"}
+
+        # 构建 Tool Schema
+        tool_schemas = []
+        for name in tool_names:
+            tool = self.tools.get(name)
+            if tool:
+                schema = {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": tool.parameters or {
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                    },
+                }
+                tool_schemas.append(schema)
+
+        if not tool_schemas:
+            return {"success": False, "error": "没有可用的 Tool"}
+
+        url = f"{API_CONFIG['base_url']}/v1/messages"
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": API_CONFIG["api_key"],
+            "anthropic-version": "2023-06-01",
+        }
+
+        # 将 messages 转换为 Anthropic API 格式
+        api_messages = []
+        for m in messages:
+            api_messages.append({"role": m["role"], "content": m["content"]})
+
+        all_tool_calls = []
+        total_usage = {"input_tokens": 0, "output_tokens": 0}
+        finish_reason = "stop"
+        final_text = ""
+
+        for round_num in range(1, self.max_rounds + 1):
+            payload = {
+                "model": API_CONFIG["model"],
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "thinking": {"type": "disabled"},
+                "system": system_prompt,
+                "messages": api_messages,
+                "tools": tool_schemas,
+            }
+
+            try:
+                resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
+            except requests.Timeout:
+                return {"success": False, "error": f"第 {round_num} 轮 API 超时"}
+            except Exception as e:
+                return {"success": False, "error": f"第 {round_num} 轮 API 调用失败: {e}"}
+
+            if resp.status_code != 200:
+                return {"success": False, "error": f"API 返回错误 ({resp.status_code}): {resp.text[:300]}"}
+
+            data = resp.json()
+            usage = data.get("usage", {})
+            total_usage["input_tokens"] += usage.get("input_tokens", 0)
+            total_usage["output_tokens"] += usage.get("output_tokens", 0)
+
+            content_blocks = data.get("content", [])
+
+            # 解析 tool_use 和 text
+            tool_uses = []
+            text_parts = []
+            for block in content_blocks:
+                if block.get("type") == "tool_use":
+                    tool_uses.append(block)
+                elif block.get("type") == "text":
+                    text_parts.append(block.get("text", ""))
+
+            round_text = "".join(text_parts)
+            if round_text:
+                final_text += round_text
+
+            # 没有 tool_use → LLM 认为分析完成
+            if not tool_uses:
+                finish_reason = "stop"
+                break
+
+            # 执行所有 tool_use
+            tool_results = []
+            for tu in tool_uses:
+                tool_name = tu.get("name", "")
+                tool_input = tu.get("input", {})
+                tool_id = tu.get("id", "")
+
+                result = self.tools.call(tool_name, **tool_input)
+                call_record = {
+                    "round": round_num,
+                    "tool": tool_name,
+                    "input": tool_input,
+                    "success": result.success,
+                    "data": result.data if result.success else None,
+                    "error": result.error if not result.success else None,
+                    "elapsed_ms": result.elapsed_ms,
+                }
+                all_tool_calls.append(call_record)
+
+                # 构建 tool_result 内容
+                if result.success:
+                    result_str = json.dumps(result.data, ensure_ascii=False, default=str)
+                else:
+                    result_str = f"错误: {result.error}"
+
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_id,
+                    "content": result_str[:8000],  # 截断过长内容
+                })
+
+            # 将本轮 tool_use + tool_result 追加到对话
+            api_messages.append({
+                "role": "assistant",
+                "content": [{"type": "tool_use", "id": tu["id"], "name": tu["name"], "input": tu["input"]}
+                           for tu in tool_uses],
+            })
+            api_messages.append({
+                "role": "user",
+                "content": tool_results,
+            })
+
+        else:
+            # 循环正常结束（达到 max_rounds）
+            finish_reason = "max_rounds"
+
+        return {
+            "success": True,
+            "text": final_text,
+            "rounds": round_num,
+            "tool_calls": all_tool_calls,
+            "usage": total_usage,
+            "finish_reason": finish_reason,
+            "messages": api_messages,
+        }
 
 
 # ── 意图路由 ────────────────────────────────────────────
@@ -665,6 +857,70 @@ class AnalysisOrchestrator:
             result = self.capabilities.call(cap_name, **kwargs)
             results.append(result)
         return results
+
+    def run_with_fc(self, user_input: str = None,
+                    system_prompt: str = None,
+                    messages: list[dict] = None,
+                    capability_name: str = None,
+                    max_rounds: int = 10,
+                    max_tokens: int = 16384,
+                    temperature: float = 0.7,
+                    timeout: int = 120,
+                    **kwargs) -> dict:
+        """使用 function calling 多轮循环执行分析
+
+        两种调用方式：
+        1. 传 user_input → IntentRouter 自动匹配 Capability → 注入关联 Tool → 执行
+        2. 传 capability_name → 跳过路由，直接用指定能力的 Tool 集合
+
+        Args:
+            user_input: 用户自然语言输入（触发自动路由）
+            system_prompt: 系统提示词（必传）
+            messages: 初始消息列表 [{"role": "user", "content": "..."}]
+            capability_name: 直接指定能力名（跳过路由）
+            max_rounds: Tool 调用最大轮数
+            max_tokens: 每轮最大 token
+            temperature: LLM 温度
+            timeout: 每轮超时
+
+        Returns:
+            同 FunctionCallingLoop.run() 的返回值
+        """
+        self.register_defaults()
+
+        # 确定工具集合
+        if capability_name:
+            tool_names = self.get_tools_for_capability(capability_name)
+        elif user_input:
+            cap_name = self.router.resolve(user_input)
+            if not cap_name:
+                return {"success": False, "error": f"无法匹配用户意图: '{user_input[:50]}...'"}
+            tool_names = self.get_tools_for_capability(cap_name)
+        else:
+            return {"success": False, "error": "必须提供 user_input 或 capability_name"}
+
+        if not tool_names:
+            return {"success": False, "error": "匹配的能力没有关联 Tool"}
+
+        if not system_prompt:
+            return {"success": False, "error": "必须提供 system_prompt"}
+
+        if not messages:
+            # 从 kwargs 构建最小消息
+            user_msg = kwargs.pop("user_message", user_input or "")
+            if not user_msg:
+                return {"success": False, "error": "必须提供 messages 或 user_message"}
+            messages = [{"role": "user", "content": user_msg}]
+
+        loop = FunctionCallingLoop(self.tools, max_rounds=max_rounds)
+        return loop.run(
+            system_prompt=system_prompt,
+            messages=messages,
+            tool_names=tool_names,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            timeout=timeout,
+        )
 
     def run_with_tools(self, capability_name: str,
                        tool_names: list[str] = None,
