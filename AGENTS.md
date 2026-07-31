@@ -7,12 +7,13 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 八字排盘 Web 应用 — 符号计算（排盘引擎）+ LLM 推理（DeepSeek API）的混合 AI 架构。
 部署地址：`https://thewher.pythonanywhere.com`（PythonAnywhere 免费账户）。
 
-### 🏗️ 架构状态（2026-07-29）
+### 🏗️ 架构状态（2026-07-31）
 
 **模块层级**：
 ```
-routes/     ← 只做请求-响应，不写业务逻辑（可 import services/utils/calculators）
-services/   ← 业务逻辑 + LLM 调用（可 import utils/calculators，不可 import routes）
+routes/     ← 只做请求-响应，不写业务逻辑（可 import services/utils/calculators/models）
+services/   ← 业务逻辑 + LLM 调用（可 import utils/calculators/models，不可 import routes）
+models/     ← 数据层：User 模型、JWT 鉴权、SQLite 存储（可 import utils，不可 import routes/services）
 utils/      ← 纯函数，无副作用（不 import 任何本项目模块）
 calculators/← 排盘引擎（bazi_calculator.py, ziwei_calculator.py 等，不 import 任何本项目模块）
 scripts/    ← 评估脚本 + CLI 工具（可 import 任何模块）
@@ -25,10 +26,12 @@ templates/  ← Jinja2 + 内联 JS。JS >200 行应抽到 static/
 | 文件 | 行数 | 职责 |
 |------|------|------|
 | `app.py` | 20 | 入口，argparse + app.run |
-| `routes/__init__.py` | ~90 | Flask 工厂 + 启动信息 |
-| `routes/ziwei.py` | ~580 | 紫微全部 API（排盘/分析/验盘/会话/流年） |
+| `routes/__init__.py` | ~95 | Flask 工厂 + 启动信息 |
+| `routes/ziwei.py` | ~610 | 紫微全部 API（排盘/分析/验盘/会话/流年） |
+| `routes/auth.py` | ~90 | 注册/登录/me（JWT 鉴权） |
 | `routes/bazi.py` | ~300 | 八字全部 API |
-| `services/ziwei_analysis.py` | ~580 | 紫微分析管道（含验盘截停） |
+| `models/user.py` | ~170 | User 模型 + PBKDF2 密码 + HMAC-SHA256 JWT |
+| `services/ziwei_analysis.py` | ~540 | 紫微分析管道（含验盘截停） |
 | `services/llm_client.py` | ~160 | API 调用 + 三层 Key 回退 |
 
 **已知技术债**：
@@ -101,6 +104,31 @@ API_CONFIG = {
     "api_key": "sk-...",
 }
 ```
+
+## 账号系统（2026-07-31 新增）
+
+### 注册/登录
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/api/auth/register` | POST | `{email, password}` → `{token, user}` |
+| `/api/auth/login` | POST | `{email, password}` → `{token, user}` |
+| `/api/auth/me` | GET | Bearer token → `{user}` |
+
+- **JWT**：HMAC-SHA256，3 天有效，存 `localStorage.ziwei_token`
+- **密码**：PBKDF2-SHA256（600k 迭代），零外部依赖
+- **数据库**：`data/users.db`（SQLite），自动建表
+- **JWT_SECRET**：环境变量或 `config.local.py`，默认值仅用于开发
+
+### 会话绑定
+
+登录后创建的紫微会话自动绑定 `user_id`。会话列表按用户隔离：已登录只看到自己的，未登录只看到匿名的。
+
+### 前端状态
+
+- `ziwei.html` 顶部栏：登录/注册按钮 → 切换为邮箱 + 退出按钮
+- 弹窗自动切换登录/注册模式，Enter 提交
+- 刷新页面时从 `localStorage` 恢复 token，调 `/api/auth/me` 验证
 
 ## 密码保护
 

@@ -155,6 +155,9 @@ app.py (20 行入口)
 | `/api/ziwei/horoscope` | POST | 流年盘 + 流曜计算 |
 | `/api/ziwei/sessions` | GET/POST | 会话列表 / 创建 |
 | `/api/ziwei/sessions/<id>` | GET/PUT/PATCH/DELETE | 会话 CRUD |
+| `/api/auth/register` | POST | 注册（返回 JWT） |
+| `/api/auth/login` | POST | 登录（返回 JWT） |
+| `/api/auth/me` | GET | 获取当前用户信息 |
 | `/api/ziwei/verify` | POST | 验盘反馈保存 |
 | `/api/ziwei/feedback/report` | GET | 聚合报告（ADMIN_TOKEN 保护） |
 

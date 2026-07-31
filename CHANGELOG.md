@@ -2,6 +2,17 @@
 
 记录对用户或架构有影响的变化。不记录每个 commit。
 
+## 2026-07-31 — 账号系统
+- **新增** `models/user.py` — PBKDF2 密码哈希 + HMAC-SHA256 JWT（零外部依赖）
+- **新增** `routes/auth.py` — 注册/登录/me API
+- **新增** 前端登录/注册弹窗（`ziwei.html` 顶部栏）
+- **新增** 会话绑定 `user_id`，按用户隔离会话列表
+- **修复** `services/ziwei_analysis.py` + `bazi_analysis.py` 缺 `import requests`（重构遗留）
+- **修复** `sendChat` 先调 `res.json()` 再检查状态码导致 500 被吞
+- **修复** thinking-orbs 动画不动（reducedMotion 冻结 + 圆点太淡 + offscreen 误判）
+- **优化** 验盘错误原因「其他」支持自由输入
+- **优化** 追问回答用 `formatText()` 渲染 Markdown
+
 ## 2026-07-29 — CLI 入口 + 项目记忆基建
 - **新增** `cli.py` — 统一命令行入口（测试/分析/验盘报告/会话管理）
 - **新增** `docs/adr/` — 5 条架构决策记录
