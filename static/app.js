@@ -63,6 +63,7 @@ function updateThemeIcon(t){const b=document.getElementById('btn-theme');if(b)b.
 let _pwResolve=null; // Promise resolver for password prompt
 let _analysisAbortController=null; // AbortController for cancelling in-flight analysis
 let _analysisStartTime=0; // timestamp when analysis started (for timeout detection)
+let _stageCarouselTimer=null; // interval timer for lightweight stage carousel
 let _feedbackFile=''; // current analysis feedback filename for verification
 let _verifyLabels={}; // {predictionIndex: "correct"|"wrong"|"partially_correct"}
 
@@ -345,7 +346,7 @@ function saveForm() {
 function loadForm() {
     try {
         const d = JSON.parse(localStorage.getItem('bazi_form'));
-        if (d) { elYear.value=d.year;elMonth.value=d.month;elDay.value=d.day;elHour.value=d.hour;elMinute.value=d.minute;elLocation.value=d.location||'';elLongitude.value=d.longitude||'120'; document.querySelector('input[name="gender"][value="'+(d.gender||'男')+'"]').checked=true; document.querySelector('input[name="calendar"][value="'+(d.calendar||'solar')+'"]').checked=true; elUseTrueSolar.checked=d.useTrueSolar||false; if(elUseTrueSolar.checked)elLngLat.style.display=''; if(d.knownEvents&&Array.isArray(d.knownEvents)){_knownEvents=d.knownEvents;renderEventRows();} }
+        if (d) { elYear.value=d.year;elMonth.value=d.month;elDay.value=d.day;elHour.value=d.hour;elMinute.value=d.minute;elLocation.value=d.location||'';elLongitude.value=d.longitude||'120'; document.querySelector('input[name="gender"][value="'+(d.gender||'男')+'"]').checked=true; document.querySelector('input[name="calendar"][value="'+(d.calendar||'solar')+'"]').checked=true; elUseTrueSolar.checked=d.useTrueSolar!==false; if(d.knownEvents&&Array.isArray(d.knownEvents)){_knownEvents=d.knownEvents;renderEventRows();} }
     } catch(e) {}
 }
 [elYear,elMonth,elDay,elHour,elMinute,elLocation,elLongitude].forEach(el => el.addEventListener('change', saveForm));
@@ -499,14 +500,18 @@ elBtnPaipan.addEventListener('click', async () => {
 // ========== 渲染 ==========
 function renderResult(data) {
     const info=data.input,solar=data.solar,lunar=data.lunar,qy=data.qiyun,pillars=data.pillars;
-    let solarInfo = solar.applied ? null : (solar.correction_minutes!==0 ? `校正 ${solar.correction_minutes}分钟，约 ${solar.adjusted_hour.toFixed(1)} 时` : '未使用校正');
+    let solarInfo = solar.applied 
+        ? `已启用 · 经度 ${info.longitude}° · 校正 ${solar.correction_minutes>0?'+':''}${solar.correction_minutes}分钟，约 ${solar.adjusted_hour.toFixed(1)} 时` 
+        : `未启用真太阳时校正`;
+    const solarEl = $('solar-correction');
+    if (solarEl) { solarEl.style.display = ''; solarEl.innerHTML = `<span style="color:var(--champagne)">🌏</span> ${solarInfo}`; }
     $('basic-info').innerHTML = `
         <div><span class="info-label">公历</span><span class="info-value">${info.birth_datetime}</span></div>
         <div><span class="info-label">农历</span><span class="info-value">${lunar.year}年${lunar.month}月${lunar.day}日${lunar.is_leap?'（闰月）':''}</span></div>
         <div><span class="info-label">时辰</span><span class="info-value">${data.shichen}</span></div>
         <div><span class="info-label">性别</span><span class="info-value">${info.gender}</span></div>
         <div><span class="info-label">出生地</span><span class="info-value">${info.location}（${info.longitude}°E）</span></div>
-        ${solarInfo ? `<div><span class="info-label">真太阳时</span><span class="info-value">${solarInfo}</span></div>` : ''}
+        <div><span class="info-label">真太阳时</span><span class="info-value">${solarInfo}</span></div>
         <div><span class="info-label">日主</span><span class="info-value">${data.ri_zhu}（${data.year_type}）</span></div>`;
     const orders=['year','month','day','hour'],colNames=['年柱','月柱','日柱','时柱'];
     const ganRow=['<td class="row-label">干支</td>'],tianRow=['<td class="row-label">天干</td>'],zhiRow=['<td class="row-label">地支</td>'];
@@ -677,11 +682,108 @@ function showLoading(t, useSkeleton=false){
     }
     elLoadingText.textContent=t;elLoading.classList.remove('hidden');elErrorBox.classList.add('hidden');
 }
-function hideLoading(){elLoading.classList.add('hidden');$('skeleton-loading').classList.add('hidden');}
+function hideLoading(){_stopStageCarousel(true);elLoading.classList.add('hidden');$('skeleton-loading').classList.add('hidden');$('progress-bar').style.display='none';}
 function showSkeleton(){ $('skeleton-loading').classList.remove('hidden'); }
 function hideSkeleton(){ $('skeleton-loading').classList.add('hidden'); }
 function showError(m){ toast(m, 'error'); hideLoading(); }
 function hideError(){ $('toast-overlay').classList.add('hidden'); elErrorBox.classList.add('hidden'); }
+
+// ========== 分析进度条 ==========
+const PROGRESS_PHASES = [
+    {id:'verify',label:'验盘'},{id:'tiaohou',label:'调候'},{id:'geju',label:'格局'},
+    {id:'wangsan',label:'旺衰'},{id:'bingyao',label:'病药'},{id:'liutong',label:'流通'},
+    {id:'shishen',label:'十神'},{id:'chonghe',label:'刑冲'},{id:'dayun',label:'大运'},
+    {id:'cross',label:'交叉'},{id:'career',label:'事业'},{id:'marriage',label:'婚姻'},
+    {id:'health',label:'健康'},{id:'selfcheck',label:'自检'}
+];
+
+function initProgressBar() {
+    const stepsEl = $('progress-steps');
+    const phaseEl = $('progress-phase');
+    let html = '';
+    PROGRESS_PHASES.forEach((p, i) => {
+        html += `<span class="progress-step" data-step="${i}"><span class="step-num">${i+1}</span><span class="step-label">${p.label}</span></span>`;
+    });
+    stepsEl.innerHTML = html;
+    phaseEl.textContent = '';
+    $('progress-fill').style.width = '0%';
+}
+
+function updateProgress(phaseIndex) {
+    const steps = document.querySelectorAll('.progress-step');
+    const phaseEl = $('progress-phase');
+    const fillEl = $('progress-fill');
+    const pct = Math.round((phaseIndex + 1) / PROGRESS_PHASES.length * 100);
+    fillEl.style.width = pct + '%';
+    steps.forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i < phaseIndex) s.classList.add('completed');
+        else if (i === phaseIndex) s.classList.add('active');
+    });
+    if (phaseIndex < PROGRESS_PHASES.length) {
+        phaseEl.textContent = PROGRESS_PHASES[phaseIndex].label + ' 分析中...';
+    }
+}
+
+const STAGE_CAROUSEL = [
+    {id:'tiaohou',label:'调候'},{id:'geju',label:'格局'},{id:'wangsan',label:'旺衰'},
+    {id:'bingyao',label:'病药'},{id:'shensha',label:'神煞'},{id:'dayun',label:'大运'},
+    {id:'threechannel',label:'三通道'},{id:'zonghe',label:'综合'},{id:'yanpan',label:'验盘'}
+];
+
+function _startStageCarousel() {
+    if (_stageCarouselTimer) return;
+    const stepsEl = $('progress-steps');
+    let html = '';
+    STAGE_CAROUSEL.forEach((p, i) => {
+        html += `<span class="progress-step" data-step="${i}"><span class="step-num">${i+1}</span><span class="step-label">${p.label}</span></span>`;
+    });
+    stepsEl.innerHTML = html;
+    const phaseEl = $('progress-phase');
+    phaseEl.textContent = '';
+    $('progress-fill').style.width = '0%';
+    let idx = 0;
+    const total = STAGE_CAROUSEL.length;
+    _updateCarouselStep(0);
+    _stageCarouselTimer = setInterval(() => {
+        idx++;
+        if (idx >= total) idx = 0;
+        _updateCarouselStep(idx);
+    }, 2000);
+}
+function _updateCarouselStep(phaseIndex) {
+    const steps = document.querySelectorAll('.progress-step');
+    const phaseEl = $('progress-phase');
+    const fillEl = $('progress-fill');
+    const pct = Math.round((phaseIndex + 1) / STAGE_CAROUSEL.length * 100);
+    fillEl.style.width = pct + '%';
+    steps.forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i < phaseIndex) s.classList.add('completed');
+        else if (i === phaseIndex) s.classList.add('active');
+    });
+    if (phaseIndex < STAGE_CAROUSEL.length) {
+        phaseEl.textContent = STAGE_CAROUSEL[phaseIndex].label + ' 分析中...';
+    }
+}
+function _stopStageCarousel(flashComplete) {
+    if (_stageCarouselTimer) { clearInterval(_stageCarouselTimer); _stageCarouselTimer = null; }
+    if (flashComplete) {
+        const steps = $('progress-steps').querySelectorAll('.progress-step');
+        steps.forEach(s => { s.classList.remove('active'); s.classList.add('completed'); });
+        $('progress-fill').style.width = '100%';
+        const phaseEl = $('progress-phase');
+        if (phaseEl) phaseEl.textContent = '分析完成 ✓';
+    }
+}
+function showProgress() {
+    initProgressBar();
+    $('progress-bar').style.display = '';
+    elLoadingText.style.display = 'none';
+    elLoading.classList.remove('hidden');
+    var s = document.querySelector('#loading .spinner');
+    if (s) s.style.display = 'none';
+}
 
 // ========== 全局 Toast（屏幕正中，点击确认关闭） ==========
 function toast(msg, type='info') {
@@ -780,12 +882,15 @@ async function doAnalyze(isRetry = false) {
     }
 
     showLoading(isRetry ? '正在重新连接 Agent...' : (getValidEvents().length > 0 ? '正在验证时辰...' : '正在验盘——反推过往事件验证时辰（约需 30 秒）...'));
+    showProgress();
+    _startStageCarousel();
     if (!isRetry) toast(getValidEvents().length > 0 ? '验证已开始\nAgent 正在核查你提供的事件与命盘是否吻合' : '验盘分析已开始\nAgent 正在反推过往事件验证时辰（约需 30 秒）', 'info');
     showSkeleton(); showAnalyzingStep();
     analysisInProgress = true;
     _analysisStartTime = Date.now();
     elBtnAnalyze.disabled = true;
     elAnalysisSection.classList.add('hidden');
+    $('liunian-section').classList.add('hidden'); _liunianData = null;
 
     try {
         // 保存待处理状态（切标签页/关页面后可恢复）
@@ -830,6 +935,8 @@ async function doAnalyze(isRetry = false) {
         addToHistory(plateData, analysisText);
         elAnalysisSection.classList.remove('hidden');
         elBtnAnalysisPdf.disabled = false;
+        // 加载流年数据
+        loadLiunian(plateData);
         $('app-main').scrollIntoView({behavior:'smooth',block:'start'});
 
         // 提取验盘预测并渲染验证面板
@@ -916,7 +1023,7 @@ $('btn-review-back')?.addEventListener('click', () => { elReviewSection.classLis
 $('btn-review-back-2')?.addEventListener('click', () => { elReviewSection.classList.add('hidden'); showDefaultStep(); });
 // 取消分析
 $('btn-cancel-analysis')?.addEventListener('click', () => {
-    if (analysisAbort) analysisAbort.abort();
+    if (_analysisAbortController) _analysisAbortController.abort();
     analysisInProgress = false; showDefaultStep(); hideLoading();
     elBtnAnalyze.disabled = false;
 });
@@ -1125,7 +1232,12 @@ elBtnChatSend.addEventListener('click', async () => {
                     }
                     if (!evtData) continue;
                     try { const p = JSON.parse(evtData);
-                        if (p.event === 'progress') { showLoading(`${p.phase_label}: ${p.phase_desc}（${p.progress_pct}%）`); }
+                        if (p.event === 'progress') {
+                            if (!$('progress-bar').style.display || $('progress-bar').style.display === 'none') showProgress();
+                            updateProgress(p.phase_index - 1);
+                            _stopStageCarousel(false);
+                            elLoadingText.style.display = 'none';
+                        }
                         else if (p.event === 'result') { resultData = p; }
                     } catch(e) {}
                 }
@@ -1211,6 +1323,8 @@ document.addEventListener('visibilitychange', () => {
                 injectGlossary(elAnalysisContent);
                 elAnalysisSection.classList.remove('hidden');
                 elBtnAnalysisPdf.disabled = false;
+                // 恢复流年
+                loadLiunian(plateData);
                 // 恢复对话上下文（analysisText 已含全部聊天，只需恢复 messages 用于续接）
                 if (loadConversation()) {
                     elAnalysisChat.classList.remove('hidden');
@@ -1255,9 +1369,10 @@ $('btn-clear').addEventListener('click', () => {
     elLongitude.value = '120';
     elUseTrueSolar.checked = false; elLngLat.style.display = 'none';
     elGeocodeStatus.classList.add('hidden'); elSuggestions.classList.add('hidden');
-    plateData = null; analysisText = null; clearConversation();
+    plateData = null; analysisText = null; clearConversation(); _liunianData = null;
     elResultSection.classList.add('hidden'); elAnalysisSection.classList.add('hidden');
     document.getElementById('charts-section').classList.add('hidden');
+    $('liunian-section').classList.add('hidden');
     elBtnPdf.disabled = true; elBtnAnalyze.disabled = true; elBtnAnalysisPdf.disabled = true; elBtnZiweiSwitch.disabled = true;
     localStorage.removeItem('bazi_form'); localStorage.removeItem('bazi_analysis'); localStorage.removeItem('bazi_plate');
     clearPendingAnalysis();
@@ -1651,4 +1766,135 @@ document.addEventListener('click', e => {
     ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
     btn.appendChild(ripple);
     ripple.addEventListener('animationend', () => ripple.remove());
+});
+
+// ========== 流年运程 ==========
+let _liunianData = null;
+let _liunianIndex = 0;
+const SIGNAL_LABELS = {A:'强冲刑',B:'中等',C:'轻微',D:'平顺'};
+
+// ========== 用神喜忌卡片 ==========
+async function loadLiunian(plateData) {
+    try {
+        const r = await fetch('/api/liunian', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plate:plateData})});
+        const d = await r.json();
+        if (!d.success) return;
+        _liunianData = d;
+        // 跳到当前年份
+        const now = new Date().getFullYear();
+        _liunianIndex = d.years.findIndex(y => y.year === now);
+        if (_liunianIndex < 0) _liunianIndex = Math.max(0, d.years.findIndex(y => y.year > now) - 1);
+        if (_liunianIndex < 0) _liunianIndex = 0;
+        renderLiunianTimeline();
+        renderLiunianSignals();
+        showLiunianYear(_liunianIndex);
+        $('liunian-section').classList.remove('hidden');
+        // 滚动到流年区域
+        setTimeout(() => { $('liunian-section').scrollIntoView({behavior:'smooth',block:'center'}); }, 300);
+    } catch(e) { console.error('liunian fetch fail', e); }
+}
+
+function showLiunianYear(idx) {
+    if (!_liunianData || idx < 0 || idx >= _liunianData.years.length) return;
+    _liunianIndex = idx;
+    const y = _liunianData.years[idx];
+    $('liunian-year').textContent = y.year;
+    $('liunian-gz').textContent = y.gz;
+    // 信号标签
+    const sigEl = $('liunian-signal');
+    sigEl.textContent = SIGNAL_LABELS[y.signal_level] || y.signal_level;
+    sigEl.className = 'liunian-signal level-' + y.signal_level;
+    // 元信息
+    $('liunian-meta').innerHTML = '<span>纳音：'+y.nayin+'</span><span>十神：'+y.shishen+'</span><span>大运：'+y.dayun_gz+'（第'+y.dayun_step+'步）</span><span>年龄：'+y.age+'岁</span>';
+    // 关系标签
+    let relHtml = '';
+    if (y.relations.length === 0) relHtml = '<span class="liunian-rel-tag">无特殊关系</span>';
+    else y.relations.forEach(r => {
+        const hasChong = r.relations.some(x => x.indexOf('冲')>=0 || x.indexOf('刑')>=0);
+        const hasHe = r.relations.some(x => x.indexOf('合')>=0);
+        let cls = 'liunian-rel-tag';
+        if (hasChong) cls += ' has-chong';
+        else if (hasHe) cls += ' has-he';
+        relHtml += '<span class="'+cls+'">'+r.pillar+'('+r.pillar_zhi+') '+r.relations.join('·')+'</span>';
+    });
+    $('liunian-relations').innerHTML = relHtml;
+    // 更新时间线 active，并滚动到可见
+    const dots = document.querySelectorAll('.liunian-timeline-dot');
+    dots.forEach((d,i) => d.classList.toggle('active', i === idx));
+    const activeDot = document.querySelector('.liunian-timeline-dot.active');
+    if (activeDot) activeDot.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+}
+
+function renderLiunianTimeline() {
+    if (!_liunianData) return;
+    const tl = $('liunian-timeline');
+    // 十年分组
+    const years = _liunianData.years;
+    const decadeStart = Math.floor(years[0].year / 10) * 10;
+    let html = '';
+    let currentDecade = -1;
+    for (let i = 0; i < years.length; i++) {
+        const y = years[i];
+        const dec = Math.floor(y.year / 10) * 10;
+        if (dec !== currentDecade) {
+            currentDecade = dec;
+            html += '<span class="liunian-decade-label">'+dec+'s</span>';
+        }
+        const title = y.year+' '+y.gz+' | '+y.shishen+' | '+(SIGNAL_LABELS[y.signal_level]||'平');
+        html += '<span class="liunian-timeline-dot level-'+y.signal_level+(i===_liunianIndex?' active':'')+'" title="'+title+'" data-idx="'+i+'" onclick="showLiunianYear('+i+')"></span>';
+    }
+    tl.innerHTML = html;
+    // 滚动到当前 active dot
+    setTimeout(() => {
+        const active = tl.querySelector('.liunian-timeline-dot.active');
+        if (active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    }, 100);
+}
+
+function renderLiunianSignals() {
+    if (!_liunianData) return;
+    const el = $('liunian-signal-grid');
+    if (!el) return;
+    // 筛选 A/B 信号年份
+    const signals = _liunianData.years.filter(y => y.signal_level === 'A' || y.signal_level === 'B');
+    if (signals.length === 0) {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:0.82em;text-align:center;padding:12px">此大运范围内无强信号年份</div>';
+        return;
+    }
+    // 只显示前20个
+    const display = signals.slice(0, 20);
+    let html = '';
+    display.forEach(y => {
+        const relText = y.relations.map(r => r.pillar+r.relations.join('')).join(' ');
+        const cls = y.signal_level === 'A' ? 'signal-card strong' : 'signal-card medium';
+        html += '<div class="'+cls+'" onclick="showLiunianYear('+_liunianData.years.indexOf(y)+')" title="'+relText+'">';
+        html += '<span class="signal-year">'+y.year+'</span>';
+        html += '<span class="signal-gz">'+y.gz+'</span>';
+        html += '<span class="signal-label">'+SIGNAL_LABELS[y.signal_level]+'</span>';
+        html += '<span class="signal-age">'+y.age+'岁</span>';
+        html += '</div>';
+    });
+    el.innerHTML = html;
+}
+
+// 按钮事件
+document.addEventListener('DOMContentLoaded', () => {
+    $('btn-liunian-prev').addEventListener('click', () => { if (_liunianIndex > 0) showLiunianYear(_liunianIndex-1); });
+    $('btn-liunian-next').addEventListener('click', () => { if (_liunianData && _liunianIndex < _liunianData.years.length-1) showLiunianYear(_liunianIndex+1); });
+    $('btn-liunian-jump').addEventListener('click', () => {
+        if (!_liunianData) return;
+        const now = new Date().getFullYear();
+        const idx = _liunianData.years.findIndex(y => y.year === now);
+        if (idx >= 0) showLiunianYear(idx);
+    });
+    // 键盘导航：流年区域上左右方向键切换年份
+    document.addEventListener('keydown', e => {
+        if (!_liunianData) return;
+        const section = $('liunian-section');
+        if (!section || section.classList.contains('hidden')) return;
+        // 检查焦点是否在输入框内，那时不拦截方向键
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+        if (e.key === 'ArrowLeft') { e.preventDefault(); if (_liunianIndex > 0) showLiunianYear(_liunianIndex-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); if (_liunianData && _liunianIndex < _liunianData.years.length-1) showLiunianYear(_liunianIndex+1); }
+    });
 });

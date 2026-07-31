@@ -10,7 +10,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, render_template, request, send_file, Response, redirect
 import requests
 
-from bazi_calculator import paipan
+from bazi_calculator import paipan, TIAN_GAN, DI_ZHI, di_liuhe, di_banhe, di_liuchong, di_liuhai, di_xing, get_shishen, get_nayin
 from city_coords import search_city
 from utils.auth import check_password, check_rate_limit, check_conv_rate_limit, check_global_ip_limit, WEB_PASSWORD, ADMIN_TOKEN
 from utils.tier import resolve_user_from_request, get_rate_limit
@@ -155,6 +155,17 @@ def api_analyze():
     if result["success"]:
         # 保存反馈日志
         feedback_file = save_feedback_log(plate_dict, result.get("messages", []), ip=ip, turn_type="initial")
+
+        # 并行调用 analysis_channel 提取结构化用神数据（用于前端用神卡片）
+        yongshen_data = None
+        try:
+            from three_channel import analysis_channel
+            ar = analysis_channel(plate_dict, timeout=60)
+            if ar.get("success") and ar.get("analysis"):
+                yongshen_data = ar["analysis"].get("yongshen")
+        except Exception:
+            pass  # analysis_channel 失败不影响主流程
+
         response_data = {
             "success": True,
             "analysis": result["analysis"],
@@ -162,6 +173,7 @@ def api_analyze():
             "usage": result.get("usage", {}),
             "messages": result.get("messages", []),
             "feedback_file": feedback_file or "",
+            "yongshen": yongshen_data,
         }
         # 写入缓存（后续重试直接返回）
         if cache_key:
@@ -572,6 +584,157 @@ def api_glossary_references():
             return _json.load(f)
     except Exception:
         return {"references": []}
+
+@bazi_bp.route("/liunian", methods=["POST"])
+def api_liunian():
+    """流年运程：计算大运范围内每年的干支及与四柱的关系。
+
+    接受 paipan 返回的 plate dict，返回每一年：
+      - year: 年份
+      - gz: 流年干支
+      - nayin: 纳音
+      - dayun_step: 所在大运步数
+      - dayun_gz: 大运干支
+      - shishen: 流年天干与日干的关系（十神）
+      - relations: 与四柱的地支关系（合冲刑害）
+      - age: 对应年龄
+    """
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        return jsonify({"error": "请求数据格式错误"}), 400
+
+    plate_dict = data.get("plate")
+    if not plate_dict:
+        return jsonify({"error": "缺少 plate 参数"}), 400
+
+    start_year = data.get("start_year")
+    end_year = data.get("end_year")
+
+    pillars = plate_dict.get("pillars", {})
+    ri_gan = pillars.get("day", {}).get("gan", "")
+    dayun = plate_dict.get("dayun", [])
+    input_info = plate_dict.get("input", {})
+    birth_year = 0
+    try:
+        birth_dt = input_info.get("birth_datetime", "")
+        birth_year = int(birth_dt[:4]) if birth_dt else 0
+    except (ValueError, IndexError):
+        pass
+
+    if not dayun:
+        return jsonify({"error": "plate 数据缺少大运信息"}), 400
+
+    # 自动确定年份范围：大运第一步开始年份 → 最后一步结束年份
+    if start_year is None:
+        start_year = int(dayun[0].get("start_year", birth_year))
+    if end_year is None:
+        end_year = int(dayun[-1].get("end_year", birth_year + 80))
+
+    # 四柱地支
+    pillar_zhi = {p: pillars[p]["zhi"] for p in ["year", "month", "day", "hour"] if p in pillars}
+    pillar_names = {"year": "年柱", "month": "月柱", "day": "日柱", "hour": "时柱"}
+
+    results = []
+    for year in range(start_year, end_year + 1):
+        # 流年干支（60甲子周期: 1984=甲子，year-4 mod 60）
+        idx = (year - 4) % 60
+        gan = TIAN_GAN[idx % 10]
+        zhi = DI_ZHI[idx % 12]
+        gz = gan + zhi
+
+        # 所在大运
+        age = year - birth_year
+        current_dayun = None
+        for d in dayun:
+            if d["start_age"] <= age < d["end_age"]:
+                current_dayun = d
+                break
+
+        if current_dayun is None:
+            continue  # 不在大运范围内，跳过
+
+        # 十神
+        shishen = get_shishen(ri_gan, gan) if ri_gan else ""
+
+        # 纳音
+        nayin = get_nayin(gz)
+
+        # 与四柱地支的关系
+        relations = []
+        for p_name, pz in pillar_zhi.items():
+            rels = []
+            # 六合
+            if di_liuhe(zhi, pz):
+                rels.append("合")
+            # 半合
+            half = di_banhe(zhi, pz)
+            if half:
+                rels.append(f"半合({half})")
+            # 六冲
+            if di_liuchong(zhi, pz):
+                rels.append("冲")
+            # 六害
+            if di_liuhai(zhi, pz):
+                rels.append("害")
+            # 相刑
+            xing = di_xing(zhi, pz)
+            if xing:
+                rels.append("刑")
+            if rels:
+                relations.append({
+                    "pillar": pillar_names.get(p_name, p_name),
+                    "pillar_zhi": pz,
+                    "relations": rels,
+                })
+
+        results.append({
+            "year": year,
+            "gz": gz,
+            "gan": gan,
+            "zhi": zhi,
+            "nayin": nayin,
+            "shishen": shishen,
+            "age": age,
+            "dayun_step": current_dayun["step"],
+            "dayun_gz": current_dayun["gz"],
+            "relations": relations,
+            # 信号等级：冲/刑为强信号, 合为中性, 害为弱信号
+            "signal_level": _liunian_signal_level(relations),
+        })
+
+    return jsonify({
+        "success": True,
+        "start_year": start_year,
+        "end_year": end_year,
+        "birth_year": birth_year,
+        "ri_gan": ri_gan,
+        "years": results,
+    })
+
+
+def _liunian_signal_level(relations: list) -> str:
+    """根据关系判断流年信号等级"""
+    has_chong = any("冲" in (r.get("relations") or []) for r in relations)
+    has_xing = any("刑" in (r.get("relations") or []) for r in relations)
+    has_hai = any("害" in (r.get("relations") or []) for r in relations)
+    has_he = any("合" in str(r.get("relations", [])) for r in relations)
+
+    # 日柱关系（核心）
+    day_rels = [r for r in relations if r.get("pillar") == "日柱"]
+    day_has_chong = any("冲" in (r.get("relations") or []) for r in day_rels)
+    day_has_he = any("合" in str(r.get("relations", [])) for r in day_rels)
+
+    if day_has_chong:
+        return "A"  # 日柱逢冲，重大变动
+    if has_chong:
+        return "B"  # 其他柱逢冲
+    if day_has_he or has_xing:
+        return "C"  # 日柱逢合/刑
+    if has_he or has_hai:
+        return "D"  # 其他合/害
+    return ""  # 无特殊信号
+
 
 # ============================================================
 # 启动

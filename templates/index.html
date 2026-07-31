@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>八字排盘</title>
-    <script>// 防暗色模式闪烁：在 CSS 加载前立即设置 data-theme
-(function(){var t=localStorage.getItem('bazi_theme');if(t){document.documentElement.setAttribute('data-theme',t)}else if(window.matchMedia('(prefers-color-scheme:dark)').matches){document.documentElement.setAttribute('data-theme','dark')}})();</script>
     <!-- 关键 CSS 内联 — 消除渲染阻塞，LCP 秒级 -->
     <!-- 完整样式异步加载 — 不阻塞首屏渲染 -->
     <link rel="preload" href="/static/style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -16,7 +14,7 @@
     <!-- ====== 左侧边栏 ====== -->
     <aside class="app-sidebar">
         <header class="app-header">
-            <h1 style="cursor:pointer" onclick="window.scrollTo({top:0,behavior:'smooth'})">八字排盘 <button id="btn-theme" onclick="toggleTheme()" title="切换日/夜模式" style="background:none;border:1px solid var(--border);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;line-height:1;vertical-align:middle;margin-left:4px">🌙</button></h1>
+            <h1 style="cursor:pointer" onclick="window.scrollTo({top:0,behavior:'smooth'})">八字排盘</h1>
             <p class="subtitle">输入出生信息，一键排出完整命盘</p>
         </header>
 
@@ -47,7 +45,7 @@
                 <div class="form-group"><label>时</label><input type="number" id="hour" placeholder="1" min="0" max="23"></div>
                 <div class="form-group"><label>分</label><input type="number" id="minute" placeholder="35" min="0" max="59"></div>
                 <div class="form-group form-wide" id="shichen-warning" style="display:none">
-                    <span style="color:#e65100;font-size:0.78em">⚠️ 出生时间接近时辰分界线（±15分钟），时辰可能因记录偏差或真太阳时校正而改变，建议确认准确度</span>
+                    <span style="color:#C8863A;font-size:0.78em">⚠️ 出生时间接近时辰分界线（±15分钟），时辰可能因记录偏差或真太阳时校正而改变，建议确认准确度</span>
                 </div>
                 <div class="form-group">
                     <label>性别</label>
@@ -57,9 +55,9 @@
                     </div>
                 </div>
                 <div class="form-group form-wide">
-                    <label><input type="checkbox" id="use-true-solar"> 真太阳时校正</label>
+                    <label><input type="checkbox" id="use-true-solar" checked> 真太阳时校正</label>
                 </div>
-                <div class="form-group form-wide" id="lnglat" style="display:none">
+                <div class="form-group form-wide" id="lnglat">
                     <label>经度</label>
                     <input type="number" id="longitude" step="0.01" placeholder="120" min="70" max="140" value="120">
                 </div>
@@ -120,7 +118,7 @@
             <div class="skeleton skeleton-text short"></div>
         </div>
 
-        <div id="loading" class="loading hidden"><div class="spinner"></div><p id="loading-text">计算中...</p></div>
+        <div id="loading" class="loading hidden"><div class="spinner"></div><p id="loading-text">计算中...</p><div id="progress-bar" class="progress-container" style="display:none"><div class="progress-fill" id="progress-fill"></div><div class="progress-steps" id="progress-steps"></div><p class="progress-phase" id="progress-phase"></p></div></div>
         <div id="error-box" class="error-box hidden"></div>
 
         <!-- 结果区 Bento Grid -->
@@ -132,7 +130,7 @@
                 <button id="btn-pdf" class="btn btn-accent btn-sm" disabled>📄 PDF</button>
             </div>
             <div class="bento-grid">
-                <div class="bento-card span-2"><h3 class="card-title">📋 基本信息</h3><div class="info-grid" id="basic-info"></div></div>
+                <div class="bento-card span-2"><h3 class="card-title">📋 基本信息</h3><div class="info-grid" id="basic-info"></div><div id="solar-correction" style="margin-top:12px;padding:10px 14px;border-radius:10px;background:rgba(228,184,99,0.04);border:1px solid rgba(228,184,99,0.12);font-size:0.8em;color:var(--text-muted);display:none"></div></div>
                 <div class="bento-card span-2"><h3 class="card-title">🔮 神煞速览</h3><div id="shensha-info" class="info-grid"></div></div>
                 <div class="bento-card span-4"><h3 class="card-title">🏛️ 四柱命盘</h3><div class="table-scroll"><table class="bazi-table" id="pillars-table"><thead><tr><th></th><th>年柱</th><th>月柱</th><th>日柱</th><th>时柱</th></tr></thead><tbody><tr id="row-ganzhi"></tr><tr id="row-tiangan"></tr><tr id="row-dizhi"></tr><tr id="row-shishen"></tr><tr id="row-nayin"></tr><tr id="row-changsheng"></tr><tr id="row-canggan"></tr></tbody></table></div></div>
                 <div class="bento-card span-4"><h3 class="card-title">🔄 起运与大运</h3><div id="qiyun-info" class="info-grid"></div><div class="table-scroll"><table class="bazi-table" id="dayun-table"><thead><tr><th>步数</th><th>干支</th><th>年龄</th><th>年份</th></tr></thead><tbody id="dayun-tbody"></tbody></table></div></div>
@@ -164,7 +162,7 @@
                 <div class="bento-card"><h3 class="card-title">🎨 五行分布</h3><div id="chart-wuxing" class="chart-box"></div></div>
                 <div class="bento-card"><h3 class="card-title">🔄 十二长生</h3><div id="chart-changsheng" class="chart-box"></div></div>
                 <div class="bento-card span-full"><h3 class="card-title">⭕ 大运环图</h3><div id="chart-dayun-ring" class="chart-box"></div></div>
-                <div class="bento-card span-full"><h3 class="card-title">🔗 干支生克关系</h3><div id="chart-shengke" class="chart-box"></div><div style="text-align:center;font-size:0.75em;color:#999;margin-top:4px;">白圈灰线黑字 · 上区天干相克 · 下区地支合冲刑害</div></div>
+                <div class="bento-card span-full"><h3 class="card-title">🔗 干支生克关系</h3><div id="chart-shengke" class="chart-box"></div><div style="text-align:center;font-size:0.75em;color:var(--text-muted);margin-top:4px;">白圈灰线黑字 · 上区天干相克 · 下区地支合冲刑害</div></div>
             </div>
         </section>
 
@@ -190,11 +188,38 @@
             </div>
         </section>
 
+        <!-- 流年运程 -->
+        <section id="liunian-section" class="result-section hidden">
+            <div class="bento-card span-4">
+                <h3 class="card-title">📅 流年运程</h3>
+                <div class="liunian-picker">
+                    <button class="btn btn-sm" id="btn-liunian-prev">◀</button>
+                    <span class="liunian-year" id="liunian-year">2025</span>
+                    <button class="btn btn-sm" id="btn-liunian-next">▶</button>
+                    <button class="btn btn-sm btn-accent" id="btn-liunian-jump" style="margin-left:8px">今年</button>
+                </div>
+                <div id="liunian-card" class="liunian-card">
+                    <div class="liunian-main">
+                        <span class="liunian-gz" id="liunian-gz">--</span>
+                        <span class="liunian-signal" id="liunian-signal"></span>
+                    </div>
+                    <div class="liunian-meta" id="liunian-meta"></div>
+                    <div class="liunian-relations" id="liunian-relations"></div>
+                </div>
+                <div class="liunian-timeline-label">📊 全周期时间轴（点击圆点切换年份）</div>
+                <div class="liunian-timeline" id="liunian-timeline"></div>
+                <div class="liunian-signal-section">
+                    <div class="liunian-signal-title">⚡ 关键信号年份</div>
+                    <div class="liunian-signal-grid" id="liunian-signal-grid"></div>
+                </div>
+            </div>
+        </section>
+
         <section class="xuetang-section" id="xuetang-section">
             <div class="bento-card span-4">
-                <h3 class="card-title" style="cursor:pointer" onclick="document.getElementById('xuetang-body').classList.toggle('hidden')">📚 八字学堂 · 42 个核心术语详解 <span style="font-size:0.7em;color:#999">（点击展开）</span></h3>
+                <h3 class="card-title" style="cursor:pointer" onclick="document.getElementById('xuetang-body').classList.toggle('hidden')">📚 八字学堂 · 42 个核心术语详解 <span style="font-size:0.7em;color:var(--text-muted)">（点击展开）</span></h3>
                 <div id="xuetang-body" class="hidden">
-                    <div class="xuetang-intro" style="margin-bottom:16px;color:#aaa;font-size:0.85em">以下术语按分析逻辑分类排列，每个词条包含<strong style="color:#d4a843">白话解释</strong>和<strong style="color:#d4a843">经典出处</strong>。</div>
+                    <div class="xuetang-intro" style="margin-bottom:16px;color:var(--text-muted);font-size:0.85em">以下术语按分析逻辑分类排列，每个词条包含<strong style="color:var(--champagne)">白话解释</strong>和<strong style="color:var(--champagne)">经典出处</strong>。</div>
                     <div id="xuetang-grid" class="xuetang-grid"></div>
                 </div>
             </div>

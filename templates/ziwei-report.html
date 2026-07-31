@@ -6,19 +6,17 @@
 <title>紫微斗数 · 命盘报告</title>
 <style>
   :root {
-    --paper: #f5f1e8; --paper-deep: #ebe5d5; --paper-card: #faf6ec;
-    --ink: #2b2825; --ink-soft: #6b6660; --ink-faint: #a8a298;
-    --vermillion: #c1432f; --vermillion-deep: #8e2f20;
-    --azure: #2e6da4; --jade: #4a7c4e; --jade-soft: #6f9971;
-    --line: #8b8378; --line-soft: #c4bdb0; --line-faint: #e0d9c8;
-    --radius: 4px; --radius-sm: 2px;
-  }
-  [data-theme="dark"] {
-    --paper: #1a1512; --paper-deep: #12100e; --paper-card: #221c18;
-    --ink: #e0d8cf; --ink-soft: #a09890; --ink-faint: #706860;
-    --vermillion: #e05545; --vermillion-deep: #a03020;
-    --azure: #5a9dd4; --jade: #5aaa5e; --jade-soft: #4a8a4e;
-    --line: #3a3028; --line-soft: #2a2018; --line-faint: #1a120e;
+    --bg-deep:#0F0A06;--glass:rgba(255,255,255,0.10);--glass-hover:rgba(255,255,255,0.16);
+    --glass-input:rgba(255,255,255,0.07);--glass-border:rgba(255,255,255,0.14);
+    --champagne:#E4B863;--champagne-light:#F3DCA8;--amber:#C8863A;
+    --text-primary:rgba(255,248,235,0.90);--text-secondary:rgba(255,248,235,0.65);--text-muted:rgba(255,248,235,0.40);
+    --vermillion:#E05545;--vermillion-deep:#A03020;
+    --azure:#5A9DD4;--jade:#5AAA5E;--jade-soft:#4A8A4E;
+    --line:rgba(255,255,255,0.12);--line-soft:rgba(255,255,255,0.08);--line-faint:rgba(255,255,255,0.05);
+    --radius:24px;--radius-sm:12px;
+    --paper:var(--bg-deep);--paper-deep:rgba(15,10,6,.92);--paper-card:var(--glass);
+    --ink:var(--text-primary);--ink-soft:var(--text-secondary);--ink-faint:var(--text-muted);
+    --ease-spring:cubic-bezier(0.16,1,0.3,1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
