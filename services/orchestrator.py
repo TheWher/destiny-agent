@@ -305,12 +305,13 @@ class AnalysisOrchestrator:
 
         def _tool_paipan_bazi(year: int, month: int, day: int, hour: int,
                               minute: int = 0, gender: str = "男",
-                              longitude: float = 120.0, location: str = "",
-                              is_lunar: bool = False) -> dict:
+                              longitude: float = 113.75, location: str = "",
+                              apply_solar_correction: bool = True) -> dict:
             """八字排盘"""
             plate = bazi_paipan(year, month, day, hour, minute,
                                 gender=gender, longitude=longitude,
-                                is_lunar=is_lunar)
+                                location=location,
+                                apply_solar_correction=apply_solar_correction)
             plate.compute()
             from utils.plate import plate_to_dict
             return plate_to_dict(plate)
@@ -330,17 +331,20 @@ class AnalysisOrchestrator:
                     "gender": {"type": "string", "enum": ["男", "女"]},
                     "longitude": {"type": "number", "description": "经度"},
                     "location": {"type": "string", "description": "出生地"},
-                    "is_lunar": {"type": "boolean", "description": "是否农历"},
+                    "apply_solar_correction": {"type": "boolean", "description": "是否真太阳时校正"},
                 },
                 "required": ["year", "month", "day", "hour", "gender"],
             },
             category="paipan",
         ))
 
-        def _tool_paipan_ziwei(**kwargs) -> dict:
+        def _tool_paipan_ziwei(year: int, month: int, day: int, hour: int,
+                               minute: int = 0, gender: str = "男",
+                               is_lunar: bool = False) -> dict:
             """紫微排盘"""
             from ziwei_calculator import ziwei_paipan, plate_to_dict as zv_plate_to_dict
-            plate = ziwei_paipan(**kwargs)
+            plate = ziwei_paipan(year, month, day, hour, minute,
+                                 gender=gender, is_lunar=is_lunar)
             return zv_plate_to_dict(plate)
 
         self.tools.register(ToolDef(
@@ -356,8 +360,7 @@ class AnalysisOrchestrator:
                     "hour": {"type": "integer"},
                     "minute": {"type": "integer"},
                     "gender": {"type": "string", "enum": ["男", "女"]},
-                    "longitude": {"type": "number"},
-                    "location": {"type": "string"},
+                    "is_lunar": {"type": "boolean", "description": "是否农历"},
                 },
                 "required": ["year", "month", "day", "hour", "gender"],
             },
@@ -399,15 +402,33 @@ class AnalysisOrchestrator:
         ))
 
         def _tool_star_lookup(star_name: str = "", stars: list[str] = None) -> dict:
-            """星曜查询"""
+            """星曜查询（支持简繁体自动转换）"""
             kb = _load_json_kb("ziwei_stars.json")
+            # 简体→繁体映射
+            S2T = {
+                '机': '機', '阳': '陽', '贞': '貞', '阴': '陰', '贪': '貪',
+                '巨': '門', '门': '門', '杀': '殺', '军': '軍', '鸾': '鸞',
+                '魁': '魁', '钺': '鉞', '马': '馬', '刑': '刑', '姚': '姚',
+                '巫': '巫', '贵': '貴', '寿': '壽', '德': '德', '哭': '哭',
+                '虚': '虛', '空': '空', '劫': '劫', '羊': '羊', '陀': '陀',
+                '铃': '鈴', '火': '火', '存': '存', '曲': '曲', '昌': '昌',
+                '弼': '弼', '辅': '輔', '喜': '喜', '禄': '祿', '权': '權',
+                '科': '科', '忌': '忌', '鸾': '鸞', '龙': '龍', '凤': '鳳',
+                '虎': '虎', '华': '華', '盖': '蓋', '池': '池', '阁': '閣',
+            }
+            def to_traditional(s):
+                return ''.join(S2T.get(c, c) for c in s)
+
             result = {}
             names = stars or ([star_name] if star_name else [])
             for name in names:
+                t_name = to_traditional(name)
+                found = False
                 for section in ["main_stars", "auspicious_stars", "malefic_stars"]:
                     section_data = kb.get(section, {})
                     for sn, sd in section_data.items():
-                        if name in sn or sn in name:
+                        # 精确匹配或包含匹配（繁体名）
+                        if t_name == sn or name == sn or t_name in sn or name in sn:
                             result[sn] = {
                                 "element": sd.get("element", ""),
                                 "type": sd.get("type", ""),
@@ -415,6 +436,10 @@ class AnalysisOrchestrator:
                                 "negative": sd.get("negative", "")[:60],
                                 "section": section,
                             }
+                            found = True
+                            break
+                    if found:
+                        break
             return result
 
         self.tools.register(ToolDef(
