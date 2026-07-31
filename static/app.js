@@ -935,6 +935,11 @@ async function doAnalyze(isRetry = false) {
         addToHistory(plateData, analysisText);
         elAnalysisSection.classList.remove('hidden');
         elBtnAnalysisPdf.disabled = false;
+        // 用神卡片
+        if (d.yongshen) {
+            renderYongshenCard(d.yongshen);
+            try { localStorage.setItem('bazi_yongshen', JSON.stringify(d.yongshen)); } catch(e) {}
+        }
         // 加载流年数据
         loadLiunian(plateData);
         $('app-main').scrollIntoView({behavior:'smooth',block:'start'});
@@ -1325,6 +1330,8 @@ document.addEventListener('visibilitychange', () => {
                 elBtnAnalysisPdf.disabled = false;
                 // 恢复流年
                 loadLiunian(plateData);
+                // 恢复用神
+                try { const ys = JSON.parse(localStorage.getItem('bazi_yongshen')); if (ys) renderYongshenCard(ys); } catch(e) {}
                 // 恢复对话上下文（analysisText 已含全部聊天，只需恢复 messages 用于续接）
                 if (loadConversation()) {
                     elAnalysisChat.classList.remove('hidden');
@@ -1373,8 +1380,9 @@ $('btn-clear').addEventListener('click', () => {
     elResultSection.classList.add('hidden'); elAnalysisSection.classList.add('hidden');
     document.getElementById('charts-section').classList.add('hidden');
     $('liunian-section').classList.add('hidden');
+    const yc = $('yongshen-card'); if (yc) yc.style.display = 'none';
     elBtnPdf.disabled = true; elBtnAnalyze.disabled = true; elBtnAnalysisPdf.disabled = true; elBtnZiweiSwitch.disabled = true;
-    localStorage.removeItem('bazi_form'); localStorage.removeItem('bazi_analysis'); localStorage.removeItem('bazi_plate');
+    localStorage.removeItem('bazi_form'); localStorage.removeItem('bazi_analysis'); localStorage.removeItem('bazi_plate'); localStorage.removeItem('bazi_yongshen');
     clearPendingAnalysis();
     hideError(); autoFillNow();
 });
@@ -1774,6 +1782,50 @@ let _liunianIndex = 0;
 const SIGNAL_LABELS = {A:'强冲刑',B:'中等',C:'轻微',D:'平顺'};
 
 // ========== 用神喜忌卡片 ==========
+const WUXING_EMOJI = {木:'🌳',火:'🔥',土:'⛰️',金:'⚜️',水:'💧'};
+function renderYongshenCard(yongshen) {
+    if (!yongshen || !yongshen.yong) return;
+    const card = $('yongshen-card');
+    const content = $('yongshen-content');
+    if (!card || !content) return;
+
+    const yong = yongshen.yong || '?';
+    const xi = yongshen.xi || [];
+    const ji = yongshen.ji || [];
+    const xian = yongshen.xian || [];
+    const reasoning = yongshen.reasoning || '';
+
+    let html = '<div class="yongshen-main">';
+    html += '<div class="yongshen-wx '+yong+'">'+yong+'</div>';
+    html += '<div class="yongshen-label"><span class="label-tag">核心用神</span><br><span class="label-val">'+yong+'</span></div>';
+    html += '</div>';
+
+    if (xi.length > 0) {
+        html += '<div class="yongshen-tags">';
+        html += '<span style="font-size:0.72em;color:var(--text-muted);margin-right:4px">喜：</span>';
+        xi.forEach(wx => { html += '<span class="yongshen-tag xi">'+wx+'</span>'; });
+        html += '</div>';
+    }
+    if (ji.length > 0) {
+        html += '<div class="yongshen-tags">';
+        html += '<span style="font-size:0.72em;color:var(--text-muted);margin-right:4px">忌：</span>';
+        ji.forEach(wx => { html += '<span class="yongshen-tag ji">'+wx+'</span>'; });
+        html += '</div>';
+    }
+    if (xian.length > 0) {
+        html += '<div class="yongshen-tags">';
+        html += '<span style="font-size:0.72em;color:var(--text-muted);margin-right:4px">闲：</span>';
+        xian.forEach(wx => { html += '<span class="yongshen-tag xian">'+wx+'</span>'; });
+        html += '</div>';
+    }
+    if (reasoning) {
+        html += '<div class="yongshen-reasoning">'+reasoning+'</div>';
+    }
+
+    content.innerHTML = html;
+    card.style.display = '';
+}
+
 async function loadLiunian(plateData) {
     try {
         const r = await fetch('/api/liunian', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plate:plateData})});

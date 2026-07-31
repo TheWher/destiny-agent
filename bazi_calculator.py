@@ -353,6 +353,12 @@ def di_liuhai(dz1: str, dz2: str) -> bool:
     return (dz1, dz2) in hai_pairs or (dz2, dz1) in hai_pairs
 
 
+def di_liuchong(dz1: str, dz2: str) -> bool:
+    """地支六冲: 子午冲, 丑未冲, 寅申冲, 卯酉冲, 辰戌冲, 巳亥冲"""
+    chong_pairs = {('子', '午'), ('丑', '未'), ('寅', '申'), ('卯', '酉'), ('辰', '戌'), ('巳', '亥')}
+    return (dz1, dz2) in chong_pairs or (dz2, dz1) in chong_pairs
+
+
 def di_xing(dz1: str, dz2: str) -> Optional[str]:
     """地支相刑, 返回刑的类型"""
     xing_map = {

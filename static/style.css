@@ -766,6 +766,29 @@ canvas.chart-box { border-radius: 12px; background: rgba(0,0,0,.2); }
 .signal-card.medium .signal-label { background: rgba(228,184,99,0.1); color: var(--champagne); }
 .signal-age { color: var(--text-muted); font-size: 0.75em; margin-left: auto; }
 
+/* ========== 用神喜忌卡片 ========== */
+.yongshen-main { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.yongshen-wx { 
+    width: 52px; height: 52px; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; font-weight: 700; letter-spacing: 2px;
+    box-shadow: 0 0 18px rgba(228,184,99,0.2);
+}
+.yongshen-wx.木 { background: rgba(46,125,50,0.18); color: #66bb6a; }
+.yongshen-wx.火 { background: rgba(198,40,40,0.18); color: #ef5350; }
+.yongshen-wx.土 { background: rgba(230,81,0,0.18); color: #ff8a65; }
+.yongshen-wx.金 { background: rgba(184,134,11,0.18); color: #ffc107; }
+.yongshen-wx.水 { background: rgba(21,101,192,0.18); color: #42a5f5; }
+.yongshen-label { font-size: 0.9rem; }
+.yongshen-label .label-tag { font-size: 0.72em; color: var(--text-muted); }
+.yongshen-label .label-val { font-weight: 700; color: var(--champagne); font-size: 1.1em; }
+.yongshen-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.yongshen-tag { font-size: 0.75em; padding: 3px 10px; border-radius: 12px; font-weight: 600; letter-spacing: 1px; }
+.yongshen-tag.xi { background: rgba(90,170,94,0.12); color: var(--jade); border: 1px solid rgba(90,170,94,0.2); }
+.yongshen-tag.ji { background: rgba(224,85,69,0.1); color: var(--vermillion); border: 1px solid rgba(224,85,69,0.18); }
+.yongshen-tag.xian { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid var(--border-light); }
+.yongshen-reasoning { font-size: 0.78em; color: var(--text-secondary); line-height: 1.6; padding: 10px 12px; background: rgba(255,255,255,0.02); border-radius: 10px; border-left: 2px solid var(--champagne); }
+
 /* === 来自 index.html 的内联样式 === */
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
