@@ -146,6 +146,15 @@ body::after{
 .palace .p-daxian{margin-top:auto;padding-top:3px;border-top:1px dashed rgba(255,255,255,.06);font-size:9px;color:var(--text-secondary);display:flex;justify-content:space-between;gap:4px}
 .palace.current .p-daxian{color:var(--champagne);font-weight:700}
 .palace .p-fly{padding:2px 0 0;font-size:8px;line-height:1.4;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:1px 4px}
+/* 三合四正连线 */
+#grid-lines .sanhe-line{fill:none;stroke-width:1.2;stroke-dasharray:4 3;opacity:.65}
+#grid-lines .sanhe-line.g0{stroke:#5A9DD4}/* 申子辰 水局 */
+#grid-lines .sanhe-line.g1{stroke:#E05545}/* 巳酉丑 金局 */
+#grid-lines .sanhe-line.g2{stroke:#5AAA5E}/* 寅午戌 火局 */
+#grid-lines .sanhe-line.g3{stroke:#E4B863}/* 亥卯未 木局 */
+#grid-lines .sanhe-line.duigong{stroke:rgba(255,255,255,.12);stroke-dasharray:2 4;opacity:.45}
+#grid-lines .sanhe-line.highlight{stroke-dasharray:none;opacity:1;stroke-width:2.2}
+.palace.hovering-sanhe{background:rgba(228,184,99,.06)!important}
 
 .center-palace{
   grid-column:2/4;grid-row:2/4;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -365,7 +374,7 @@ body::after{
 
 <section id="result-section" class="hidden">
 
-    <div class="ziwei-grid" id="grid"><div class="center-palace" style="grid-column:2/4;grid-row:2/4"><div class="loading" style="padding:0;color:var(--ink-faint)">读取命盘...</div></div></div>
+    <div style="position:relative"><div class="ziwei-grid" id="grid"><div class="center-palace" style="grid-column:2/4;grid-row:2/4"><div class="loading" style="padding:0;color:var(--ink-faint)">读取命盘...</div></div></div><svg id="grid-lines" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></svg></div>
 
     <div class="confirm-card" id="confirm-card"></div>
 
@@ -514,6 +523,7 @@ const LAIYIN=['父母','福德','命宫','兄弟','夫妻','子女','财帛','�
 function renderInPlace(data){
 
     renderGrid(data);
+    setTimeout(renderSanheLines, 200);
 
     renderConfirm(data);
 
@@ -799,6 +809,60 @@ async function confirmAnalyze(){
     btn.disabled=false;btn.textContent='确认认领';
   }
   document.getElementById('claim-overlay').addEventListener('click',function(ev){if(ev.target===this)closeClaim()});
+
+// ── 三合四正连线 ──
+function renderSanheLines(){
+  const svg=document.getElementById('grid-lines');
+  if(!svg)return;
+  const grid=document.getElementById('grid');
+  if(!grid||!grid.children.length)return;
+  const rect=grid.getBoundingClientRect();
+  const svgRect=svg.getBoundingClientRect();
+  const ox=rect.left-svgRect.left,oy=rect.top-svgRect.top;
+  const cellW=rect.width/4,cellH=rect.height/4;
+  const brs=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+  const groups=[
+    {br:'申',mates:['子','辰']},{br:'巳',mates:['酉','丑']},
+    {br:'寅',mates:['午','戌']},{br:'亥',mates:['卯','未']}
+  ];
+  let html='';
+  groups.forEach((g,gi)=>{
+    const all=[g.br,...g.mates];
+    const pts=all.map(b=>{const pos=GRID_POS[b];return[ox+pos[0]*cellW+cellW/2,oy+pos[1]*cellH+cellH/2]});
+    html+='<polyline class="sanhe-line g'+gi+'" data-group="'+gi+'" points="'+pts[0][0]+','+pts[0][1]+' '+pts[1][0]+','+pts[1][1]+' '+pts[2][0]+','+pts[2][1]+' '+pts[0][0]+','+pts[0][1]+'"/>';
+  });
+  for(let i=0;i<6;i++){
+    const b1=brs[i],b2=brs[i+6];
+    const p1=GRID_POS[b1],p2=GRID_POS[b2];
+    html+='<line class="sanhe-line duigong" data-duigong="'+b1+'-'+b2+'" x1="'+(ox+p1[0]*cellW+cellW/2)+'" y1="'+(oy+p1[1]*cellH+cellH/2)+'" x2="'+(ox+p2[0]*cellW+cellW/2)+'" y2="'+(oy+p2[1]*cellH+cellH/2)+'"/>';
+  }
+  svg.innerHTML=html;
+  grid.querySelectorAll('.palace').forEach(el=>{
+    if(!el.dataset.hooked){
+      el.dataset.hooked='1';
+      el.addEventListener('mouseenter',function(){
+        const br=el.querySelector('.p-dizhi')?.textContent?.trim();
+        if(!br)return;
+        const idx=brs.indexOf(br);
+        if(idx<0)return;
+        let hlBr=new Set();[4,6,8].forEach(d=>hlBr.add(brs[(idx+d)%12]));hlBr.add(br);
+        svg.querySelectorAll('.sanhe-line').forEach(l=>l.classList.remove('highlight'));
+        const gi=groups.findIndex(g=>g.br===br||g.mates.includes(br));
+        if(gi>=0)svg.querySelector('.sanhe-line[data-group="'+gi+'"]')?.classList.add('highlight');
+        svg.querySelector('.sanhe-line[data-duigong*="'+br+'"]')?.classList.add('highlight');
+        grid.querySelectorAll('.palace').forEach(p=>p.classList.remove('hovering-sanhe'));
+        grid.querySelectorAll('.palace').forEach(p=>{
+          const b=p.querySelector('.p-dizhi')?.textContent?.trim();
+          if(hlBr.has(b))p.classList.add('hovering-sanhe');
+        });
+      });
+      el.addEventListener('mouseleave',function(){
+        svg.querySelectorAll('.sanhe-line').forEach(l=>l.classList.remove('highlight'));
+        grid.querySelectorAll('.palace').forEach(p=>p.classList.remove('hovering-sanhe'));
+      });
+    }
+  });
+}
 
 </script>
 
