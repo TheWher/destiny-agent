@@ -325,6 +325,71 @@ check("bazi_analysis Tool 包含 kb_retrieve",
 
 
 # ══════════════════════════════════════════════════════════
+# 9. Skill 标准化
+# ══════════════════════════════════════════════════════════
+
+print(f"\n{B}═══ 9. Skill 标准化 ═══{N}\n")
+
+from services.orchestrator import SkillDef, SkillRegistry
+
+# Skill 注册
+sr = SkillRegistry()
+check("SkillRegistry 创建成功", isinstance(sr, SkillRegistry))
+
+# 手动注册一个 Skill
+cap = orch.capabilities.get("bazi_analysis")
+skill = SkillDef(
+    name="bazi_analysis",
+    description="八字分析",
+    capability=cap,
+    version="1.0.0",
+    trigger_words=["八字", "四柱", "用神"],
+    priority=1.5,
+    tags=["八字", "分析"],
+)
+sr.register(skill)
+check("Skill 注册成功", sr.get("bazi_analysis") is not None)
+
+# list_by_tag
+bazi_skills = sr.list_by_tag("八字")
+check("list_by_tag(八字) 找到 1 个", len(bazi_skills) == 1)
+
+# to_router_keywords
+kw = sr.to_router_keywords()
+check("to_router_keywords 返回 dict", isinstance(kw, dict))
+check("to_router_keywords 包含 bazi_analysis",
+      "bazi_analysis" in kw)
+check("to_router_keywords 触发词匹配",
+      kw["bazi_analysis"] == ["八字", "四柱", "用神"])
+
+# from_skills 构建 IntentRouter
+from services.orchestrator import IntentRouter
+router = IntentRouter.from_skills(sr)
+check("from_skills 构建路由成功",
+      router.resolve("帮我看看八字") == "bazi_analysis")
+
+# Skill.to_dict
+d = skill.to_dict()
+check("to_dict 包含 version", d.get("version") == "1.0.0")
+check("to_dict 包含 trigger_words",
+      d.get("trigger_words") == ["八字", "四柱", "用神"])
+check("to_dict 包含 stages",
+      isinstance(d.get("stages"), list))
+
+# orch.skills（自动注册的 4 个 Skill）
+skill_summary = orch.summary()
+check("orch.skills 有 4 个 Skill",
+      skill_summary.get("skills", {}).get("total") == 4,
+      f"实际: {skill_summary.get('skills', {}).get('total')}")
+
+# 验证 Router 从 Skill 重建后仍然有效
+check("Router 从 Skill 重建后匹配紫微",
+      orch.router.resolve("排个紫微斗数命盘") == "ziwei_analysis")
+check("Router 从 Skill 重建后匹配验盘",
+      orch.router.resolve("帮我验盘核对一下") == "verify_panel")
+
+
+# ══════════════════════════════════════════════════════════
 # 结果
 # ══════════════════════════════════════════════════════════
 

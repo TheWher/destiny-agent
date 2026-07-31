@@ -173,6 +173,92 @@ class CapabilityRegistry:
             return CapabilityResult(success=False, error=f"{e}", elapsed_ms=elapsed)
 
 
+# ── 技能标准化 ──────────────────────────────────────────
+
+@dataclass
+class SkillDef:
+    """标准化技能定义
+
+    在 CapabilityDef 外层包标准化元数据壳。
+    每个 Skill 对应一个命理分析能力，带版本、触发词、优先级等元数据，
+    支持动态注册和发现。
+    """
+    # 核心标识
+    name: str
+    description: str
+    capability: CapabilityDef                 # 关联的能力流水线
+
+    # 元数据
+    version: str = "1.0.0"
+    trigger_words: list[str] = field(default_factory=list)  # 触发词（供 IntentRouter 自动构建关键词表）
+    priority: float = 1.0                               # 优先级（歧义消解用，越高越优先）
+    tags: list[str] = field(default_factory=list)       # 标签（八字/紫微/验盘/交叉）
+    author: str = ""
+
+    # 接口契约
+    input_schema: dict = field(default_factory=dict)    # 输入 Schema
+    output_schema: dict = field(default_factory=dict)   # 输出 Schema
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "version": self.version,
+            "trigger_words": self.trigger_words,
+            "priority": self.priority,
+            "tags": self.tags,
+            "stages": self.capability.stages,
+            "tools": self.capability.tools,
+            "category": self.capability.category,
+        }
+
+
+class SkillRegistry:
+    """技能注册表
+
+    动态技能发现机制，替代硬编码四个 Capability。
+    每个 Skill 自带 trigger_words，IntentRouter 可以从中自动构建关键词表。
+    """
+
+    def __init__(self):
+        self._skills: dict[str, SkillDef] = {}
+
+    def register(self, skill: SkillDef) -> None:
+        if skill.name in self._skills:
+            raise ValueError(f"Skill '{skill.name}' already registered")
+        self._skills[skill.name] = skill
+
+    def get(self, name: str) -> Optional[SkillDef]:
+        return self._skills.get(name)
+
+    def list_all(self) -> list[SkillDef]:
+        return list(self._skills.values())
+
+    def list_by_tag(self, tag: str) -> list[SkillDef]:
+        return [s for s in self._skills.values() if tag in s.tags]
+
+    def get_capability(self, name: str) -> Optional[CapabilityDef]:
+        """从 Skill 中提取关联的 CapabilityDef"""
+        skill = self._skills.get(name)
+        return skill.capability if skill else None
+
+    def to_router_keywords(self) -> dict[str, list[str]]:
+        """导出所有 Skill 的触发词，供 IntentRouter 构建关键词表
+
+        Returns:
+            {skill_name: [trigger_word_list], ...}
+        """
+        return {s.name: s.trigger_words for s in self._skills.values()}
+
+    def to_prompt_lines(self) -> str:
+        """生成 skill 清单文本（可注入 system prompt）"""
+        lines = ["## 🎯 可用技能", ""]
+        for skill in sorted(self._skills.values(), key=lambda s: -s.priority):
+            tags_str = ", ".join(skill.tags) if skill.tags else ""
+            lines.append(f"- **{skill.name}** (v{skill.version}) [{tags_str}]: {skill.description}")
+        return "\n".join(lines)
+
+
 # ── Function Calling 多轮执行循环 ──────────────────────
 
 class FunctionCallingLoop:
@@ -371,24 +457,27 @@ class IntentRouter:
     编排层最核心的分派逻辑。独立于 Orchestrator 注入，
     便于后续切换匹配策略（关键词 → embedding → LLM 语义路由）。
 
+    支持两种关键词来源：
+    1. 显式传入 keywords dict
+    2. 从 SkillRegistry.to_router_keywords() 自动构建
+
     使用方式：
-        router = IntentRouter(keywords={
-            "ziwei_analysis": ["紫微", "斗数", "命盘", "星曜", "十二宫"],
-            "bazi_analysis": ["八字", "四柱", "十神", "用神", "大运"],
-            "verify_panel": ["验盘", "验证", "核对", "校准"],
-            "cross_validate": ["交叉", "比对", "综合分析", "全面"],
-        })
-        cap_name = router.resolve("帮我看看八字格局")  # → "bazi_analysis"
-        all_caps = router.resolve_all("全面分析")       # → [("cross_validate", 0.6), ...]
+        # 显式关键词
+        router = IntentRouter(keywords={"bazi_analysis": ["八字", "四柱"], ...})
+
+        # 从 SkillRegistry 自动构建
+        skills = SkillRegistry()
+        skills.register(SkillDef(name="bazi", trigger_words=["八字", "四柱"], ...))
+        router = IntentRouter.from_skills(skills)
     """
 
     def __init__(self, keywords: dict[str, list[str]] = None):
-        """
-        Args:
-            keywords: {capability_name: [触发关键词列表]}
-                      如果不传，使用内置默认关键词表。
-        """
-        self._keywords = keywords or self._default_keywords()
+        self._keywords = keywords or {}
+
+    @classmethod
+    def from_skills(cls, skills: "SkillRegistry") -> "IntentRouter":
+        """从 SkillRegistry 自动构建关键词表"""
+        return cls(keywords=skills.to_router_keywords())
 
     @staticmethod
     def _default_keywords() -> dict[str, list[str]]:
@@ -484,10 +573,11 @@ class AnalysisOrchestrator:
         stars = orchestrator.tools.call("star_lookup", star_name="紫微")
     """
 
-    def __init__(self, router: IntentRouter = None):
+    def __init__(self, router: IntentRouter = None, skills: "SkillRegistry" = None):
         self.tools = ToolRegistry()
         self.capabilities = CapabilityRegistry()
-        self.router = router or IntentRouter()  # 可注入自定义路由
+        self.skills = skills or SkillRegistry()  # 技能注册表（可注入）
+        self.router = router or IntentRouter()    # 可注入自定义路由
         self._defaults_registered = False
 
     # ── 注册内置 Tool ────────────────────────────────
@@ -790,15 +880,36 @@ class AnalysisOrchestrator:
             tools=["paipan_bazi", "paipan_ziwei", "wuxing_query", "star_lookup", "kb_retrieve"],
         ))
 
+    def _register_skills(self):
+        """注册内置 Skill（标准化 Capability 元数据壳）"""
+        # 从默认关键词表获取触发词（注册 Skill 时 router 可能尚未从 Skill 重建）
+        default_kw = IntentRouter._default_keywords() if hasattr(IntentRouter, '_default_keywords') else {}
+        for cap in self.capabilities.list_all():
+            trigger_words = self.router._keywords.get(cap.name, default_kw.get(cap.name, []))
+            skill = SkillDef(
+                name=cap.name,
+                description=cap.description,
+                capability=cap,
+                version="1.0.0",
+                trigger_words=trigger_words,
+                priority=1.0,
+                tags=[cap.category],
+            )
+            self.skills.register(skill)
+
     # ── 初始化 ────────────────────────────────────────
 
     def register_defaults(self):
-        """注册所有内置 Tool 和 Capability"""
+        """注册所有内置 Tool、Capability 和 Skill"""
         if self._defaults_registered:
             return
         self._register_paipan_tools()
         self._register_query_tools()
         self._register_capabilities()
+        self._register_skills()
+        # 从 Skill 触发词重建 IntentRouter 关键词表
+        if self.skills and self.skills._skills:
+            self.router = IntentRouter.from_skills(self.skills)
         self._defaults_registered = True
 
     # ── 统一执行入口 ──────────────────────────────────
@@ -960,6 +1071,10 @@ class AnalysisOrchestrator:
                 "total": len(self.capabilities.list_all()),
                 "names": [c.name for c in self.capabilities.list_all()],
             },
+            "skills": {
+                "total": len(self.skills.list_all()),
+                "names": [s.name for s in self.skills.list_all()],
+            },
         }
 
 
@@ -990,6 +1105,13 @@ if __name__ == "__main__":
     for name in summary['capabilities']['names']:
         cap = orch.capabilities.get(name)
         print(f"  - {name}: {' → '.join(cap.stages)}")
+
+    print(f"\nSkill 注册: {summary['skills']['total']} 个")
+    for name in summary['skills']['names']:
+        skill = orch.skills.get(name)
+        tags_str = ", ".join(skill.tags) if skill.tags else ""
+        print(f"  - {name} v{skill.version} [{tags_str}]: {skill.description[:60]}...")
+        print(f"    触发词({len(skill.trigger_words)}): {', '.join(skill.trigger_words[:8])}{'...' if len(skill.trigger_words)>8 else ''}")
 
     print("\nTool JSON Schema 导出 (示例):")
     schemas = orch.tools.to_json_schema()
