@@ -11,6 +11,7 @@ AGENTS.md
 *.pdf
 .DS_Store
 config.local.py
+data/
 feedback_logs/
 feedback/
 feedback/ziwei/
