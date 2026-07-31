@@ -194,6 +194,49 @@ body::after{
 
 @media(max-width:860px){.app-layout{flex-direction:column}.app-sidebar{width:100%;min-width:0;height:auto;position:static;border-right:none;border-bottom:1px solid var(--glass-border);padding:20px 16px 16px}.app-main{padding:20px 16px 80px}.sticky-actions{width:100%}.ziwei-grid{height:380px}.palace .star-name{font-size:11px}.palace .p-aux{font-size:8px}.palace .p-stars{gap:0}.center-palace .c-ming-star{font-size:18px}.center-palace .c-ju{font-size:11px}.center-palace .c-anchor{font-size:10px}.confirm-card .cc-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:480px){.app-sidebar{padding:14px 10px 12px}.app-main{padding:14px 10px 72px}.app-sidebar .app-header h1{font-size:1.2rem}.sticky-actions{padding:8px 10px 10px;gap:4px}.sticky-actions .btn{font-size:.74em;padding:6px 10px}.radio-group{gap:8px}.radio-label{font-size:.74em}.ziwei-grid{height:300px;gap:1px}.palace{padding:2px 3px;font-size:7px}.palace .star-name{font-size:9px}.palace .p-dizhi{font-size:9px}.palace .p-gong{font-size:8px}.palace .p-aux{font-size:7px}.palace .p-fly{font-size:6px}.center-palace{padding:6px 8px}.center-palace .c-ming-star{font-size:14px}.center-palace .c-ju{font-size:9px;letter-spacing:2px}.center-palace .c-anchor{font-size:8px}.center-palace .c-current{font-size:8px;padding:2px 4px}.confirm-card .cc-grid{grid-template-columns:1fr}.confirm-card .cc-item{font-size:.78em}}
+/* 流年选择器 */
+.yun-strip{margin-bottom:14px;border:1px solid var(--glass-border);background:var(--glass);backdrop-filter:blur(40px) saturate(160%);-webkit-backdrop-filter:blur(40px) saturate(160%);border-radius:var(--radius-lg);overflow:hidden}
+.yun-overview{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 14px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--glass-border);font-size:12px}
+.yun-overview .ov-label{color:var(--text-muted);font-size:11px}
+.yun-overview .ov-value{color:var(--text-primary);font-weight:700;font-family:"Noto Serif SC",serif}
+.yun-overview .ov-current{color:var(--champagne);font-weight:700}
+.yun-overview .ov-year-input{width:60px;padding:2px 4px;font-size:11px;border:1px solid var(--glass-border);background:var(--glass-input);color:var(--text-primary);border-radius:var(--radius-sm);font-family:inherit}
+.yun-decade{display:grid;grid-template-columns:repeat(12,1fr);position:relative;border-bottom:1px solid var(--glass-border)}
+.yun-decade .dec-cell{padding:5px 2px;text-align:center;font-size:9px;cursor:pointer;border-right:1px solid var(--border-light);position:relative;transition:background .15s}
+.yun-decade .dec-cell:last-child{border-right:none}
+.yun-decade .dec-cell:hover{background:rgba(255,255,255,.06)}
+.yun-decade .dec-cell .d-gz{font-size:11px;font-weight:700;font-family:"Noto Serif SC",serif;color:var(--text-primary)}
+.yun-decade .dec-cell .d-ages{color:var(--text-muted);font-size:8px}
+.yun-decade .dec-cell.current{background:rgba(228,184,99,.08)}
+.yun-decade .dec-cell.current .d-gz{color:var(--champagne)}
+.yun-decade .dec-cell.current::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--champagne)}
+.yun-decade .dec-cell.active{background:rgba(90,157,212,.10);box-shadow:inset 0 0 0 1px var(--azure)}
+.yun-focus{display:flex;align-items:center;gap:0;padding:0;border-top:1px solid var(--border-light)}
+.yun-focus .focus-pill{flex:1;padding:7px 10px;cursor:pointer;text-align:center;border-right:1px solid var(--border-light);transition:background .15s;display:flex;align-items:center;justify-content:center;gap:4px}
+.yun-focus .focus-pill:last-child{border-right:none}
+.yun-focus .focus-pill:hover{background:rgba(255,255,255,.06)}
+.yun-focus .focus-pill.active{color:var(--champagne);font-weight:700}
+.yun-focus .fp-label{font-size:10px;color:var(--text-muted)}
+.yun-focus .fp-value{font-size:11px;color:var(--text-primary);font-family:"Noto Serif SC",serif}
+.yun-focus .focus-pill.active .fp-value{color:var(--champagne)}
+.yun-drill{display:none;padding:6px 10px;background:rgba(255,255,255,.03);border-top:1px solid var(--border-light)}
+.yun-drill.open{display:block}
+.yun-drill .drill-grid{display:grid;gap:2px}
+.yun-drill .drill-cell{padding:4px;text-align:center;font-size:9px;cursor:pointer;border:1px solid var(--border-light);background:var(--glass-input)}
+.yun-drill .drill-cell:hover{background:rgba(255,255,255,.08)}
+.yun-drill .drill-cell .dc-gz{font-size:11px;font-weight:700;font-family:"Noto Serif SC",serif;color:var(--text-primary)}
+.yun-drill .drill-cell .dc-sub{color:var(--text-muted);font-size:8px}
+.yun-drill .drill-cell.active{background:rgba(90,157,212,.10)}
+.yun-drill .drill-cell.active .dc-gz{color:var(--azure)}
+.scope-status{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:5px 12px;background:rgba(90,157,212,.08);border:1px solid rgba(90,157,212,.20);border-radius:var(--radius-md);margin-bottom:10px;font-size:11px;color:var(--text-primary)}
+.scope-status.show{display:flex}
+.scope-status .ss-label{color:var(--azure);font-weight:700;font-size:10px}
+.scope-status .ss-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:2px;font-size:10px;font-weight:600}
+.scope-status .ss-chip.decade{background:var(--azure);color:var(--bg-deep)}
+.scope-status .ss-chip.yearly{background:var(--vermillion);color:var(--bg-deep)}
+.scope-status .ss-chip.monthly{background:var(--jade);color:var(--bg-deep)}
+.scope-status .ss-clear{margin-left:auto;font-size:10px;color:var(--text-muted);cursor:pointer;border:1px solid var(--glass-border);padding:1px 8px;border-radius:2px}
+.scope-status .ss-clear:hover{color:var(--vermillion);border-color:var(--vermillion)}
 </style>
 
 <script src="/static/tier.js"></script>
@@ -374,7 +417,39 @@ body::after{
 
 <section id="result-section" class="hidden">
 
+    <div class="scope-status" id="scope-status">
+      <span class="ss-label">📍 当前叠盘</span>
+      <span id="ss-chips"></span>
+      <span class="ss-clear" onclick="clearAllScope()">清除全部 ✕</span>
+    </div>
     <div style="position:relative"><div class="ziwei-grid" id="grid"><div class="center-palace" style="grid-column:2/4;grid-row:2/4"><div class="loading" style="padding:0;color:var(--ink-faint)">读取命盘...</div></div></div><svg id="grid-lines" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></svg></div>
+
+    <div class="yun-strip" id="yun-strip">
+      <div class="yun-overview" id="yun-overview">
+        <span class="ov-label">大限</span>
+        <span class="ov-current" id="ov-current">—</span>
+        <span class="ov-label">· 年份</span>
+        <input type="number" class="ov-year-input" id="horo-year" value="2026" min="1900" max="2100" onchange="renderFlowYears()">
+      </div>
+      <div class="yun-decade" id="yun-decade"></div>
+      <div class="yun-focus">
+        <div class="focus-pill" id="fp-year" onclick="toggleDrill('year')">
+          <span class="fp-label">流年</span><span class="fp-value" id="fpv-year">—</span>
+        </div>
+        <div class="focus-pill" id="fp-month" onclick="toggleDrill('month')">
+          <span class="fp-label">流月</span><span class="fp-value" id="fpv-month">—</span>
+        </div>
+        <div class="focus-pill" id="fp-day" onclick="highlightDayOnly()">
+          <span class="fp-label">流日</span><span class="fp-value" id="fpv-day">—</span>
+        </div>
+      </div>
+      <div class="yun-drill" id="drill-year">
+        <div class="drill-grid" id="drill-year-grid" style="grid-template-columns:repeat(12,1fr)"></div>
+      </div>
+      <div class="yun-drill" id="drill-month">
+        <div class="drill-grid" id="drill-month-grid" style="grid-template-columns:repeat(12,1fr)"></div>
+      </div>
+    </div>
 
     <div class="confirm-card" id="confirm-card"></div>
 
@@ -391,6 +466,14 @@ body::after{
 const $=id=>document.getElementById(id);
 
 let plateData=null;
+
+// ── 流年选择器常量 ──
+const GAN_ARR=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const ZHI_ARR=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const GAN_SIHUA={'甲':['廉贞','破军','武曲','太阳'],'乙':['天机','天梁','紫微','太阴'],'丙':['天同','天机','文昌','廉贞'],'丁':['太阴','天同','天机','巨门'],'戊':['贪狼','太阴','右弼','天机'],'己':['武曲','贪狼','天梁','文曲'],'庚':['太阳','武曲','太阴','天同'],'辛':['巨门','太阳','文曲','文昌'],'壬':['天梁','紫微','左辅','武曲'],'癸':['破军','巨门','太阴','贪狼']};
+const LIMIT_NAMES=['命宫','兄弟','夫妻','子女','财帛','疾厄','迁移','交友','官禄','田宅','福德','父母'];
+let scope={decade:null,yearly:null,monthly:null,dayOnly:null};
+let horoscopeData=null;
 
 
 // ── 加载历史会话 ──
@@ -523,8 +606,9 @@ const LAIYIN=['父母','福德','命宫','兄弟','夫妻','子女','财帛','�
 function renderInPlace(data){
 
     renderGrid(data);
-    setTimeout(renderSanheLines, 200);
-
+    setTimeout(renderSanheLines,200);
+    renderYunDecade(data);
+    renderFlowYears();
     renderConfirm(data);
 
 }
@@ -862,6 +946,234 @@ function renderSanheLines(){
       });
     }
   });
+}
+
+// ── 运限三层架构 ──
+function renderYunDecade(plate){
+  const palaces=plate.palaces||[];
+  const curAge=currentAge();
+  let curDecStr='—';
+  for(const p of palaces){
+    const dr=p.decadal_range||'';
+    if(dr){
+      const[s,e]=dr.split('-').map(Number);
+      if(s<=curAge&&curAge<=e){curDecStr=(p.decadal_dizhi||'')+' '+p.name+' '+dr;break;}
+    }
+  }
+  $('ov-current').textContent=curDecStr;
+  const decEl=$('yun-decade');
+  decEl.innerHTML='';
+  palaces.forEach((p,idx)=>{
+    const dr=p.decadal_range||'';
+    const div=document.createElement('div');
+    div.className='dec-cell';
+    div.dataset.idx=idx;
+    div.dataset.pname=p.name;
+    if(dr){
+      const[s,e]=dr.split('-').map(Number);
+      if(s<=curAge&&curAge<=e)div.classList.add('current');
+    }
+    div.innerHTML='<div class="d-gz">'+(p.decadal_dizhi||'')+'</div><div class="d-ages">'+(dr||'')+'</div>';
+    div.onclick=()=>toggleScope('decade',{pName:p.name,palaceIdx:idx});
+    decEl.appendChild(div);
+  });
+}
+function renderFlowYears(){
+  const ty=parseInt($('horo-year')?.value)||new Date().getFullYear();
+  const yg=$('drill-year-grid');
+  yg.innerHTML='';
+  for(let i=0;i<12;i++){
+    const y=ty-(ty%12)+i;
+    const gz=GAN_ARR[(y-4)%10]+ZHI_ARR[(y-4)%12];
+    const br=ZHI_ARR[(y-4)%12];
+    const div=document.createElement('div');
+    div.className='drill-cell';
+    if(y===ty)div.classList.add('active');
+    div.innerHTML='<div class="dc-gz">'+gz+'</div><div class="dc-sub">'+y+'年</div>';
+    div.onclick=()=>toggleScope('yearly',{year:y,gz,br});
+    yg.appendChild(div);
+  }
+  const inp=plateData?.input||{};
+  const birthDt=inp.birth_datetime||'';
+  const birthM=parseInt(birthDt.split('-')[1])||1;
+  const birthH=parseInt(birthDt.split(' ')[1]?.split(':')[0])||0;
+  const sc=Math.floor((birthH+1)/2)%12;
+  const yearIdx=(ty-4)%12;
+  const dj=(((yearIdx-(birthM-1))%12+12)%12+sc)%12;
+  const mg=$('drill-month-grid');
+  mg.innerHTML='';
+  const ygan=GAN_ARR[(ty-4)%10];
+  for(let m=1;m<=12;m++){
+    const idx=(dj+m-1)%12;
+    const br=ZHI_ARR[idx];
+    const mgz=ygan+br;
+    const div=document.createElement('div');
+    div.className='drill-cell';
+    div.innerHTML='<div class="dc-gz">'+m+'月 '+br+'</div><div class="dc-sub">'+br+'宫</div>';
+    div.onclick=()=>toggleScope('monthly',{month:m,br,gz:mgz});
+    mg.appendChild(div);
+  }
+  if(!scope.yearly)$('fpv-year').textContent='—';
+  if(!scope.monthly)$('fpv-month').textContent='—';
+  $('fpv-day').textContent='—';
+}
+function toggleDrill(kind){
+  const y=$('drill-year'),m=$('drill-month');
+  if(kind==='year'){y.classList.toggle('open');m.classList.remove('open')}
+  else if(kind==='month'){m.classList.toggle('open');y.classList.remove('open')}
+}
+async function fetchHoroscope(year){
+  const ss=$('scope-status');
+  if(ss&&ss.classList.contains('show')){
+    const ld=document.createElement('span');ld.id='horo-loading';ld.textContent='流曜加载中...';ld.style.cssText='font-size:10px;color:var(--text-muted);margin:0 6px;animation:blink 1s infinite';
+    ss.appendChild(ld);
+  }
+  try{
+    const inp=plateData?.input||{};
+    const birthDt=inp.birth_datetime||'';
+    const parts=birthDt.match(/(\d{4})-(\d{2})-(\d{2})\s(\d{1,2}):(\d{2})/);
+    if(!parts){document.getElementById('horo-loading')?.remove();return;}
+    const body={
+      year:parseInt(parts[1]),month:parseInt(parts[2]),day:parseInt(parts[3]),
+      hour:parseInt(parts[4]),gender:inp.gender||'男',
+      target_year:year,is_lunar:inp.is_lunar||false
+    };
+    const r=await fetch('/api/ziwei/horoscope',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+    });
+    if(r.ok){horoscopeData=await r.json();}
+  }catch(e){horoscopeData=null;}
+  document.getElementById('horo-loading')?.remove();
+}
+async function toggleScope(kind,data){
+  const cur=scope[kind];
+  if(cur&&JSON.stringify(cur)===JSON.stringify(data)){scope[kind]=null;}
+  else{scope[kind]=data;}
+  if(kind==='yearly'&&scope.yearly){await fetchHoroscope(scope.yearly.year);}
+  if(kind==='monthly'&&scope.monthly){if(!horoscopeData)await fetchHoroscope(new Date().getFullYear());}
+  updateFocusPills();
+  applyAllScope();
+}
+function updateFocusPills(){
+  document.querySelectorAll('.yun-decade .dec-cell').forEach(c=>c.classList.remove('active'));
+  if(scope.decade){
+    document.querySelectorAll('.yun-decade .dec-cell').forEach(c=>{
+      if(c.dataset.pname===scope.decade.pName)c.classList.add('active');
+    });
+  }
+  const fy=$('fp-year'),fm=$('fp-month');
+  if(scope.yearly){fy.classList.add('active');$('fpv-year').textContent=scope.yearly.year+' '+scope.yearly.gz;}
+  else{fy.classList.remove('active');$('fpv-year').textContent='—';}
+  if(scope.monthly){fm.classList.add('active');$('fpv-month').textContent=scope.monthly.month+'月 '+scope.monthly.gz[1];}
+  else{fm.classList.remove('active');$('fpv-month').textContent='—';}
+  document.querySelectorAll('#drill-year-grid .drill-cell').forEach(c=>{
+    c.classList.remove('active');
+    if(scope.yearly&&c.querySelector('.dc-sub')?.textContent===scope.yearly.year+'年')c.classList.add('active');
+  });
+  document.querySelectorAll('#drill-month-grid .drill-cell').forEach(c=>{
+    c.classList.remove('active');
+    if(scope.monthly&&c.textContent.includes(scope.monthly.month+'月'))c.classList.add('active');
+  });
+  updateScopeStatus();
+}
+function updateScopeStatus(){
+  const ss=$('scope-status'),chips=$('ss-chips');
+  if(!ss||!chips)return;
+  const has=scope.decade||scope.yearly||scope.monthly;
+  if(has){ss.classList.add('show');}
+  else{ss.classList.remove('show');return;}
+  let html='';
+  if(scope.decade)html+='<span class="ss-chip decade">大限 '+scope.decade.pName+'</span>';
+  if(scope.yearly)html+='<span class="ss-chip yearly">流年 '+scope.yearly.gz+'</span>';
+  if(scope.monthly)html+='<span class="ss-chip monthly">流月 '+scope.monthly.gz+'</span>';
+  chips.innerHTML=html;
+}
+function applyAllScope(){
+  const palaces=plateData?.palaces||[];
+  document.querySelectorAll('.palace').forEach(el=>{
+    el.style.boxShadow='';
+    el.querySelectorAll('.scope-badge,.sihua-flow,.living-badge,.daxian-sihua,.p-fly,.liuyao-row').forEach(b=>b.remove());
+  });
+  if(scope.decade){
+    const tIdx=scope.decade.palaceIdx;
+    const decPal=palaces[tIdx]||{};
+    const decStem=(decPal.decadal_dizhi||'')[0];
+    const decSihua=GAN_SIHUA[decStem];
+    const decNames=['禄','权','科','忌'];
+    const decColors=['var(--champagne)','var(--azure)','var(--jade)','var(--text-primary)'];
+    document.querySelectorAll('.palace').forEach((el,i)=>{
+      const limitName=LIMIT_NAMES[(i-tIdx+12)%12];
+      const badge=document.createElement('span');
+      badge.className='living-badge';
+      badge.textContent=limitName;
+      badge.style.cssText='font-size:7px;color:var(--azure);border:1px solid var(--azure);border-radius:2px;padding:0 2px;margin-left:2px;font-weight:700;display:inline-block;line-height:1.3';
+      el.querySelector('.p-head')?.appendChild(badge);
+      const pName=el.querySelector('.p-gong')?.textContent?.trim();
+      if(pName&&pName===scope.decade.pName){el.style.boxShadow='inset 0 0 0 2px var(--azure)';}
+      if(pName&&decSihua){
+        for(let j=0;j<4;j++){
+          const star=decSihua[j];
+          const found=palaces.find(p=>(p.major_stars||[]).some(s=>s.name===star)||(p.minor_stars||[]).some(s=>s.name===star));
+          if(found&&found.name===pName){
+            const tag=document.createElement('span');
+            tag.className='daxian-sihua';
+            tag.textContent='限'+decNames[j];
+            tag.style.cssText='font-size:8px;font-weight:700;color:'+decColors[j]+';border:1px solid '+decColors[j]+';border-radius:2px;padding:0 2px;margin-left:2px;display:inline-block;line-height:1.3';
+            el.querySelector('.p-stars')?.appendChild(tag);
+          }
+        }
+      }
+    });
+  }
+  if(scope.yearly){
+    const ybr=scope.yearly.br;
+    const sihua=GAN_SIHUA[scope.yearly.gz[0]];
+    const huaNames=['禄','权','科','忌'];
+    const muColors=['var(--champagne)','var(--azure)','var(--jade)','var(--text-primary)'];
+    document.querySelectorAll('.palace').forEach(el=>{
+      const dz=el.querySelector('.p-dizhi');
+      if(dz&&dz.textContent.trim()===ybr){
+        const existing=el.style.boxShadow;
+        el.style.boxShadow=(existing?existing+', ':'')+'inset 0 0 0 2px var(--vermillion)';
+        const badge=document.createElement('span');
+        badge.className='scope-badge';
+        badge.textContent=scope.yearly.year+'年';
+        badge.style.cssText='font-size:8px;color:var(--vermillion);border:1px solid var(--vermillion);border-radius:2px;padding:0 3px;margin-left:2px;font-weight:700;display:inline-block;line-height:1.3';
+        el.querySelector('.p-head')?.appendChild(badge);
+      }
+      const pName=el.querySelector('.p-gong')?.textContent?.trim();
+      if(pName&&sihua){
+        for(let i=0;i<4;i++){
+          const star=sihua[i];
+          const found=palaces.find(p=>(p.major_stars||[]).some(s=>s.name===star)||(p.minor_stars||[]).some(s=>s.name===star));
+          if(found&&found.name===pName){
+            const tag=document.createElement('span');
+            tag.className='sihua-flow';
+            tag.textContent=huaNames[i];
+            tag.style.cssText='font-size:8px;font-weight:700;color:'+muColors[i]+';border:1px solid '+muColors[i]+';border-radius:2px;padding:0 2px;margin-left:2px;display:inline-block;line-height:1.3';
+            el.querySelector('.p-stars')?.appendChild(tag);
+          }
+        }
+      }
+    });
+  }
+}
+function highlightDayOnly(){
+  scope.dayOnly=scope.dayOnly?null:{day:new Date().getDate(),br:ZHI_ARR[(new Date().getDate()-1)%12]};
+  const fd=$('fp-day');
+  if(scope.dayOnly){fd.classList.add('active');$('fpv-day').textContent=scope.dayOnly.day+'日 '+scope.dayOnly.br;}
+  else{fd.classList.remove('active');$('fpv-day').textContent='—';}
+}
+function clearAllScope(){
+  scope={decade:null,yearly:null,monthly:null,dayOnly:null};
+  horoscopeData=null;
+  updateFocusPills();
+  applyAllScope();
+}
+function reRender(){
+  $('horo-year').value=new Date().getFullYear();
+  clearAllScope();
+  if(plateData)renderInPlace(plateData);
 }
 
 </script>
