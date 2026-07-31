@@ -37,6 +37,7 @@ class CapabilityDef:
     fn: Callable[..., dict]                   # 执行函数
     stages: list[str] = field(default_factory=list)  # 流水线阶段名列表
     category: str = "analysis"                # 分类：analysis / verify / cross
+    tools: list[str] = field(default_factory=list)   # 关联的 Tool 名列表（用于动态注入）
 
 @dataclass
 class ToolResult:
@@ -501,6 +502,7 @@ class AnalysisOrchestrator:
                 "刑冲合害", "神煞参考", "大运流年", "交叉验证",
             ],
             category="analysis",
+            tools=["paipan_bazi", "wuxing_query", "kb_retrieve"],
         ))
 
         # ── 紫微分析流水线 ──
@@ -520,6 +522,7 @@ class AnalysisOrchestrator:
                 "大限流年", "叠盘分析",
             ],
             category="analysis",
+            tools=["paipan_ziwei", "star_lookup", "kb_retrieve"],
         ))
 
         # ── 验盘流水线 ──
@@ -537,6 +540,7 @@ class AnalysisOrchestrator:
             fn=_cap_verify_panel,
             stages=["信号提取", "事件倒推", "等级标注", "合规校验"],
             category="verify",
+            tools=["kb_retrieve"],
         ))
 
         # ── 交叉验证流水线 ──
@@ -591,6 +595,7 @@ class AnalysisOrchestrator:
             fn=_cap_cross_validate,
             stages=["八字排盘", "八字独立分析", "紫微独立分析", "结论比对", "差异注入"],
             category="verify",
+            tools=["paipan_bazi", "paipan_ziwei", "wuxing_query", "star_lookup", "kb_retrieve"],
         ))
 
     # ── 初始化 ────────────────────────────────────────
@@ -612,12 +617,13 @@ class AnalysisOrchestrator:
         return self.capabilities.call(capability_name, **kwargs)
 
     def route(self, user_input: str, threshold: float = 0.0,
-              **kwargs) -> CapabilityResult:
+              inject_tools: bool = True, **kwargs) -> CapabilityResult:
         """根据用户输入自动匹配并执行能力
 
         Args:
             user_input: 用户自然语言输入
             threshold: 匹配阈值
+            inject_tools: 是否自动注入关联 Tool Schema（按需注入，省 token）
             **kwargs: 传递给能力的参数（如 plate_dict, bazi_ref 等）
 
         Returns:
@@ -630,6 +636,15 @@ class AnalysisOrchestrator:
                 success=False,
                 error=f"无法匹配用户意图: '{user_input[:50]}...'（可用能力: {[c.name for c in self.capabilities.list_all()]}）"
             )
+        # 动态注入关联 Tool（只注入该 Capability 需要的，不塞全部）
+        if inject_tools:
+            cap_tools = self.get_tools_for_capability(cap_name)
+            if cap_tools:
+                kwargs["tools_description"] = self.tools.to_prompt_lines(cap_tools)
+                kwargs["tool_schemas"] = [
+                    s for s in self.tools.to_json_schema()
+                    if s["name"] in cap_tools
+                ]
         return self.capabilities.call(cap_name, **kwargs)
 
     def route_all(self, user_input: str, threshold: float = 0.7,
@@ -660,6 +675,19 @@ class AnalysisOrchestrator:
         tools_desc = self.tools.to_prompt_lines(tool_names) if tool_names else ""
         kwargs["tools_description"] = tools_desc
         return self.capabilities.call(capability_name, **kwargs)
+
+    def get_tools_for_capability(self, capability_name: str) -> list[str]:
+        """返回指定能力关联的 Tool 名称列表
+
+        用于动态注入：IntentRouter 匹配到能力后，只注入该能力需要的 Tool Schema，
+        而非全量 5 个 Tools 塞进 system prompt。
+        """
+        self.register_defaults()
+        cap = self.capabilities.get(capability_name)
+        if not cap:
+            return []
+        # 过滤：只返回已注册的 Tool（防御性：tools 列表中可能有拼写错误）
+        return [t for t in cap.tools if self.tools.get(t) is not None]
 
     def summary(self) -> dict:
         """返回当前注册状态的摘要"""

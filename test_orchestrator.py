@@ -224,6 +224,57 @@ check("自定义 router 可路由",
 
 
 # ══════════════════════════════════════════════════════════
+# 7. Tool 动态注入（Capability → Tool 关联）
+# ══════════════════════════════════════════════════════════
+
+print(f"\n{B}═══ 7. Tool 动态注入 ═══{N}\n")
+
+# get_tools_for_capability
+bazi_tools = orch.get_tools_for_capability("bazi_analysis")
+check("bazi_analysis 关联 3 个 Tool",
+      len(bazi_tools) == 3,
+      f"实际: {bazi_tools}")
+check("bazi_analysis 包含 paipan_bazi",
+      "paipan_bazi" in bazi_tools)
+check("bazi_analysis 包含 wuxing_query",
+      "wuxing_query" in bazi_tools)
+check("bazi_analysis 包含 kb_retrieve",
+      "kb_retrieve" in bazi_tools)
+
+ziwei_tools = orch.get_tools_for_capability("ziwei_analysis")
+check("ziwei_analysis 关联 3 个 Tool",
+      len(ziwei_tools) == 3,
+      f"实际: {ziwei_tools}")
+check("ziwei_analysis 包含 paipan_ziwei",
+      "paipan_ziwei" in ziwei_tools)
+
+verify_tools = orch.get_tools_for_capability("verify_panel")
+check("verify_panel 关联 1 个 Tool",
+      len(verify_tools) == 1,
+      f"实际: {verify_tools}")
+check("verify_panel = kb_retrieve",
+      verify_tools == ["kb_retrieve"])
+
+cross_tools = orch.get_tools_for_capability("cross_validate")
+check("cross_validate 关联 5 个 Tool（全量）",
+      len(cross_tools) == 5,
+      f"实际: {cross_tools}")
+
+# 不存在的 Capability
+check("不存在的能力返回空列表",
+      orch.get_tools_for_capability("nonexistent") == [])
+
+# route() 注入工具验证（不调 LLM，仅验证参数传递）
+result = orch.route("帮我排八字", inject_tools=True,
+                    plate_dict={"input": {"birth_datetime": "2005-08-19 01:35", "gender": "男"}})
+check("route 带 inject_tools 不崩溃", isinstance(result, CapabilityResult))
+
+# inject_tools=False 验证
+result_no_inject = orch.route("帮我排八字", inject_tools=False)
+check("route inject_tools=False 不崩溃", isinstance(result_no_inject, CapabilityResult))
+
+
+# ══════════════════════════════════════════════════════════
 # 结果
 # ══════════════════════════════════════════════════════════
 
