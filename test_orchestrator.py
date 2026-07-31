@@ -39,10 +39,10 @@ orch.register_defaults()
 
 # Tool 注册数
 s = orch.summary()
-check("Tool 注册数 = 5", s['tools']['total'] == 5,
+check("Tool 注册数 = 7", s['tools']['total'] == 7,
       f"实际: {s['tools']['total']}")
 check("Tool 分类: paipan=2", s['tools']['by_category'].get('paipan') == 2)
-check("Tool 分类: query=3", s['tools']['by_category'].get('query') == 3)
+check("Tool 分类: query=5", s['tools']['by_category'].get('query') == 5)
 
 # Capability 注册数
 check("Capability 注册数 = 4", s['capabilities']['total'] == 4,
@@ -231,8 +231,8 @@ print(f"\n{B}═══ 7. Tool 动态注入 ═══{N}\n")
 
 # get_tools_for_capability
 bazi_tools = orch.get_tools_for_capability("bazi_analysis")
-check("bazi_analysis 关联 3 个 Tool",
-      len(bazi_tools) == 3,
+check("bazi_analysis 关联 5 个 Tool",
+      len(bazi_tools) == 5,
       f"实际: {bazi_tools}")
 check("bazi_analysis 包含 paipan_bazi",
       "paipan_bazi" in bazi_tools)
@@ -242,22 +242,22 @@ check("bazi_analysis 包含 kb_retrieve",
       "kb_retrieve" in bazi_tools)
 
 ziwei_tools = orch.get_tools_for_capability("ziwei_analysis")
-check("ziwei_analysis 关联 3 个 Tool",
-      len(ziwei_tools) == 3,
+check("ziwei_analysis 关联 5 个 Tool",
+      len(ziwei_tools) == 5,
       f"实际: {ziwei_tools}")
 check("ziwei_analysis 包含 paipan_ziwei",
       "paipan_ziwei" in ziwei_tools)
 
 verify_tools = orch.get_tools_for_capability("verify_panel")
-check("verify_panel 关联 1 个 Tool",
-      len(verify_tools) == 1,
+check("verify_panel 关联 3 个 Tool",
+      len(verify_tools) == 3,
       f"实际: {verify_tools}")
-check("verify_panel = kb_retrieve",
-      verify_tools == ["kb_retrieve"])
+check("verify_panel 包含 kb_retrieve",
+      "kb_retrieve" in verify_tools)
 
 cross_tools = orch.get_tools_for_capability("cross_validate")
-check("cross_validate 关联 5 个 Tool（全量）",
-      len(cross_tools) == 5,
+check("cross_validate 关联 7 个 Tool（全量）",
+      len(cross_tools) == 7,
       f"实际: {cross_tools}")
 
 # 不存在的 Capability
@@ -313,8 +313,8 @@ check("run_with_fc 无关输入返回失败",
 
 # 验证 Tool 动态注入逻辑
 bazi_tools = orch.get_tools_for_capability("bazi_analysis")
-check("bazi_analysis 的 Tool 有 3 个",
-      len(bazi_tools) == 3,
+check("bazi_analysis 的 Tool 有 5 个",
+      len(bazi_tools) == 5,
       f"实际: {bazi_tools}")
 
 # tool_names 匹配验证
@@ -322,6 +322,29 @@ check("bazi_analysis Tool 包含 paipan_bazi",
       "paipan_bazi" in bazi_tools)
 check("bazi_analysis Tool 包含 kb_retrieve",
       "kb_retrieve" in bazi_tools)
+check("bazi_analysis Tool 包含 memory_retrieve",
+      "memory_retrieve" in bazi_tools)
+
+# 测试 memory_retrieve 和 memory_store
+r = orch.tools.call("memory_retrieve", user_id="test_orch_001")
+check("memory_retrieve 成功", r.success)
+check("memory_retrieve 返回 user_id",
+      r.data.get("user_id") == "test_orch_001" if r.success else False)
+
+r = orch.tools.call("memory_store", user_id="test_orch_001",
+                    analysis_type="test", findings="测试分析结论",
+                    bazi_profile={"rizhu": "甲木", "yongshen": "水"})
+check("memory_store 成功", r.success)
+
+# 验证存储后可检索
+r = orch.tools.call("memory_retrieve", user_id="test_orch_001")
+check("memory_retrieve 检索到已存储数据",
+      r.success and r.data.get("bazi_profile", {}).get("rizhu") == "甲木" if r.success else False)
+
+# 清理测试文件
+import os
+os.remove(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "sessions", "user_profiles", "test_orch_001.json"))
 
 
 # ══════════════════════════════════════════════════════════

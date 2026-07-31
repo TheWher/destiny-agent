@@ -764,6 +764,61 @@ class AnalysisOrchestrator:
             category="query",
         ))
 
+    def _register_memory_tools(self):
+        """注册用户记忆类工具"""
+        from services.memory import load_memory, store_memory
+
+        def _tool_memory_retrieve(user_id: str) -> dict:
+            """检索用户命理画像"""
+            return load_memory(user_id)
+
+        self.tools.register(ToolDef(
+            name="memory_retrieve",
+            description="检索用户的命理画像：八字/紫微分析历史、已验证人生事实。分析前调用以获取上下文。",
+            fn=_tool_memory_retrieve,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "user_id": {"type": "string", "description": "用户标识"},
+                },
+                "required": ["user_id"],
+            },
+            category="query",
+        ))
+
+        def _tool_memory_store(user_id: str, analysis_type: str = "",
+                               findings: str = "", bazi_profile: dict = None,
+                               ziwei_profile: dict = None,
+                               verified_facts: list = None) -> dict:
+            """存储分析结果到用户记忆"""
+            return store_memory(
+                user_id=user_id,
+                analysis_type=analysis_type,
+                findings=findings,
+                bazi_profile=bazi_profile or {},
+                ziwei_profile=ziwei_profile or {},
+                verified_facts=verified_facts or [],
+            )
+
+        self.tools.register(ToolDef(
+            name="memory_store",
+            description="保存分析结论到用户记忆：八字/紫微画像、已验证事实。分析完成后调用以持久化。",
+            fn=_tool_memory_store,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "user_id": {"type": "string", "description": "用户标识"},
+                    "analysis_type": {"type": "string", "description": "分析类型：bazi_analysis / ziwei_analysis / verify_panel / cross_validate"},
+                    "findings": {"type": "string", "description": "分析核心发现"},
+                    "bazi_profile": {"type": "object", "description": "八字画像更新：{rizhu, pattern_summary, yongshen, key_signals}"},
+                    "ziwei_profile": {"type": "object", "description": "紫微画像更新：{ming_gong, pattern, key_interactions}"},
+                    "verified_facts": {"type": "array", "items": {"type": "object"}, "description": "已验证事实：[{year, desc}]"},
+                },
+                "required": ["user_id"],
+            },
+            category="query",
+        ))
+
     def _register_capabilities(self):
         """注册分析流水线"""
 
@@ -784,7 +839,7 @@ class AnalysisOrchestrator:
                 "刑冲合害", "神煞参考", "大运流年", "交叉验证",
             ],
             category="analysis",
-            tools=["paipan_bazi", "wuxing_query", "kb_retrieve"],
+            tools=["paipan_bazi", "wuxing_query", "kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
         # ── 紫微分析流水线 ──
@@ -804,7 +859,7 @@ class AnalysisOrchestrator:
                 "大限流年", "叠盘分析",
             ],
             category="analysis",
-            tools=["paipan_ziwei", "star_lookup", "kb_retrieve"],
+            tools=["paipan_ziwei", "star_lookup", "kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
         # ── 验盘流水线 ──
@@ -822,7 +877,7 @@ class AnalysisOrchestrator:
             fn=_cap_verify_panel,
             stages=["信号提取", "事件倒推", "等级标注", "合规校验"],
             category="verify",
-            tools=["kb_retrieve"],
+            tools=["kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
         # ── 交叉验证流水线 ──
@@ -877,7 +932,7 @@ class AnalysisOrchestrator:
             fn=_cap_cross_validate,
             stages=["八字排盘", "八字独立分析", "紫微独立分析", "结论比对", "差异注入"],
             category="verify",
-            tools=["paipan_bazi", "paipan_ziwei", "wuxing_query", "star_lookup", "kb_retrieve"],
+            tools=["paipan_bazi", "paipan_ziwei", "wuxing_query", "star_lookup", "kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
     def _register_skills(self):
@@ -905,6 +960,7 @@ class AnalysisOrchestrator:
             return
         self._register_paipan_tools()
         self._register_query_tools()
+        self._register_memory_tools()
         self._register_capabilities()
         self._register_skills()
         # 从 Skill 触发词重建 IntentRouter 关键词表
