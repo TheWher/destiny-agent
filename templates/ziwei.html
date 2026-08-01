@@ -237,6 +237,17 @@ body::after{
 .scope-status .ss-chip.monthly{background:var(--jade);color:var(--bg-deep)}
 .scope-status .ss-clear{margin-left:auto;font-size:10px;color:var(--text-muted);cursor:pointer;border:1px solid var(--glass-border);padding:1px 8px;border-radius:2px}
 .scope-status .ss-clear:hover{color:var(--vermillion);border-color:var(--vermillion)}
+/* ── 性能降级：毛玻璃大面积 blur 是 LCP/INP 杀手，移动端关闭、桌面降档（2026-08-01） ── */
+@media (max-width:768px){
+  .app-sidebar,.btn,.a-card,.chart-wrapper,.sticky-actions button,[class*="overlay"]{
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  }
+  body::after{display:none}
+}
+@media (min-width:769px){
+  .app-sidebar{backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%)}
+  .btn,.a-card,.chart-wrapper,.sticky-actions button{backdrop-filter:blur(10px) saturate(150%);-webkit-backdrop-filter:blur(10px) saturate(150%)}
+}
 </style>
 
 <script src="/static/tier.js"></script>

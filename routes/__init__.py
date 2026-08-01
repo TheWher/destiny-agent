@@ -5,7 +5,7 @@
 import os
 import socket
 import argparse
-from flask import Flask
+from flask import Flask, request
 
 def get_local_ips() -> list[str]:
     """获取本机所有局域网 IPv4 地址"""
@@ -54,6 +54,33 @@ def create_app():
     import os as _os
     _root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
     app = Flask(__name__, template_folder=_os.path.join(_root, "templates"), static_folder=_os.path.join(_root, "static"))
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 7 * 24 * 3600  # 静态文件缓存 7 天
+
+    # ── 性能：静态资源长缓存 + gzip 压缩 + HTML 不缓存（2026-08-01） ──
+    import gzip as _gzip
+
+    @app.after_request
+    def _perf_headers(resp):
+        path = request.path
+        if path.startswith("/static/"):
+            resp.headers["Cache-Control"] = "public, max-age=604800"
+        else:
+            resp.headers["Cache-Control"] = "no-cache"
+        # gzip：仅压缩文本类且客户端支持时；跳过已压缩/小响应/passthrough（静态文件由环境处理）
+        if (resp.status_code == 200 and
+            "Content-Encoding" not in resp.headers and
+            not getattr(resp, "direct_passthrough", False) and
+            resp.mimetype in ("text/html", "text/css", "application/javascript", "application/json", "text/plain") and
+            "gzip" in request.headers.get("Accept-Encoding", "").lower() and
+            resp.content_length is not None and resp.content_length > 1024):
+            _data = resp.get_data()
+            _gz = _gzip.compress(_data, 6)
+            if len(_gz) < len(_data):
+                resp.set_data(_gz)
+                resp.headers["Content-Encoding"] = "gzip"
+                resp.headers["Content-Length"] = str(len(_gz))
+                resp.headers["Vary"] = "Accept-Encoding"
+        return resp
 
     # 注册蓝图
     from routes.pages import pages_bp
