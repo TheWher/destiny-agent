@@ -80,5 +80,25 @@ footer{position:relative;z-index:2;text-align:center;font-size:.68rem;color:var(
 </div>
 <footer>AI 驱动的传统命理解读</footer>
 </main>
+<script>
+// ── 入口页埋点：landing_view 浏览 + landing_click 卡片点击（匿名，sendBeacon 保证跳转前送达） ──
+(function(){
+  var did = localStorage.getItem('ziwei_device_id');
+  if(!did){ try{ did = crypto.randomUUID(); localStorage.setItem('ziwei_device_id', did); }catch(e){} }
+  function fire(ev, meta){
+    try{
+      var body = JSON.stringify({event: ev, device_id: did, meta: meta || {}});
+      if(navigator.sendBeacon){ navigator.sendBeacon('/api/events', new Blob([body], {type:'application/json'})); }
+      else { fetch('/api/events', {method:'POST', headers:{'Content-Type':'application/json'}, body: body}).catch(function(){}); }
+    }catch(e){}
+  }
+  fire('landing_view');
+  document.querySelectorAll('.card').forEach(function(c){
+    c.addEventListener('click', function(){
+      fire('landing_click', {target: (c.getAttribute('href') === '/app') ? 'bazi' : 'ziwei'});
+    });
+  });
+})();
+</script>
 </body>
 </html>
