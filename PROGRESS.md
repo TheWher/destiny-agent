@@ -38,7 +38,8 @@
     - normpath 前提（hanako 补）：比较前声明条目与输入都先过 normpath（顺带消尾斜杠），声明 data/cache// 双斜杠也能命中
     - write 约定（本次落地）：format:path 参数的写意图用参数 schema 的 write: true 标注，默认读
     - 注入边界（本次落地）：只注入插件 register() 显式返回的 tools 列表；未声明的 Tool 保持 None 不拦（方案 A 声明式边界，硬约束挂 Phase 4 manifest 校验强制检查 parameters schema）
-    - 归属校验（韩湘生审出，`06b9518` 补漏）：声明列表是"关联/使用的工具"不是"拥有的工具"。ToolDef 加 owner 字段（None=未归属/"builtin"=内建/插件名=插件拥有），register_defaults() 末尾 freeze_builtins() 固化内建归属；注入时 owner 非 None 且非本插件 → 跳过 + warn。修掉两个洞：①后 init 插件声明他人工具名静默覆盖先 init 的 policy（拦截随 init 顺序漂）；②插件声明内建工具名把内建 None 免拦覆盖成插件 policy（内建功能被拦坏）
+    - 归属校验（韩湘生审出，`b0d6f8c` 补漏）：声明列表是"关联/使用的工具"不是"拥有的工具"。ToolDef 加 owner 字段（None=未归属/"builtin"=内建/插件名=插件拥有），register_defaults() 末尾 freeze_builtins() 固化内建归属；注入时 owner 非 None 且非本插件 → 跳过 + warn。修掉两个洞：①后 init 插件声明他人工具名静默覆盖先 init 的 policy（拦截随 init 顺序漂）；②插件声明内建工具名把内建 None 免拦覆盖成插件 policy（内建功能被拦坏）。recovery 路径韩湘生补测：error → recovery → init 重新固化 owner + 重注入，幂等通
+- [x] Phase 2 正式关闭（`b0d6f8c`）：依赖解析（拓扑序 + 递归传播 + 优雅降级）+ Sandbox 拦截（注入时序 + 归属固化 + 跨盘兜底 + 边界匹配）双线闭环，合龙成立
 - [ ] Phase 3：热升级（upgrading → swap 原子切换）+ 卸载不丢状态
 - [ ] Phase 4：外部插件发现（pip install / git clone → skills/ 目录）
 
