@@ -1,0 +1,86 @@
+{
+  "version": "2026-08-01",
+  "content_hash": "bdc5892b",
+  "hash_scope": [
+    "tiers",
+    "schema_registered",
+    "reachable_not_registered",
+    "dry_run_rules",
+    "dispatch_allowlist"
+  ],
+  "hash_scope_note": "排除 basis/note/desc 等元数据；与 kb_whitelist_hash.py 的 HASH_FIELDS 一一对应，--check 自动校验一致性",
+  "hash_rule": "改内容必重算 content_hash 并 bump；仅改元数据或日期不算内容变更，不 bump。pair 扩池不动名单则哈希天然不变",
+  "basis": "kb_loader.retrieve_kb dispatch 分支实核 + orchestrator kb_retrieve schema 登记",
+  "note": "dry-run 白名单 v1。判据=分派结果语义正确，两档语义 + 兜底设计档。漂移检测只盯该走专用却落 generic 的档。",
+  "tiers": {
+    "dedicated": {
+      "desc": "有专属检索逻辑（星曜名精确匹配）。漂移检测盯这档",
+      "files": [
+        "ziwei_stars.json",
+        "ziwei_star_palace.json"
+      ]
+    },
+    "named_generic": {
+      "desc": "专名分支，但实现直接转发 _retrieve_generic（_retrieve_fuzuo / _retrieve_classics 均已核实为一行转发）。语义正确，非漂移",
+      "files": [
+        "ziwei_fuzuo.json",
+        "ziwei_classics.json",
+        "ziwei_classics_full.json"
+      ]
+    },
+    "generic_by_design": {
+      "desc": "兜底即正确语义（dict-of-entries 通用遍历匹配）。八字系 7 + 紫微非专用 2",
+      "files": [
+        "bazi_basics.json",
+        "bazi_extended.json",
+        "classical_references.json",
+        "glossary.json",
+        "shishen_domains.json",
+        "signal_rules.json",
+        "tiaohou.json",
+        "ziwei_hua.json",
+        "ziwei_sihua_interact.json"
+      ]
+    }
+  },
+  "schema_registered": [
+    "bazi_basics.json",
+    "bazi_extended.json",
+    "tiaohou.json",
+    "signal_rules.json",
+    "shishen_domains.json",
+    "glossary.json",
+    "classical_references.json",
+    "ziwei_stars.json",
+    "ziwei_fuzuo.json",
+    "ziwei_star_palace.json",
+    "ziwei_classics.json"
+  ],
+  "reachable_not_registered": [
+    "ziwei_classics_full.json",
+    "ziwei_hua.json",
+    "ziwei_sihua_interact.json"
+  ],
+  "dispatch_allowlist": [
+    "bazi_basics.json",
+    "bazi_extended.json",
+    "tiaohou.json",
+    "signal_rules.json",
+    "shishen_domains.json",
+    "glossary.json",
+    "classical_references.json",
+    "ziwei_stars.json",
+    "ziwei_fuzuo.json",
+    "ziwei_star_palace.json",
+    "ziwei_classics.json",
+    "ziwei_hua.json",
+    "ziwei_sihua_interact.json"
+  ],
+  "dispatch_allowlist_note": "登记化后 dispatch 受理名单 = 14 全集 - classics_full（唯一被拒）。schema 是 LLM 推荐名（11），受理边界是另一回事（13）。hua 不在 schema 但必须受理（zh_* 15 对在评测 run 里），按 schema 收会误杀。存在性校验用 14 全集、受理用 13 名单，两层各司其职。",
+  "dry_run_rules": {
+    "existence": "target.file 必须 ∈ 14 文件全集（knowledge_base 目录实存）",
+    "drift_detect": "dedicated 档必须命中专用分支；后端化后 stars/star_palace 若落 generic → fail fast",
+    "generic_ok": "generic_by_design 档不构成漂移，不得拦截",
+    "named_ok": "named_generic 档只要专名分支仍存在即语义正确；分支消失则降级为 generic，不算漂移但记版本变更"
+  }
+}

@@ -3,3 +3,4 @@ fpdf2>=2.8.0
 requests>=2.34.0
 zhdate>=0.1
 iztro-py>=0.3.0
+sentence-transformers>=2.7.0

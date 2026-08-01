@@ -1,4 +1,25 @@
-## Destiny_agent 进度 （2026-07-31）
+## Destiny_agent 进度 （2026-08-01）
+
+### 知识库接入形态审计（韩湘生核实 + hanako 落档，2026-08-01）
+
+**KB 四类接入形态（决定性，评测/检索改造按此分层）：**
+- 直读注入：ziwei_stars / ziwei_hua 速查表（`_load_json_kb` 直读，不进检索路径）
+- 检索注入：ziwei_fuzuo + ziwei_classics（`_build_ziwei_user_message` 里 `retrieve_kb` 仅这两处）
+- 工具可达：ziwei_star_palace（kb_retrieve 工具链，LLM 自主决定查不查，非确定性注入）
+- 未登记的工具可达：ziwei_classics_full（75 段，dispatch 层 `if "classics" in kb_name` 会受理走 _retrieve_classics，但 orchestrator schema 未登记该名，LLM 默认不传；比 star_palace 弱一档、比死资产活一档。修正：不是死资产）
+
+**接口边界定案（2026-08-01，韩湘生）：注册不动、后端可换。**
+- embedding 替换只换检索后端内部实现；ToolDef / schema / kb_name dispatch 一概不动
+- 落地：`_retrieve_*` 家族收敛成后端概念，embedding 是换后端，dispatch 匹配逻辑零改动
+- 好处：评测时间窗只卡“后端替换”一个点，pair 池三层替换前后跑同一套工具调用，对比条件天然干净
+
+**文档债（待修）：**
+- `services/ziwei_analysis.py:54` 注释“ziwei_star_palace.json 不在此处加载，由 _build_ziwei_user_message 按需检索”是过时注释，与实现矛盾：`_build_ziwei_user_message` 实际只检索 fuzuo + classics，star_palace 走 kb_retrieve 工具链。照注释找注入会扑空，需删除或改写。
+- `services/kb_loader.py:123` 注释把 classics 与 classics_full 并列“古籍引用”，含糊但不全错（dispatch 确实共用 _retrieve_classics），真问题是 schema 未登记 full。建议改为“classics 系共用 _retrieve_classics，full 未登记”。
+- ziwei_classics.json 真伪分层已核：14 条干净真引文 / 3 条混合（紫微独坐、巨日同宫、杀破狼格）/ 23 条纯转述（含 13 条单星条目书名号挂现代白话）。计划拆字段：引文/按语/来源真伪标记，外层“格局名→条目” key 形态不动（评测 target 依赖此结构，零返工）。
+- classics_full 75 段 source 标注（gusuifu/quanji/quanshu）实为主题标签非原文出处，全库零整篇原文。source 降级排后（死数据不影响用户），第一优先级是 classics.json 引文标记。
+
+### 已上线
 
 ### 已上线
 - 紫微斗数全流程：排盘（iztro 引擎）→ 确认 → AI 验盘 → 正式解读（SSE 流式，2-4 分钟）
@@ -42,6 +63,14 @@
 - [x] Phase 2 正式关闭（`b0d6f8c`）：依赖解析（拓扑序 + 递归传播 + 优雅降级）+ Sandbox 拦截（注入时序 + 归属固化 + 跨盘兜底 + 边界匹配）双线闭环，合龙成立
 - [ ] Phase 3：热升级（upgrading → swap 原子切换）+ 卸载不丢状态
 - [ ] Phase 4：外部插件发现（pip install / git clone → skills/ 目录）
+
+### 检索器后端化（2026-08-01，embedding 上线）
+- 后端抽象：BaseBackend + 注册表，`KB_BACKEND=lexical|embedding` 配置切换引擎，`retrieve_kb`/`retrieve_hits` 双出口一个引擎（签名不变，外部契约零变化）
+- 登记表驱动：受理边界 = kb_whitelist.json 的 dispatch_allowlist（13 名），full 唯一被拒，未登记名显式报错不静默兜底（白名单 14 全集管存在性、受理 13 名单管 dispatch，两层各司其职）
+- embedding 后端（`services/kb_embedding.py`）：BAAI/bge-small-zh-v1.5 本地模型（512 维），条目抽取对齐各 KB 答案单位（star_palace 星×宫格、classics pattern、hua 化曜×宫、fuzuo 辅星×宫、tiaohou 单行）；query 关键词分别编码取平均（整句拼接对"专名+槽位"查询区分度不足）；query/passage 编码对称（同一 encode、同一 normalize）
+- 评测（dry_run_check）：三态验收线（文件级对→0 + 平均 1640 及格 / ~1KB 优良）、cff 16 对 graduated 跳过留档、粒度判定改动态（返回长度 vs 文件大小，不再硬编码 UNIT_MAP）、hits↔str 一致性第三道校验
+- 对比结果（`evaluation_reports/backend_compare_20260801.md`）：命中 100% 持平，平均返回 2423→331B（↓86%），文件级 25→0，≥1.6KB 占比 100%→0%，一致性 87/87 双后端通过。验收线：文件级 0 PASS、平均 331B 优良
+- 模型文件不入库（models/bge-small-zh-v1.5/ 已 gitignore），下载源 ModelScope（hf-mirror/直连超时或限速）；sentence-transformers>=2.7.0 入 requirements.txt
 
 ### 部署
 `https://thewher.pythonanywhere.com`（PythonAnywhere 免费账户）

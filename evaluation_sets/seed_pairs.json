@@ -1,0 +1,1698 @@
+{
+  "meta": {
+    "version": "0.2",
+    "judge": "exact_contain",
+    "k": 5,
+    "normalize": "去空白/全半角/标点后，标准答案文本为返回段落子串即算中",
+    "validation": "star/hua 类 target：palace 必填，star 与 hua 至少一者非空；classics 用 index/格局名；tiaohou 用 gan/zhi；keywords=模拟命盘检索词，新旧检索器共用",
+    "whitelist_ref": "kb_whitelist.json (content_hash 由 kb_whitelist_hash.py 唯一算法源计算)",
+    "note": "v0.2 扩池：6 组 target 形态，答案不硬编码，评测时从 KB 对应 target 实时取"
+  },
+  "pairs": [
+    {
+      "id": "zf_001",
+      "query": "天魁星落在命宫有什么影响",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "天魁",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "天魁",
+        "命宮"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_002",
+      "query": "文昌星在官禄宫主什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "文昌",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "文昌",
+        "官祿"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_003",
+      "query": "文昌星落在命宫说明这个人怎样",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "文昌",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "文昌",
+        "命宮"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_004",
+      "query": "天钺在夫妻宫代表什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "天钺",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "天钺",
+        "夫妻"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_005",
+      "query": "左辅在官禄宫主什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "左辅",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "左辅",
+        "官祿"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_006",
+      "query": "右弼坐命的人如何",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "右弼",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "右弼",
+        "命宮"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_007",
+      "query": "文曲在官禄宫主什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "文曲",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "文曲",
+        "官祿"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_008",
+      "query": "禄存在命宫代表什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "禄存",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "禄存",
+        "命宮"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_009",
+      "query": "天马在迁移宫主什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "天马",
+          "palace": "迁移"
+        }
+      },
+      "keywords": [
+        "天马",
+        "迁移"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_010",
+      "query": "擎羊坐命有什么影响",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "擎羊",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "擎羊",
+        "命宮"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_011",
+      "query": "陀罗在财帛宫好不好",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "陀罗",
+          "palace": "財帛"
+        }
+      },
+      "keywords": [
+        "陀罗",
+        "財帛"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_012",
+      "query": "火星在夫妻宫代表什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "火星",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "火星",
+        "夫妻"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_013",
+      "query": "铃星在官禄宫主什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "铃星",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "铃星",
+        "官祿"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_014",
+      "query": "地空坐命的人如何",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "地空",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "地空",
+        "命宮"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zf_015",
+      "query": "地劫在田宅宫代表什么",
+      "target": {
+        "file": "ziwei_fuzuo.json",
+        "key": {
+          "star": "地劫",
+          "palace": "田宅"
+        }
+      },
+      "keywords": [
+        "地劫",
+        "田宅"
+      ],
+      "tier": "named_generic",
+      "note": "辅星×宫，白话问"
+    },
+    {
+      "id": "zc_001",
+      "query": "紫府同宫是什么格局，好不好",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "紫府同宫"
+      },
+      "keywords": [
+        "紫府同宫"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_002",
+      "query": "君臣庆会是什么意思",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "君臣庆会"
+      },
+      "keywords": [
+        "君臣庆会"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_003",
+      "query": "日月并明这个格局代表什么",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "日月并明"
+      },
+      "keywords": [
+        "日月并明"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_004",
+      "query": "月朗天门什么意思",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "月朗天门"
+      },
+      "keywords": [
+        "月朗天门"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_005",
+      "query": "日照雷门是什么格局",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "日照雷门"
+      },
+      "keywords": [
+        "日照雷门"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_006",
+      "query": "机月同梁格代表什么",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "机月同梁格"
+      },
+      "keywords": [
+        "机月同梁格"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_007",
+      "query": "府相朝垣是什么意思",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "府相朝垣"
+      },
+      "keywords": [
+        "府相朝垣"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_008",
+      "query": "火贪格是什么格局",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "火贪格"
+      },
+      "keywords": [
+        "火贪格"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_009",
+      "query": "铃贪格好不好",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "铃贪格"
+      },
+      "keywords": [
+        "铃贪格"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_010",
+      "query": "三奇嘉会代表什么",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "三奇嘉会"
+      },
+      "keywords": [
+        "三奇嘉会"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_011",
+      "query": "禄马交驰是什么格局",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "禄马交驰"
+      },
+      "keywords": [
+        "禄马交驰"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_012",
+      "query": "命宫化权是什么意思",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "命宫化权"
+      },
+      "keywords": [
+        "命宫化权"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_013",
+      "query": "火铃夹命是什么格局，吉凶如何",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "火铃夹命"
+      },
+      "keywords": [
+        "火铃夹命"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_014",
+      "query": "辅弼夹命是什么意思",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "辅弼夹命"
+      },
+      "keywords": [
+        "辅弼夹命"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_015",
+      "query": "紫微独坐命宫是什么格局",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "紫微独坐"
+      },
+      "keywords": [
+        "紫微独坐"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_016",
+      "query": "巨日同宫是什么格局",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "巨日同宫"
+      },
+      "keywords": [
+        "巨日同宫"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zc_017",
+      "query": "杀破狼格代表什么",
+      "target": {
+        "file": "ziwei_classics.json",
+        "key": "杀破狼格"
+      },
+      "keywords": [
+        "杀破狼格"
+      ],
+      "tier": "named_generic",
+      "note": "格局名问，答案=引文+按语，字面不重叠"
+    },
+    {
+      "id": "zp_001",
+      "query": "紫微坐命宫的人性格怎么样",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "紫微",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "紫微",
+        "命宮"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_002",
+      "query": "天机星落在夫妻宫代表什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天机",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "天机",
+        "夫妻"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_003",
+      "query": "太阳星在财帛宫好不好",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "太阳",
+          "palace": "財帛"
+        }
+      },
+      "keywords": [
+        "太阳",
+        "財帛"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_004",
+      "query": "贪狼在疾厄宫是什么意思",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "贪狼",
+          "palace": "疾厄"
+        }
+      },
+      "keywords": [
+        "贪狼",
+        "疾厄"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_005",
+      "query": "武曲星在官禄宫主事业怎么样",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "武曲",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "武曲",
+        "官祿"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_006",
+      "query": "天同坐命的人性格怎么样",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天同",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "天同",
+        "命宮"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_007",
+      "query": "廉贞星落在夫妻宫代表什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "廉贞",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "廉贞",
+        "夫妻"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_008",
+      "query": "天府在财帛宫的人财运怎么样",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天府",
+          "palace": "財帛"
+        }
+      },
+      "keywords": [
+        "天府",
+        "財帛"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_009",
+      "query": "太阴星在官禄宫主什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "太阴",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "太阴",
+        "官祿"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_010",
+      "query": "紫微在田宅宫好不好",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "紫微",
+          "palace": "田宅"
+        }
+      },
+      "keywords": [
+        "紫微",
+        "田宅"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_011",
+      "query": "天机星在疾厄宫是什么意思",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天机",
+          "palace": "疾厄"
+        }
+      },
+      "keywords": [
+        "天机",
+        "疾厄"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_012",
+      "query": "太阳落在夫妻宫说明什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "太阳",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "太阳",
+        "夫妻"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_013",
+      "query": "武曲坐命的人有什么特点",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "武曲",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "武曲",
+        "命宮"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_014",
+      "query": "天同在福德宫主什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天同",
+          "palace": "福德"
+        }
+      },
+      "keywords": [
+        "天同",
+        "福德"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_015",
+      "query": "廉贞在官禄宫的事业运如何",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "廉贞",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "廉贞",
+        "官祿"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_016",
+      "query": "天府坐命的人性格如何",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天府",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "天府",
+        "命宮"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_017",
+      "query": "太阴在夫妻宫代表什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "太阴",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "太阴",
+        "夫妻"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_018",
+      "query": "贪狼在官禄宫说明什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "贪狼",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "贪狼",
+        "官祿"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_019",
+      "query": "巨门坐命的人有什么特点",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "巨门",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "巨门",
+        "命宮"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_020",
+      "query": "天相在夫妻宫主什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天相",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "天相",
+        "夫妻"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_021",
+      "query": "天梁在财帛宫好不好",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天梁",
+          "palace": "財帛"
+        }
+      },
+      "keywords": [
+        "天梁",
+        "財帛"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_022",
+      "query": "七杀在官禄宫的事业运",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "七杀",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "七杀",
+        "官祿"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_023",
+      "query": "破军坐命的人性格怎么样",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "破军",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "破军",
+        "命宮"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_024",
+      "query": "天相在疾厄宫是什么意思",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天相",
+          "palace": "疾厄"
+        }
+      },
+      "keywords": [
+        "天相",
+        "疾厄"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_025",
+      "query": "天梁坐命的人如何",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天梁",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "天梁",
+        "命宮"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_026",
+      "query": "七杀落在夫妻宫代表什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "七杀",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "七杀",
+        "夫妻"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_027",
+      "query": "破军在财帛宫财运如何",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "破军",
+          "palace": "財帛"
+        }
+      },
+      "keywords": [
+        "破军",
+        "財帛"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_028",
+      "query": "太阴在疾厄宫代表什么",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "太阴",
+          "palace": "疾厄"
+        }
+      },
+      "keywords": [
+        "太阴",
+        "疾厄"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_029",
+      "query": "天机在官禄宫的事业",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "天机",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "天机",
+        "官祿"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zp_030",
+      "query": "紫微在夫妻宫怎么样",
+      "target": {
+        "file": "ziwei_star_palace.json",
+        "key": {
+          "star": "紫微",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "紫微",
+        "夫妻"
+      ],
+      "tier": "dedicated",
+      "note": "主星×宫，工具可达层"
+    },
+    {
+      "id": "zh_001",
+      "query": "化禄在命宫代表什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化祿",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "化祿",
+        "命宮"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_002",
+      "query": "化忌落在疾厄宫是什么意思",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化忌",
+          "palace": "疾厄"
+        }
+      },
+      "keywords": [
+        "化忌",
+        "疾厄"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_003",
+      "query": "化禄在夫妻宫代表什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化祿",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "化祿",
+        "夫妻"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_004",
+      "query": "化禄在官禄宫主什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化祿",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "化祿",
+        "官祿"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_005",
+      "query": "化禄在迁移宫好不好",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化祿",
+          "palace": "遷移"
+        }
+      },
+      "keywords": [
+        "化祿",
+        "遷移"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_006",
+      "query": "化权在命宫代表什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化權",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "化權",
+        "命宮"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_007",
+      "query": "化权在财帛宫主什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化權",
+          "palace": "財帛"
+        }
+      },
+      "keywords": [
+        "化權",
+        "財帛"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_008",
+      "query": "化权在官禄宫的事业",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化權",
+          "palace": "官祿"
+        }
+      },
+      "keywords": [
+        "化權",
+        "官祿"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_009",
+      "query": "化科在命宫代表什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化科",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "化科",
+        "命宮"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_010",
+      "query": "化科在夫妻宫主什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化科",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "化科",
+        "夫妻"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_011",
+      "query": "化科在财帛宫说明什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化科",
+          "palace": "財帛"
+        }
+      },
+      "keywords": [
+        "化科",
+        "財帛"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_012",
+      "query": "化忌在命宫代表什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化忌",
+          "palace": "命宮"
+        }
+      },
+      "keywords": [
+        "化忌",
+        "命宮"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_013",
+      "query": "化忌在夫妻宫代表什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化忌",
+          "palace": "夫妻"
+        }
+      },
+      "keywords": [
+        "化忌",
+        "夫妻"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_014",
+      "query": "化忌在财帛宫好不好",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化忌",
+          "palace": "財帛"
+        }
+      },
+      "keywords": [
+        "化忌",
+        "財帛"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "zh_015",
+      "query": "化忌在迁移宫说明什么",
+      "target": {
+        "file": "ziwei_hua.json",
+        "key": {
+          "hua": "化忌",
+          "palace": "遷移"
+        }
+      },
+      "keywords": [
+        "化忌",
+        "遷移"
+      ],
+      "tier": "generic_by_design",
+      "note": "四化×宫，star 留空（化曜级通用解读）"
+    },
+    {
+      "id": "cff_001",
+      "query": "七杀这颗星性格上有什么特点",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 7
+        }
+      },
+      "keywords": [
+        "七杀"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "白话转述（控制组）"
+    },
+    {
+      "id": "cff_002",
+      "query": "巨门为什么被人说成口舌是非之曜",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 39
+        }
+      },
+      "keywords": [
+        "巨门",
+        "口舌"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "白话转述（控制组）"
+    },
+    {
+      "id": "cff_003",
+      "query": "生年四化是不是固定不变的",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 68
+        }
+      },
+      "keywords": [
+        "生年四化",
+        "四化"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "白话转述（控制组）"
+    },
+    {
+      "id": "cff_004",
+      "query": "紫微和天府这些星曜在斗数里是什么地位",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 0
+        }
+      },
+      "keywords": [
+        "紫微",
+        "天府"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_005",
+      "query": "斗数里辅佐帝星的星曜有哪些",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 1
+        }
+      },
+      "keywords": [
+        "左辅",
+        "右弼",
+        "紫微"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_006",
+      "query": "看命的时候先看什么",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 2
+        }
+      },
+      "keywords": [
+        "命宫",
+        "身宫"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_007",
+      "query": "羊陀夹忌是什么，凶不凶",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 23
+        }
+      },
+      "keywords": [
+        "羊陀夹忌",
+        "化忌"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_008",
+      "query": "紫微斗数是什么人传下来的",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 29
+        }
+      },
+      "keywords": [
+        "陈抟",
+        "紫微斗数"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_009",
+      "query": "命盘里的星是怎么安上去的",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 30
+        }
+      },
+      "keywords": [
+        "安星",
+        "年干"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_010",
+      "query": "命宫和身宫各代表什么",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 31
+        }
+      },
+      "keywords": [
+        "命宫",
+        "身宫"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_011",
+      "query": "紫微这颗星有什么特质",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 32
+        }
+      },
+      "keywords": [
+        "紫微",
+        "帝座"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_012",
+      "query": "太阳这颗星主什么",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 44
+        }
+      },
+      "keywords": [
+        "太阳",
+        "男贵"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_013",
+      "query": "命宫在一张盘里是什么地位",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 58
+        }
+      },
+      "keywords": [
+        "命宫",
+        "枢纽"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_014",
+      "query": "夫妻宫主要看什么",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 65
+        }
+      },
+      "keywords": [
+        "夫妻宫",
+        "配偶"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_015",
+      "query": "夫妻宫化忌代表什么",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 66
+        }
+      },
+      "keywords": [
+        "夫妻宫",
+        "化忌"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "cff_016",
+      "query": "四化各自主什么",
+      "target": {
+        "file": "ziwei_classics_full.json",
+        "key": {
+          "index": 67
+        }
+      },
+      "keywords": [
+        "化禄",
+        "化权",
+        "化科",
+        "化忌"
+      ],
+      "tier": "generic_by_design",
+      "status": "graduated",
+      "note": "文言转述池"
+    },
+    {
+      "id": "th_001",
+      "query": "甲日出生在寅月调候用什么天干",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "甲",
+          "zhi": "寅"
+        }
+      },
+      "keywords": [
+        "甲",
+        "寅"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_002",
+      "query": "乙日生在丑月调候喜什么",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "乙",
+          "zhi": "丑"
+        }
+      },
+      "keywords": [
+        "乙",
+        "丑"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_003",
+      "query": "丙日午月调候用什么",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "丙",
+          "zhi": "午"
+        }
+      },
+      "keywords": [
+        "丙",
+        "午"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_004",
+      "query": "丁日卯月调候用神是什么",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "丁",
+          "zhi": "卯"
+        }
+      },
+      "keywords": [
+        "丁",
+        "卯"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_005",
+      "query": "戊日申月调候喜什么",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "戊",
+          "zhi": "申"
+        }
+      },
+      "keywords": [
+        "戊",
+        "申"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_006",
+      "query": "己日亥月调候用什么",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "己",
+          "zhi": "亥"
+        }
+      },
+      "keywords": [
+        "己",
+        "亥"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_007",
+      "query": "庚日巳月调候用神",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "庚",
+          "zhi": "巳"
+        }
+      },
+      "keywords": [
+        "庚",
+        "巳"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_008",
+      "query": "辛日子月调候喜什么",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "辛",
+          "zhi": "子"
+        }
+      },
+      "keywords": [
+        "辛",
+        "子"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_009",
+      "query": "壬日酉月调候用什么",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "壬",
+          "zhi": "酉"
+        }
+      },
+      "keywords": [
+        "壬",
+        "酉"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    },
+    {
+      "id": "th_010",
+      "query": "癸日辰月调候用神是什么",
+      "target": {
+        "file": "tiaohou.json",
+        "key": {
+          "gan": "癸",
+          "zhi": "辰"
+        }
+      },
+      "keywords": [
+        "癸",
+        "辰"
+      ],
+      "tier": "generic_by_design",
+      "note": "调候表精确查询"
+    }
+  ]
+}
