@@ -1,0 +1,25 @@
+{
+  "description": "min_score 阈值评估负样本组：与各 KB 领域完全无关的日常检索词。目的：验证阈值过滤对假阳性（恒返 top-k 的硬塞条目）的滤除效果，正样本误杀风险由 103 对正样本单独测。",
+  "negatives": [
+    {"id": "neg_001", "file": "ziwei_star_palace.json", "keywords": ["天气预报", "下雨"]},
+    {"id": "neg_002", "file": "ziwei_star_palace.json", "keywords": ["股票", "基金行情"]},
+    {"id": "neg_003", "file": "ziwei_star_palace.json", "keywords": ["足球", "比赛结果"]},
+    {"id": "neg_004", "file": "ziwei_star_palace.json", "keywords": ["感冒", "吃药"]},
+    {"id": "neg_011", "file": "ziwei_classics.json", "keywords": ["数学", "公式推导"]},
+    {"id": "neg_012", "file": "ziwei_classics.json", "keywords": ["跑步", "锻炼计划"]},
+    {"id": "neg_013", "file": "ziwei_classics.json", "keywords": ["英语", "单词记忆"]},
+    {"id": "neg_014", "file": "ziwei_classics.json", "keywords": ["做饭", "菜谱"]},
+    {"id": "neg_021", "file": "ziwei_hua.json", "keywords": ["商场", "促销打折"]},
+    {"id": "neg_022", "file": "ziwei_hua.json", "keywords": ["火车", "出行时间"]},
+    {"id": "neg_023", "file": "ziwei_hua.json", "keywords": ["体检", "健康报告"]},
+    {"id": "neg_024", "file": "ziwei_hua.json", "keywords": ["考试", "复习方法"]},
+    {"id": "neg_031", "file": "ziwei_fuzuo.json", "keywords": ["装修", "家具选择"]},
+    {"id": "neg_032", "file": "ziwei_fuzuo.json", "keywords": ["养猫", "日常经验"]},
+    {"id": "neg_033", "file": "ziwei_fuzuo.json", "keywords": ["手机", "品牌对比"]},
+    {"id": "neg_034", "file": "ziwei_fuzuo.json", "keywords": ["租房", "注意事项"]},
+    {"id": "neg_041", "file": "tiaohou.json", "keywords": ["咖啡馆", "推荐"]},
+    {"id": "neg_042", "file": "tiaohou.json", "keywords": ["电影", "评分"]},
+    {"id": "neg_043", "file": "tiaohou.json", "keywords": ["健身", "动作要领"]},
+    {"id": "neg_044", "file": "tiaohou.json", "keywords": ["旅行", "攻略"]}
+  ]
+}
