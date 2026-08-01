@@ -611,7 +611,7 @@ $('btn-render').addEventListener('click',()=>{
 
     fetch('/api/ziwei/paipan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year:b.y,month:b.m,day:b.d,hour:hh,minute:mm,gender:b.gender,is_lunar:b.cal==='lunar',longitude:parseFloat($('longitude').value)||120,location:$('location').value||''})})
 
-    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d);track('chart_created',{gender:b.gender,cal:b.cal})})
+    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d);track('chart_created',{gender:b.gender,cal:b.cal,input_time:b.h+':'+b.min})})
 
     .catch(()=>{$('loading-section').innerHTML='<p style="color:#ef5350;font-family:serif">排盘失败</p>'});
 
