@@ -794,6 +794,67 @@ def register(orch):
 '''
 
 
+# 归属演示：A 注册并声明 shared_tool
+_PLUGIN_OWNER_A_INIT = '''
+from services.orchestrator import ToolDef
+
+
+def register(orch):
+    orch.tools.register(ToolDef(
+        name="shared_tool",
+        description="共享工具（归属演示）",
+        fn=lambda **kw: {"success": True},
+        parameters={
+            "type": "object",
+            "properties": {"file_path": {"type": "string", "format": "path"}},
+            "required": [],
+        },
+        category="plugin",
+    ))
+    return {"tools": ["shared_tool"], "capabilities": [], "skills": []}
+'''
+
+# 归属演示：B 注册自己的 b_tool，但声明了 A 的 shared_tool
+_PLUGIN_OWNER_B_INIT = '''
+from services.orchestrator import ToolDef
+
+
+def register(orch):
+    orch.tools.register(ToolDef(
+        name="b_tool",
+        description="B 自己的工具",
+        fn=lambda **kw: {"success": True},
+        parameters={
+            "type": "object",
+            "properties": {"file_path": {"type": "string", "format": "path"}},
+            "required": [],
+        },
+        category="plugin",
+    ))
+    return {"tools": ["shared_tool", "b_tool"], "capabilities": [], "skills": []}
+'''
+
+# 归属演示：C 注册自己的 c_tool，但声明了内建工具名 paipan_bazi
+_PLUGIN_OWNER_C_INIT = '''
+from services.orchestrator import ToolDef
+
+
+def register(orch):
+    orch.tools.register(ToolDef(
+        name="c_tool",
+        description="C 自己的工具",
+        fn=lambda **kw: {"success": True},
+        parameters={
+            "type": "object",
+            "properties": {"file_path": {"type": "string", "format": "path"}},
+            "required": [],
+        },
+        category="plugin",
+    ))
+    return {"tools": ["paipan_bazi", "c_tool"], "capabilities": [], "skills": []}
+'''
+
+
 def _make_sandbox_plugin(tmpdir, name, init_body=_SANDBOX_TOOL_PLUGIN_INIT):
     """构造一个注册真实 Tool 的插件目录"""
     d = os.path.join(tmpdir, name)
@@ -929,6 +990,52 @@ def test_sandbox_interception():
     sp_p = SandboxPolicy.from_manifest("prio", {"sandbox": {"rw_paths_extra": ["data/cache/"]}})
     check("优先级-rw 与 forbidden 冲突时禁止胜出",
           sp_p.validate_path("data/cache/x.json", is_write=True, base_dir=base_dir) == False)
+
+    # ── 8.6 归属校验：声明列表不是所有权 ──
+    # 场景 1：B 声明 A 的工具名 shared_tool → B 注入被跳过，policy 仍属 A，不随 init 顺序漂
+    orch3 = AnalysisOrchestrator()
+    orch3.register_defaults()
+    pm3 = PluginManager(orch3)
+    d_a = _make_sandbox_plugin(tmpdir, "owner_a", _PLUGIN_OWNER_A_INIT)
+    d_b = _make_sandbox_plugin(tmpdir, "owner_b", _PLUGIN_OWNER_B_INIT)
+    pm3.register(PluginManifest.from_dict(
+        {"name": "owner_a", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=d_a), d_a)
+    pm3.register(PluginManifest.from_dict(
+        {"name": "owner_b", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=d_b), d_b)
+    pm3.enable_all()
+    pm3.init("owner_a")
+    pm3.init("owner_b")
+    shared = orch3.tools.get("shared_tool")
+    check("归属-后 init 插件不覆盖先 init 的 policy",
+          shared.sandbox_policy is not None and shared.owner == "owner_a",
+          f"owner={shared.owner}")
+    res = orch3.tools.call("shared_tool", file_path="config.local.py")
+    check("归属-A 的 policy 仍生效（拦截不漂移）", not res.success, res.error or "")
+    check("归属-B 自己的工具正常注入",
+          orch3.tools.get("b_tool") is not None and orch3.tools.get("b_tool").owner == "owner_b")
+
+    # 场景 2：插件声明内建工具名 paipan_bazi → 跳过，内建保持 None 免拦
+    orch4 = AnalysisOrchestrator()
+    orch4.register_defaults()
+    check("归属-freeze 后内建 owner 固化 builtin",
+          orch4.tools.get("paipan_bazi").owner == "builtin")
+    pm4 = PluginManager(orch4)
+    d_c = _make_sandbox_plugin(tmpdir, "owner_c", _PLUGIN_OWNER_C_INIT)
+    pm4.register(PluginManifest.from_dict(
+        {"name": "owner_c", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=d_c), d_c)
+    pm4.enable("owner_c")
+    r_c = pm4.init("owner_c")
+    check("归属-声明内建名的插件仍 ACTIVE", r_c.state == PluginState.ACTIVE,
+          f"state={r_c.state.value}")
+    check("归属-内建 Tool 未被注入 policy",
+          orch4.tools.get("paipan_bazi").sandbox_policy is None)
+    check("归属-内建 owner 不被改写",
+          orch4.tools.get("paipan_bazi").owner == "builtin")
+    check("归属-C 自己的工具正常注入",
+          orch4.tools.get("c_tool") is not None and orch4.tools.get("c_tool").owner == "owner_c")
 
     shutil.rmtree(tmpdir)
 

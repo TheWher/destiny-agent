@@ -479,14 +479,27 @@ class PluginManager:
         只注入插件 register() 返回的 tools 列表里的 Tool；ToolRegistry 不反向依赖
         PluginManager（避免 orchestrator→plugin_manager 循环依赖），call() 层只查
         tool.sandbox_policy，None 直接放行。
-        未显式声明的 Tool（或 orchestrator 缺失时）保持 None，不注入、不拦截。
+
+        归属校验（韩湘生审出，`06b9518` 补漏）：
+        声明列表是"关联/使用的工具"，不是"拥有的工具"。注入前校验 tool.owner：
+        - owner 非 None 且不是本插件 → 已被内建或其他插件占用，跳过 + warn，
+          避免后 init 插件静默覆盖先 init 插件的 policy（拦谁随 init 顺序漂）
+        - owner 为 None → 无主，注入并固化 owner = 插件名
+        - 未显式声明的 Tool（或 orchestrator 缺失时）保持 None，不注入、不拦截
         """
         if not self.orchestrator or not runtime.registered_tools:
             return
+        plugin_name = runtime.manifest.name
         for tool_name in runtime.registered_tools:
             tool = self.orchestrator.tools.get(tool_name)
-            if tool is not None:
-                tool.sandbox_policy = runtime.sandbox_policy
+            if tool is None:
+                continue
+            if tool.owner is not None and tool.owner != plugin_name:
+                print(f"[PluginManager] warn: 插件 '{plugin_name}' 声明的工具 "
+                      f"'{tool_name}' 归属 '{tool.owner}'，跳过 policy 注入")
+                continue
+            tool.sandbox_policy = runtime.sandbox_policy
+            tool.owner = plugin_name
 
     def disable(self, plugin_name: str) -> PluginRuntime:
         """禁用插件，保留注册但不路由新请求

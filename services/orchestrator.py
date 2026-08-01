@@ -34,6 +34,8 @@ class ToolDef:
     category: str = "general"                 # 分类：paipan / query / render / external
     sandbox_policy: Optional["SandboxPolicy"] = None  # 沙箱策略：内建 Tool 为 None（可信免拦），
                                                       # 插件 init 时由 PluginManager 注入
+    owner: Optional[str] = None               # 归属：None=未归属；"builtin"=内建；插件名=插件拥有
+                                                      # 注入时校验归属，避免声明列表被当所有权用
 
 @dataclass
 class CapabilityDef:
@@ -88,6 +90,17 @@ class ToolRegistry:
 
     def get(self, name: str) -> Optional[ToolDef]:
         return self._tools.get(name)
+
+    def freeze_builtins(self) -> None:
+        """把当前已注册的 Tool 固化归属为内建（builtin）
+
+        register_defaults() 末尾调用一次（幂等保护由 _defaults_registered 保证）。
+        之后插件 init 注入 policy 时，内建工具名不再会被插件声明列表覆盖——
+        归属证据在注册时就固化，注入时对不上就跳过。
+        """
+        for tool in self._tools.values():
+            if tool.owner is None:
+                tool.owner = "builtin"
 
     def list_all(self) -> list[ToolDef]:
         return list(self._tools.values())
@@ -1012,6 +1025,8 @@ class AnalysisOrchestrator:
         # 从 Skill 触发词重建 IntentRouter 关键词表
         if self.skills and self.skills._skills:
             self.router = IntentRouter.from_skills(self.skills)
+        # 内建工具归属固化：插件注入时不再能覆盖内建（Phase 2 归属校验）
+        self.tools.freeze_builtins()
         self._defaults_registered = True
 
     # ── 统一执行入口 ──────────────────────────────────
