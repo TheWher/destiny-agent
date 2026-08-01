@@ -146,3 +146,41 @@ def list_users():
         })
     finally:
         conn.close()
+
+
+# ------------------------------------------------------------
+# Admin payment orders
+# ------------------------------------------------------------
+@admin_bp.route("/payments", methods=["GET"])
+def list_payments():
+    """订单列表，?status=pending 只看待确认。"""
+    if not _check_admin():
+        return jsonify({"error": "unauthorized"}), 401
+    from models.user import list_payment_orders
+    status = request.args.get("status")
+    orders = list_payment_orders(status)
+    return jsonify({"orders": orders, "count": len(orders)})
+
+
+@admin_bp.route("/payments/<order_id>/confirm", methods=["POST"])
+def confirm_payment(order_id):
+    """确认付费订单：升级用户 Pro + 标记 confirmed。"""
+    if not _check_admin():
+        return jsonify({"error": "unauthorized"}), 401
+    from models.user import confirm_payment_order
+    order = confirm_payment_order(order_id)
+    if not order:
+        return jsonify({"error": "订单不存在"}), 404
+    return jsonify({"order": order})
+
+
+@admin_bp.route("/payments/<order_id>/reject", methods=["POST"])
+def reject_payment(order_id):
+    """驳回订单：标记 rejected，不改 tier。"""
+    if not _check_admin():
+        return jsonify({"error": "unauthorized"}), 401
+    from models.user import reject_payment_order
+    order = reject_payment_order(order_id)
+    if not order:
+        return jsonify({"error": "订单不存在"}), 404
+    return jsonify({"order": order})

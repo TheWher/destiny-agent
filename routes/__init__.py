@@ -61,6 +61,7 @@ def create_app():
     from routes.ziwei import ziwei_bp
     from routes.charts import charts_bp
     from routes.auth import auth_bp, admin_bp
+    from routes.payment import payment_bp
 
     app.register_blueprint(pages_bp)
     app.register_blueprint(bazi_bp)
@@ -68,6 +69,7 @@ def create_app():
     app.register_blueprint(charts_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(payment_bp)
 
     # 启动时加载紫微会话
     from routes.ziwei import _ziwei_sessions, _load_sessions_from_disk

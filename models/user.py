@@ -48,6 +48,16 @@ def init_db():
             expires_at    TEXT NOT NULL,
             created_at    TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS payment_orders (
+            id          TEXT PRIMARY KEY,
+            user_id     TEXT NOT NULL,
+            email       TEXT,
+            order_type  TEXT NOT NULL DEFAULT 'pay',
+            credential  TEXT,
+            status      TEXT NOT NULL DEFAULT 'pending',
+            created_at  TEXT NOT NULL,
+            handled_at  TEXT
+        );
     """)
     # 迁移：旧 users 表可能缺少 tier 列
     try:
@@ -198,6 +208,98 @@ def get_user_by_id(user_id: str) -> dict | None:
     try:
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def update_user_tier(user_id: str, tier: str) -> bool:
+    """直接改用户 tier。返回是否命中。"""
+    conn = get_db()
+    try:
+        cur = conn.execute("UPDATE users SET tier = ? WHERE id = ?", (tier, user_id))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+# ------------------------------------------------------------
+# Payment orders（付费升级 + 邀请码升级）
+# ------------------------------------------------------------
+def create_payment_order(user_id: str, email: str, order_type: str, credential: str) -> dict:
+    """建订单。invite 类型直接 confirmed（邀请码即支付确认），pay 类型 pending 待人工核对。"""
+    conn = get_db()
+    try:
+        oid = str(uuid.uuid4())
+        now = _now_iso()
+        status = "confirmed" if order_type == "invite" else "pending"
+        handled = now if order_type == "invite" else None
+        conn.execute(
+            "INSERT INTO payment_orders (id, user_id, email, order_type, credential, status, created_at, handled_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (oid, user_id, email, order_type, credential, status, now, handled),
+        )
+        conn.commit()
+        return {"id": oid, "user_id": user_id, "email": email, "order_type": order_type,
+                "credential": credential, "status": status, "created_at": now, "handled_at": handled}
+    finally:
+        conn.close()
+
+
+def get_payment_order(order_id: str) -> dict | None:
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def list_payment_orders(status: str | None = None) -> list:
+    conn = get_db()
+    try:
+        if status:
+            rows = conn.execute(
+                "SELECT * FROM payment_orders WHERE status = ? ORDER BY created_at DESC", (status,)
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM payment_orders ORDER BY created_at DESC").fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def confirm_payment_order(order_id: str) -> dict | None:
+    """确认付费订单：升级用户 tier 并标记 confirmed。返回订单或 None。"""
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone()
+        if not row:
+            return None
+        if row["status"] == "pending":
+            conn.execute("UPDATE users SET tier = 'pro' WHERE id = ?", (row["user_id"],))
+            conn.execute(
+                "UPDATE payment_orders SET status = 'confirmed', handled_at = ? WHERE id = ?",
+                (_now_iso(), order_id),
+            )
+            conn.commit()
+        return dict(conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone())
+    finally:
+        conn.close()
+
+
+def reject_payment_order(order_id: str) -> dict | None:
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone()
+        if not row:
+            return None
+        conn.execute(
+            "UPDATE payment_orders SET status = 'rejected', handled_at = ? WHERE id = ?",
+            (_now_iso(), order_id),
+        )
+        conn.commit()
+        return dict(conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone())
     finally:
         conn.close()
 

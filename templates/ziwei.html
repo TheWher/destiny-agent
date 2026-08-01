@@ -264,6 +264,7 @@ body::after{
           <span id="auth-user" class="hidden" style="display:flex;align-items:center;gap:8px">
             <span id="auth-email" style="color:var(--ink);font-weight:600"></span>
             <span id="auth-tier" style="font-size:.7em;padding:1px 6px;border-radius:3px;background:var(--gold);color:#fff"></span>
+            <button id="auth-upgrade-btn" class="btn btn-gold" onclick="showUpgradeModal()" style="font-size:.75em;padding:2px 10px;display:none">升级</button>
             <button class="btn" onclick="logout()" style="font-size:.75em;padding:2px 10px">退出</button>
           </span>
           <span id="auth-claim-hint" class="hidden" style="font-size:.7em;color:var(--vermillion);cursor:pointer;margin-left:4px" onclick="checkClaimable()">📋 认领旧会话</span>
@@ -390,6 +391,28 @@ body::after{
       <button class="btn" style="flex:1;padding:8px;font-size:.9em" onclick="closeAuthModal()">取消</button>
     </div>
     <p id="auth-switch" style="text-align:center;margin-top:12px;font-size:.75em;color:var(--text-muted);cursor:pointer" onclick="switchAuthMode()">没有账号？立即注册</p>
+  </div>
+</div>
+
+<!-- ── 升级 Pro 弹窗（新用户福利 + 邀请码） ── -->
+<div id="upgrade-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:210;align-items:center;justify-content:center">
+  <div style="background:var(--card-bg);border:1px solid var(--border-light);border-radius:var(--radius);padding:24px 28px;width:380px;max-width:92vw;max-height:90vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="font-size:1.05rem;color:var(--text);margin:0">升级 Pro</h2>
+      <button class="btn" style="padding:2px 10px;font-size:.8em" onclick="closeUpgradeModal()">✕</button>
+    </div>
+    <div id="upgrade-msg" style="color:var(--text);font-size:.8em;margin-bottom:10px">新用户福利：<b>5 元永久</b> Pro。微信扫码支付后，填写转账单号+昵称，人工核对，<b>当天开通</b>。</div>
+    <img src="/static/pay_qr.jpg" alt="微信收款码" style="width:180px;height:180px;display:block;margin:0 auto 12px;border-radius:8px;border:1px solid var(--border)">
+    <input id="upgrade-cred" placeholder="微信转账单号 + 昵称" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88em;background:var(--bg);color:var(--text);outline:none;margin-bottom:10px;font-family:inherit">
+    <button id="upgrade-pay-btn" class="btn btn-gold" style="width:100%;padding:9px;font-size:.9em" onclick="submitPayment()">我已支付，提交凭证</button>
+    <div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px;color:var(--text-muted);font-size:.75em">
+      <div style="flex:1;height:1px;background:var(--border)"></div>有邀请码？<div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input id="upgrade-invite" placeholder="邀请码" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88em;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
+      <button id="upgrade-invite-btn" class="btn btn-gold" style="padding:8px 16px;font-size:.88em" onclick="submitInvite()">开通</button>
+    </div>
+    <div id="upgrade-result" style="margin-top:12px;font-size:.8em;color:var(--accent);display:none"></div>
   </div>
 </div>
 
@@ -864,6 +887,7 @@ async function confirmAnalyze(){
       $id('auth-placeholder').classList.add('hidden');$id('auth-user').classList.remove('hidden');
       $id('auth-email').textContent=user.email;var tier=user.tier||'free';$id('auth-tier').textContent=tier==='free'?'免费':tier==='pro'?'Pro':'基础';
       $id('auth-tier').style.background=tier==='pro'?'linear-gradient(135deg,#d4a843,#b8860b)':'var(--text-muted)';
+      var ub=$id('auth-upgrade-btn');if(ub)ub.style.display=tier==='free'?'':'none';
     }else{
       $id('auth-placeholder').classList.remove('hidden');$id('auth-user').classList.add('hidden');
       $id('auth-email').textContent='';
@@ -873,6 +897,52 @@ async function confirmAnalyze(){
   if(_authToken){checkAuth().then(function(){if(_authToken)checkClaimable()})}
   document.getElementById('auth-overlay').addEventListener('click',function(ev){if(ev.target===this)closeAuthModal()});
   document.getElementById('auth-pw-inp').addEventListener('keydown',function(ev){if(ev.key==='Enter')doAuth()});
+
+  // ---------- Upgrade Pro ----------
+  function showUpgradeModal(){
+    if(!_authToken){showAuthModal('login');return}
+    $id('upgrade-result').style.display='none';
+    $id('upgrade-cred').value='';$id('upgrade-invite').value='';
+    $id('upgrade-overlay').style.display='flex';
+  }
+  function closeUpgradeModal(){$id('upgrade-overlay').style.display='none'}
+  function _setUpgradeResult(ok,msg){
+    var el=$id('upgrade-result');el.style.display='block';
+    el.style.color=ok?'var(--accent)':'var(--vermillion)';
+    el.textContent=msg;
+  }
+  async function submitPayment(){
+    var cred=$id('upgrade-cred').value.trim(),btn=$id('upgrade-pay-btn');
+    if(!cred){_setUpgradeResult(false,'请填写转账单号+昵称');return}
+    btn.disabled=true;btn.textContent='提交中...';
+    try{
+      var r=await fetch('/api/payment/order',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({credential:cred})});
+      var d=await r.json();
+      if(!r.ok){_setUpgradeResult(false,d.error||'提交失败');return}
+      _setUpgradeResult(true,'已提交，人工核对后当天开通 Pro');
+      setTimeout(closeUpgradeModal,2500);
+    }catch(e){_setUpgradeResult(false,'网络错误，请重试')}
+    btn.disabled=false;btn.textContent='我已支付，提交凭证';
+  }
+  async function submitInvite(){
+    var code=$id('upgrade-invite').value.trim(),btn=$id('upgrade-invite-btn');
+    if(!code){_setUpgradeResult(false,'请填写邀请码');return}
+    btn.disabled=true;btn.textContent='开通中...';
+    try{
+      var r=await fetch('/api/payment/invite',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({code:code})});
+      var d=await r.json();
+      if(!r.ok){_setUpgradeResult(false,d.error||'开通失败');return}
+      await checkAuth();
+      _setUpgradeResult(true,'🎉 邀请码开通成功，已是 Pro');
+      setTimeout(closeUpgradeModal,2000);
+    }catch(e){_setUpgradeResult(false,'网络错误，请重试')}
+    btn.disabled=false;btn.textContent='开通';
+  }
+  // 覆盖 tier.js 的升级入口：已登录直接开升级弹窗，未登录先登录
+  window._tierOpenAuth=function(){
+    if(_authToken){showUpgradeModal()}else{showAuthModal('login')}
+  };
+  document.getElementById('upgrade-overlay').addEventListener('click',function(ev){if(ev.target===this)closeUpgradeModal()});
 
   // ---------- Session Claim ----------
   var _claimData=null;
