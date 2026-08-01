@@ -61,16 +61,24 @@ main{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align
 footer{position:relative;z-index:2;text-align:center;font-size:.68rem;color:var(--text-muted);padding:1rem;letter-spacing:.04em}
 @media(max-width:640px){.systems{grid-template-columns:1fr}.hero h1{font-size:1.6rem}.card{padding:1.6rem 1rem}}
 @media(max-width:480px){main{padding:2rem 1rem}.hero .mark{font-size:.64rem;padding:2px 10px}.hero h1{font-size:1.35rem}.hero p{font-size:.78rem;max-width:100%}.card{padding:1.2rem .8rem}.card .icon{font-size:1.6rem}.card h2{font-size:1.1rem}.card .specs{gap:.4rem;font-size:.62rem}footer{font-size:.6rem}}
+/* ── 性能降级：毛玻璃与 ziwei 页同款处理（2026-08-01） ── */
+@media (max-width:768px){
+  .card{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  body::after{display:none}
+}
+@media (min-width:769px){
+  .card{backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%)}
+}
 </style>
 </head>
 <body>
 <main>
-<section class="hero"><div class="mark">符号计算 + LLM 推理</div><h1>推命 · 观星 · 知运</h1><p>八字 · 紫微斗数 · AI深度解读</p></section>
+<section class="hero"><div class="mark">AI 命理解读</div><h1>推命 · 观星 · 知运</h1><p>八字 · 紫微斗数 · AI 深度解读</p></section>
 <div class="systems">
-<a href="/app" class="card"><div class="icon">&#x2630;</div><div class="tag bazi">八字</div><h2>四柱推命</h2><p>sxtwl C++ + Meeus 双引擎 · 调候→格局→旺衰→病药9级递进 · 验盘闭环</p><div class="specs"><span>真太阳时</span><span>夜子时</span><span>250+城市</span></div></a>
-<a href="/ziwei" class="card"><div class="icon">&#x1F52E;</div><div class="tag ziwei">紫微</div><h2>斗数观星</h2><p>iztro-py排盘+14主星亮度修正 · 三层叠盘 · 三合四正连线 · 飞星流曜 · 交叉验证</p><div class="specs"><span>24格局</span><span>三层叠盘</span><span>v8 Agent</span></div></a>
+<a href="/app" class="card"><div class="icon">&#x2630;</div><div class="tag bazi">八字</div><h2>四柱推命</h2><p>排四柱、看五行十神，大运流年逐年展开，AI 逐项解读你的命局</p><div class="specs"><span>真太阳时</span><span>大运流年</span><span>250+城市</span></div></a>
+<a href="/ziwei" class="card"><div class="icon">&#x1F52E;</div><div class="tag ziwei">紫微</div><h2>斗数观星</h2><p>十二宫命盘、四化飞星，AI 逐宫解读性格与运势走向</p><div class="specs"><span>24格局</span><span>大限流年</span><span>AI追问</span></div></a>
 </div>
-<footer>八字 sxtwl + 紫微 iztro-py · Flask · DeepSeek v4-pro</footer>
+<footer>AI 驱动的传统命理解读</footer>
 </main>
 </body>
 </html>
