@@ -556,14 +556,26 @@ function track(event, meta){
     fetch('/api/events',{method:'POST',headers:h,body:JSON.stringify(body)}).catch(function(){});
   }catch(e){}
 }
-// 页面停留时长：离开时上报秒数
+// 页面停留时长：离开时上报秒数（fetch keepalive，页面销毁也尽力送达；fallback sendBeacon）
 (function(){
   var _t0 = Date.now();
   function _reportStay(){
     var secs = Math.round((Date.now()-_t0)/1000);
     if(secs < 3) return;
-    track('report_stay',{seconds:secs});
     _t0 = Date.now();
+    var body = JSON.stringify({event:'report_stay', device_id:_rptDeviceId, meta:{seconds:secs}});
+    var h = {'Content-Type':'application/json'};
+    if(_ziweiToken) h.Authorization = 'Bearer '+_ziweiToken;
+    try{
+      fetch('/api/events',{method:'POST',headers:h,body:body,keepalive:true}).catch(function(){});
+    }catch(e){
+      try{
+        if(navigator.sendBeacon){
+          var blob = new Blob([body],{type:'application/json'});
+          navigator.sendBeacon('/api/events', blob);
+        }
+      }catch(e2){}
+    }
   }
   window.addEventListener('pagehide', _reportStay);
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') _reportStay(); });

@@ -236,7 +236,7 @@ def list_events():
 
 @admin_bp.route("/events/stats", methods=["GET"])
 def event_stats():
-    """漏斗统计：按事件名计数 + 今日注册/排盘/解读/升级。"""
+    """漏斗统计：按事件名计数 + 今日注册/排盘/解读/升级 + report_stay 时长分布。"""
     if not _check_admin():
         return jsonify({"error": "unauthorized"}), 401
     from models.user import get_db
@@ -250,9 +250,30 @@ def event_stats():
             "SELECT event, COUNT(*) AS cnt FROM events WHERE created_at >= ? GROUP BY event ORDER BY cnt DESC",
             (today,),
         ).fetchall()
+        # report_stay 时长分布（看分布不看均值：均值混合"认真读"与"卡住/挂机"两种状态）
+        stay_buckets = {"lt_1min": 0, "1_5min": 0, "5_15min": 0, "gt_15min": 0}
+        stay_rows = conn.execute(
+            "SELECT meta FROM events WHERE event = 'report_stay' AND meta IS NOT NULL"
+        ).fetchall()
+        import json as _json
+        for r in stay_rows:
+            try:
+                m = _json.loads(r["meta"])
+                s = int(m.get("seconds", 0))
+            except Exception:
+                continue
+            if s < 60:
+                stay_buckets["lt_1min"] += 1
+            elif s < 300:
+                stay_buckets["1_5min"] += 1
+            elif s < 900:
+                stay_buckets["5_15min"] += 1
+            else:
+                stay_buckets["gt_15min"] += 1
         return jsonify({
             "all": [dict(r) for r in rows],
             "today": [dict(r) for r in today_rows],
+            "report_stay_buckets": stay_buckets,
         })
     finally:
         conn.close()

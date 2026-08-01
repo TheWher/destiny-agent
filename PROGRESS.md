@@ -35,6 +35,8 @@
 - 未登录旧会话归属迁移（device fingerprint 匹配 + 孤儿认领弹窗）
 - 付费层级权限控制：Free 5次/h → Pro 20次/h，tier 差异化限流（user_id key 隔离 8 个独立 action 桶），admin API 手动升降级，前端升级引导 toast
 - 全站移动端适配：480px 手机断点全覆盖（6 个文件），表单/十二宫格/运限轴/聊天区均适配
+- 最小埋点系统（analytics）：events 表（user_id/device_id/event/meta）+ POST /api/events 匿名可收，转化线（register/login/chart_created/report_rendered/upgrade_modal_open/upgrade_order_created/upgrade_invite_success）+ 质量线（report_stay 停留秒数/report_share/chat_turn/overlay_done/yearly_deep_done），admin /api/admin/events[/stats] 查漏斗，scripts/smoke_analytics.py 16/16
+- 邀请码多码化：INVITE_CODES 映射 {码:发放人} 一对一归因（兼容旧 INVITE_CODE 单码归 king），redeem 时记 invite_redeem 事件带 code+owner
 
 ### 待完成
 - [ ] 支付接入（Stripe，已后置——先手动改库验证付费意愿）
