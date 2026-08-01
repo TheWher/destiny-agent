@@ -623,20 +623,121 @@ class PluginManager:
         return results
 
     def init_all(self) -> dict[str, PluginRuntime]:
-        """初始化所有已启用的插件
+        """初始化所有已启用的插件，按依赖拓扑序执行
 
         每个插件独立 init，失败的不影响其他。优雅降级的核心执行入口。
+        Phase 2：接入依赖解析——
+          - 拓扑序：依赖先 init（Kahn 排序）
+          - 环 / 缺失 / 版本不满足 → 相关插件进 error，错误信息人类可读
+          - 版本表来源限定 active 插件（error/disabled 不喂入，存在性≠活性）
+          - init 失败 → 依赖它的插件同步 error（依赖 error 同步传播）
         """
         results = {}
-        for name, runtime in self._plugins.items():
-            if runtime.state == PluginState.ENABLED:
+        enabled = [
+            name for name, rt in self._plugins.items()
+            if rt.state == PluginState.ENABLED
+        ]
+        if not enabled:
+            return results
+
+        # 版本表：本次要 init 的插件 + 已 active 的存量插件。
+        # 同批插件互相依赖时被依赖方即将 init，算存在；
+        # error/disabled 态不喂入（活性证据，存在性≠活性）
+        available_versions = {
+            name: rt.manifest.version
+            for name, rt in self._plugins.items()
+            if rt.state in (PluginState.ENABLED, PluginState.ACTIVE, PluginState.UPGRADING)
+        }
+
+        # 构建依赖图：{plugin: [DepRequirement]}
+        from services.dependency_resolver import (
+            DepRequirement, resolve_dependencies,
+        )
+        dep_graph = {}
+        for name in enabled:
+            rt = self._plugins[name]
+            reqs = rt.manifest.requires.get("plugins", {})
+            dep_graph[name] = [
+                DepRequirement(name=dep_name, constraint=constraint or "")
+                for dep_name, constraint in reqs.items()
+            ]
+
+        res = resolve_dependencies(dep_graph, available_versions)
+        if not res.ok:
+            # 环 / 缺失 / 版本不满足：涉及插件进 error
+            failed = set(res.failed_plugins)
+            for name in failed:
+                if name in self._plugins:
+                    self._set_error(
+                        name,
+                        f"init_all 依赖解析失败: {'; '.join(res.errors)}",
+                        traceback.format_exc(),
+                    )
+                    results[name] = self._plugins.get(name)
+            # 失败插件的依赖方同步 error（沿依赖链传播）
+            for name in failed:
+                self._propagate_dep_error(name, self._plugins.get(name))
+
+            # 不受影响的插件仍按原顺序 init（无拓扑序，按注册序逐个跑）
+            for name in enabled:
+                if name in failed:
+                    continue
+                rt = self._plugins.get(name)
+                if rt is None or rt.state != PluginState.ENABLED:
+                    results[name] = rt
+                    continue
                 try:
                     results[name] = self.init(name)
                 except Exception as e:
-                    # 优雅降级：单个插件崩溃不影响其他插件和主 Cycle
                     self._set_error(name, f"init_all: {e}")
                     results[name] = self._plugins.get(name)
+                rt = results[name]
+                if rt is None or rt.state != PluginState.ACTIVE:
+                    self._propagate_dep_error(name, rt)
+            return results
+
+        # 拓扑序逐个 init
+        for name in res.order:
+            rt = self._plugins.get(name)
+            if rt is None or rt.state != PluginState.ENABLED:
+                # 已被依赖传播标记（ERROR 等）或不存在，跳过 init
+                results[name] = rt
+                if rt is not None and rt.state == PluginState.ERROR:
+                    self._propagate_dep_error(name, rt)
+                continue
+            try:
+                results[name] = self.init(name)
+            except Exception as e:
+                # 优雅降级：单个插件崩溃不影响其他插件和主 Cycle
+                self._set_error(name, f"init_all: {e}")
+                results[name] = self._plugins.get(name)
+
+            # 依赖 error 同步传播：谁依赖了这个失败插件，谁同步 error
+            rt = results[name]
+            if rt is None or rt.state != PluginState.ACTIVE:
+                self._propagate_dep_error(name, rt)
+
         return results
+
+    def _propagate_dep_error(self, failed_name: str, failed_rt: PluginRuntime = None) -> None:
+        """依赖 error 同步传播：标记依赖 failed_name 的插件为 error（递归）
+
+        A→B→C 链条：C init 失败 → B error → A 也 error，沿依赖链向上传播。
+        error 态插件标记 stale 但保留在 Registry（不响应新请求），
+        避免其他插件报"依赖缺失"。
+        """
+        err_msg = (failed_rt.error_message if failed_rt else "init 失败")
+        for name, rt in self._plugins.items():
+            if rt.state != PluginState.ENABLED:
+                continue
+            reqs = rt.manifest.requires.get("plugins", {})
+            if failed_name in reqs:
+                self._set_error(
+                    name,
+                    f"插件 '{name}' 因依赖 '{failed_name}' 处于 error 态而同步 error: {err_msg}",
+                )
+                # 递归：依赖方自身也变成 error，继续向上传播
+                self._propagate_dep_error(name, self._plugins.get(name))
 
     # ── 查询接口 ──────────────────────────────────────
 

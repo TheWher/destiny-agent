@@ -717,6 +717,153 @@ def test_orchestrator_integration():
     check("PluginManager 注册后 total=1", pm.summary()["total"] == 1)
 
 
+# ══════════════════════════════════════════════════════════
+# 7. Phase 2: init_all 依赖解析集成
+# ══════════════════════════════════════════════════════════
+
+def _make_plugin_dir(tmpdir, name, manifest_extra=None, init_body="return {'tools': [], 'capabilities': [], 'skills': []}"):
+    """构造一个真实可加载的插件目录"""
+    d = os.path.join(tmpdir, name)
+    os.makedirs(d, exist_ok=True)
+    manifest = {"name": name, "version": "1.0.0", "api_version": CURRENT_API_VERSION}
+    if manifest_extra:
+        manifest.update(manifest_extra)
+    with open(os.path.join(d, "manifest.yaml"), "w", encoding="utf-8") as f:
+        f.write(json.dumps(manifest))
+    with open(os.path.join(d, "__init__.py"), "w", encoding="utf-8") as f:
+        f.write(f"def register(orch): {init_body}\n")
+    return d
+
+
+def test_init_all_dependencies():
+    print(f"\n{B}═══ 7. init_all 依赖解析集成 ═══{N}\n")
+
+    # ── 7.1 拓扑序：B 无依赖，A 依赖 B → init 后 B 先 active ──
+    tmpdir = tempfile.mkdtemp(prefix="dep_init_test_")
+    pm = PluginManager()
+    d_b = _make_plugin_dir(tmpdir, "dep_b")
+    d_a = _make_plugin_dir(tmpdir, "dep_a",
+                           manifest_extra={"requires": {"plugins": {"dep_b": ">=1.0.0"}}})
+    pm.register(PluginManifest.from_dict(
+        {"name": "dep_b", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=d_b), d_b)
+    pm.register(PluginManifest.from_dict(
+        {"name": "dep_a", "version": "1.0.0", "api_version": CURRENT_API_VERSION,
+         "requires": {"plugins": {"dep_b": ">=1.0.0"}}},
+        source_path=d_a), d_a)
+    pm.enable_all()
+    results = pm.init_all()
+    check("拓扑序-无环全 active",
+          results["dep_a"].state == PluginState.ACTIVE
+          and results["dep_b"].state == PluginState.ACTIVE,
+          f"a={results['dep_a'].state.value}, b={results['dep_b'].state.value}")
+
+    # ── 7.2 版本不满足：A 依赖 B >=2.0.0，B 只有 1.0.0 → A error ──
+    pm2 = PluginManager()
+    d_b2 = _make_plugin_dir(tmpdir, "ver_b")
+    d_a2 = _make_plugin_dir(tmpdir, "ver_a",
+                            manifest_extra={"requires": {"plugins": {"ver_b": ">=2.0.0"}}})
+    pm2.register(PluginManifest.from_dict(
+        {"name": "ver_b", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=d_b2), d_b2)
+    pm2.register(PluginManifest.from_dict(
+        {"name": "ver_a", "version": "1.0.0", "api_version": CURRENT_API_VERSION,
+         "requires": {"plugins": {"ver_b": ">=2.0.0"}}},
+        source_path=d_a2), d_a2)
+    pm2.enable_all()
+    results2 = pm2.init_all()
+    check("版本不满足-A error", results2["ver_a"].state == PluginState.ERROR,
+          f"state={results2['ver_a'].state.value}")
+    check("版本不满足-错误人类可读",
+          "不满足约束" in results2["ver_a"].error_message,
+          results2["ver_a"].error_message)
+    # B 不受影响，独立 init 成功
+    check("版本不满足-B 仍 active", results2["ver_b"].state == PluginState.ACTIVE,
+          f"state={results2['ver_b'].state.value}")
+
+    # ── 7.3 循环依赖：A↔B → 双双 error，错误列出环 ──
+    pm3 = PluginManager()
+    d_a3 = _make_plugin_dir(tmpdir, "cyc_a",
+                            manifest_extra={"requires": {"plugins": {"cyc_b": ">=1.0.0"}}})
+    d_b3 = _make_plugin_dir(tmpdir, "cyc_b",
+                            manifest_extra={"requires": {"plugins": {"cyc_a": ">=1.0.0"}}})
+    pm3.register(PluginManifest.from_dict(
+        {"name": "cyc_a", "version": "1.0.0", "api_version": CURRENT_API_VERSION,
+         "requires": {"plugins": {"cyc_b": ">=1.0.0"}}},
+        source_path=d_a3), d_a3)
+    pm3.register(PluginManifest.from_dict(
+        {"name": "cyc_b", "version": "1.0.0", "api_version": CURRENT_API_VERSION,
+         "requires": {"plugins": {"cyc_a": ">=1.0.0"}}},
+        source_path=d_b3), d_b3)
+    pm3.enable_all()
+    results3 = pm3.init_all()
+    check("循环依赖-A error", results3["cyc_a"].state == PluginState.ERROR,
+          f"state={results3['cyc_a'].state.value}")
+    check("循环依赖-B error", results3["cyc_b"].state == PluginState.ERROR,
+          f"state={results3['cyc_b'].state.value}")
+    check("循环依赖-错误列环", "循环依赖" in results3["cyc_a"].error_message,
+          results3["cyc_a"].error_message)
+
+    # ── 7.4 依赖 error 同步传播：B init 崩溃，A 依赖 B → A 也 error ──
+    pm4 = PluginManager()
+    d_b4 = _make_plugin_dir(tmpdir, "crash_dep",
+                            init_body="raise RuntimeError('模拟崩溃：插件内部异常')")
+    d_a4 = _make_plugin_dir(tmpdir, "depend_on_crash",
+                            manifest_extra={"requires": {"plugins": {"crash_dep": ">=1.0.0"}}})
+    pm4.register(PluginManifest.from_dict(
+        {"name": "crash_dep", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=d_b4), d_b4)
+    pm4.register(PluginManifest.from_dict(
+        {"name": "depend_on_crash", "version": "1.0.0", "api_version": CURRENT_API_VERSION,
+         "requires": {"plugins": {"crash_dep": ">=1.0.0"}}},
+        source_path=d_a4), d_a4)
+    pm4.enable_all()
+    results4 = pm4.init_all()
+    check("传播-crash_dep error", results4["crash_dep"].state == PluginState.ERROR,
+          f"state={results4['crash_dep'].state.value}")
+    check("传播-依赖方同步 error",
+          results4["depend_on_crash"].state == PluginState.ERROR,
+          f"state={results4['depend_on_crash'].state.value}")
+    check("传播-错误注明依赖方",
+          "depend_on_crash" in results4["depend_on_crash"].error_message,
+          results4["depend_on_crash"].error_message)
+    check("传播-错误注明被依赖插件",
+          "crash_dep" in results4["depend_on_crash"].error_message,
+          results4["depend_on_crash"].error_message)
+
+    # ── 7.5 版本表活性：error 插件不进版本表，依赖它的插件报缺失 ──
+    pm5 = PluginManager()
+    # ghost 插件从未注册，A 依赖 ghost → 缺失
+    d_a5 = _make_plugin_dir(tmpdir, "dep_ghost",
+                            manifest_extra={"requires": {"plugins": {"ghost_plugin": ">=1.0.0"}}})
+    pm5.register(PluginManifest.from_dict(
+        {"name": "dep_ghost", "version": "1.0.0", "api_version": CURRENT_API_VERSION,
+         "requires": {"plugins": {"ghost_plugin": ">=1.0.0"}}},
+        source_path=d_a5), d_a5)
+    pm5.enable_all()
+    results5 = pm5.init_all()
+    check("缺失依赖-error", results5["dep_ghost"].state == PluginState.ERROR,
+          f"state={results5['dep_ghost'].state.value}")
+    check("缺失依赖-错误含插件名",
+          "ghost_plugin" in results5["dep_ghost"].error_message,
+          results5["dep_ghost"].error_message)
+
+    # ── 7.6 无依赖多插件并行 init 不受影响 ──
+    pm6 = PluginManager()
+    for n in ["ind_a", "ind_b", "ind_c"]:
+        d = _make_plugin_dir(tmpdir, n)
+        pm6.register(PluginManifest.from_dict(
+            {"name": n, "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+            source_path=d), d)
+    pm6.enable_all()
+    results6 = pm6.init_all()
+    check("独立插件全 active",
+          all(results6[n].state == PluginState.ACTIVE for n in ["ind_a", "ind_b", "ind_c"]))
+
+    import shutil
+    shutil.rmtree(tmpdir)
+
+
 # ── 主入口 ─────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -730,6 +877,7 @@ if __name__ == "__main__":
     test_discover_and_load()
     test_builtin_register()
     test_orchestrator_integration()
+    test_init_all_dependencies()
 
     # 汇总
     print(f"\n\n{B}{'='*60}{N}")

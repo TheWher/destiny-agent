@@ -27,6 +27,7 @@ class ResolveResult:
     order: tuple = ()                    # 拓扑序（依赖先于依赖方），ok=True 时有效
     cycle: tuple = ()                    # 环上的插件名序列（ok=False 且有环时有效）
     errors: list = field(default_factory=list)  # 人类可读错误信息
+    failed_plugins: list = field(default_factory=list)  # 校验失败的插件名（供调用方定位 error 归属）
 
 
 # ── SemVer 比对 ─────────────────────────────────────────
@@ -97,6 +98,7 @@ def resolve_dependencies(
           ok=False → errors 含人类可读错误；有环时 cycle 列出环上插件名
     """
     errors = []
+    failed_plugins = []
     graph = {}          # name -> set(依赖名)
     # 存在性证据 = 图内节点 ∪ 版本表（版本表提供"已注册"证据）；
     # 图外依赖若没有任何证据 → 一律报缺失，无版本表不豁免
@@ -141,6 +143,7 @@ def resolve_dependencies(
                     errors.append(
                         f"依赖 '{dep_name}' 版本 '{actual}' 不满足约束 '{constraint}'"
                     )
+                    failed_plugins.append(name)
 
         graph[name] = req_names
 
@@ -151,9 +154,11 @@ def resolve_dependencies(
                 errors.append(
                     f"插件 '{name}' 依赖的 '{dep_name}' 不存在或未注册"
                 )
+                failed_plugins.append(name)
 
     if errors:
-        return ResolveResult(ok=False, errors=errors)
+        return ResolveResult(ok=False, errors=errors,
+                             failed_plugins=list(dict.fromkeys(failed_plugins)))
 
     # Kahn 拓扑排序
     # in_degree 只计"图内依赖"：依赖指向图外插件（版本表内已存在）时视为存量满足，
@@ -182,6 +187,7 @@ def resolve_dependencies(
         return ResolveResult(
             ok=False,
             cycle=tuple(cycle),
+            failed_plugins=list(cycle),
             errors=[
                 f"检测到循环依赖: {' → '.join(cycle + [cycle[0]])}"
                 if cycle else "检测到循环依赖（无法定位环）"
