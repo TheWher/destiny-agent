@@ -34,6 +34,7 @@
     - 跨盘兑底（hanako 钉）：Windows 上 os.path.relpath 跨盘抛 ValueError（D:\ 与 C:\），归一化需 try/except 兑住，抛了当越界拦截，不穿透到 call()
     - fallback 清理（hanako 发现）：validate_path 末尾"共享知识库默认允许读取"分支 startswith("knowledge_base") 无斜杠边界，knowledge_base_evil/x 可被放行；ro_paths 默认已有 knowledge_base/，该分支冗余，base_dir 重构时一并删除
     - 边界匹配通用规则（韩湘生补）：所有前缀匹配统一带分隔符边界（norm_path == path 或 startswith(path + os.sep)），防止 rw_paths_extra 等不带尾斜杠条目时 data/cache_evil 被放行
+    - normpath 前提（hanako 补）：比较前声明条目与输入都先过 normpath（顺带消掉尾斜杠），再按边界匹配比较；否则声明 data/cache/ 时 path + os.sep 拼出 data/cache// 双斜杠，匹配失效
     - 协调点：依赖解析（外层，init_all 拓扑序）与 policy 注入（内层，单个插件 init 内）不冲突，外层定调用顺序，内层各自注入
 - [ ] Phase 3：热升级（upgrading → swap 原子切换）+ 卸载不丢状态
 - [ ] Phase 4：外部插件发现（pip install / git clone → skills/ 目录）
