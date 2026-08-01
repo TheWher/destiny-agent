@@ -441,6 +441,9 @@
     </div>
   </div>
 
+  <!-- 时辰未确认警示（勾选"不确定时辰"后显示，拆掉错盘的背书） -->
+  <div id="unknown-time-warning" style="display:none;background:rgba(193,67,47,.08);border:1px solid rgba(193,67,47,.35);color:var(--vermillion);border-radius:4px;padding:10px 14px;font-size:12px;line-height:1.7;margin:10px 0">⚠️ <b>时辰未经确认</b>：命宫与四化随时辰变换，本命盘可能偏差，以下解读仅供参考。建议向家人确认出生时辰后重新排盘。</div>
+
   <!-- 命盘概要 -->
   <div class="info-bar" id="info-bar">
     <div class="skeleton-line"></div>
@@ -633,6 +636,9 @@ async function load(){
     if(!r.ok){ $('grid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-soft)">报告未找到或已过期</div>'; return }
     const s = await r.json();
     plateData = s.plate_data || null;
+    // 时辰未确认警示：标注拆掉错盘的背书
+    var _utw = document.getElementById('unknown-time-warning');
+    if(_utw && plateData && plateData.input && plateData.input.unknown_time){ _utw.style.display='block'; }
     renderInfo(s);
     loadSessionList();  // 填充会话切换器
     if(plateData && plateData.palaces){

@@ -314,19 +314,29 @@ body::after{
 
                 <span style="font-weight:600;font-size:.8em;color:var(--accent)">性别</span>
 
-                <div class="radio-group"><label class="radio-label"><input type="radio" name="g" value="男" checked> 男</label><label class="radio-label" style="margin-left:16px"><input type="radio" name="g" value="女"> 女</label></div>
+                <div class="radio-group"><label class="radio-label"><input type="radio" name="g" value="男" checked> 男 · 乾造</label><label class="radio-label" style="margin-left:16px"><input type="radio" name="g" value="女"> 女 · 坤造</label></div>
+
+            </div>
+
+            <div style="padding:14px 16px;display:flex;align-items:center;gap:12px">
+
+                <span style="font-weight:600;font-size:.8em;color:var(--accent)">时辰</span>
+
+                <label class="radio-label" style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:.8em;color:var(--ink)"><input type="checkbox" id="unknown-time" style="width:16px;height:16px;accent-color:var(--vermillion)"> 不确定时辰</label>
+
+                <span id="unknown-time-hint" style="font-size:.68em;color:var(--vermillion);display:none">命宫与四化随时辰变换，建议先向家人确认</span>
 
             </div>
 
         </div>
 
-        <label class="radio-label" style="margin-bottom:6px;display:flex;align-items:center;gap:8px;font-size:.9em;font-weight:600;color:var(--accent)"><input type="checkbox" id="use-true-solar" style="width:18px;height:18px;accent-color:var(--vermillion)"> ⏱ 真太阳时校正</label>
+        <label class="radio-label" style="margin-bottom:6px;display:flex;align-items:center;gap:8px;font-size:.9em;font-weight:600;color:var(--accent);cursor:pointer"><input type="checkbox" id="use-true-solar" style="width:18px;height:18px;accent-color:var(--vermillion)"> ⏱ 真太阳时校正</label>
 
-        <p style="font-size:.72em;color:var(--ink-faint);margin-bottom:8px">北京时间以120°E为基准，出生地经度不同会产生时间偏移。输入经度和出生地后勾选校正。</p>
+        <p style="font-size:.72em;color:var(--ink-faint);margin-bottom:8px">出生地经度与北京时间不同会产生时差，勾选后可输入出生地自动校正。</p>
 
         <div id="solar-info" style="display:none;font-size:.8em;color:var(--vermillion);margin-bottom:8px;line-height:1.6"></div>
 
-        <div id="solar-row" style="background:var(--paper-card);border:1px solid var(--line-soft);border-radius:var(--radius-sm);margin-bottom:10px;position:relative">
+        <div id="solar-row" style="background:var(--paper-card);border:1px solid var(--line-soft);border-radius:var(--radius-sm);margin-bottom:10px;position:relative;display:none">
 
             <div style="padding:14px 16px">
 
@@ -435,7 +445,29 @@ body::after{
 
     
 
-<section id="welcome-section"><div style="text-align:center;padding:100px 40px;color:var(--ink-soft)"><div style="font-size:3em;margin-bottom:14px">🔮</div><p style="font-size:.95em;margin-bottom:6px">输入出生信息，点击「排盘」开始分析</p><p style="font-size:.72em;color:var(--ink-faint)">排盘后确认命盘信息 → 点击 AI 解读</p></div></section>
+<section id="welcome-section">
+<div style="max-width:560px;margin:0 auto;padding:56px 24px">
+  <div style="text-align:center;margin-bottom:28px">
+    <div style="font-size:2.6em;margin-bottom:10px">🔮</div>
+    <h2 style="font-size:1.25rem;color:var(--text);margin:0 0 6px;font-family:'Noto Serif SC',serif">紫微斗数排盘</h2>
+    <p style="font-size:.82em;color:var(--ink-faint);margin:0">输入出生信息，生成命盘 + AI 解读</p>
+  </div>
+  <div style="background:var(--card-bg);border:1px solid var(--border-light);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px">
+    <div style="font-size:.75em;font-weight:700;color:var(--accent);margin-bottom:12px">排盘后你将看到</div>
+    <div style="display:grid;gap:10px;font-size:.82em;line-height:1.6;color:var(--text)">
+      <div style="display:flex;gap:10px;align-items:flex-start"><span>🀄</span><span><b>完整命盘</b>：十二宫格局、四化飞星、三方四正，一眼看懂</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-start"><span>✅</span><span><b>AI 验盘</b>：六项人生信号逐条预测，与你确认是否准确</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-start"><span>📅</span><span><b>大限流年叠盘</b>：十年大限、流年流月层层叠加，看运势节奏</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--champagne)">🔮</span><span><b>大限流年深度解读</b><span style="font-size:.7em;padding:1px 6px;border-radius:3px;background:linear-gradient(135deg,#d4a843,#b8860b);color:#fff;margin-left:6px">Pro</span>：十年全景四化展开，深度逐宫解读</span></div>
+    </div>
+  </div>
+  <div style="background:var(--card-bg);border:1px dashed var(--border-light);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:.72em;color:var(--ink-faint)">⚡ 老手通道</span>
+    <input type="text" id="welcome-quick" class="quick" maxlength="12" inputmode="numeric" placeholder="200508190135" style="flex:1;min-width:0">
+    <span style="font-size:.68em;color:var(--ink-faint)">12 位数字自动填表</span>
+  </div>
+</div>
+</section>
 
 <section id="loading-section" class="hidden"><div class="loading"><div class="spinner"></div><p style="font-family:'Noto Serif SC',serif;letter-spacing:1px">紫微排盘中...</p></div></section>
 
@@ -561,6 +593,15 @@ $('quick').addEventListener('input',function(){const v=this.value.replace(/\D/g,
 
 $('quick').addEventListener('keydown',e=>{if(e.key==='Enter')$('btn-render').click()});
 
+// 主区老手通道同步到侧栏快捷输入
+(function(){
+  var wq=document.getElementById('welcome-quick');
+  if(wq){
+    wq.addEventListener('input',function(){var v=this.value.replace(/\D/g,'');if(v.length<8)return;$('y').value=v.slice(0,4);$('m').value=parseInt(v.slice(4,6));$('d').value=parseInt(v.slice(6,8));if(v.length>=10)$('h').value=parseInt(v.slice(8,10));if(v.length>=12)$('min').value=parseInt(v.slice(10,12));if($('quick'))$('quick').value=v});
+    wq.addEventListener('keydown',e=>{if(e.key==='Enter')$('btn-render').click()});
+  }
+})();
+
 function getB(){const c=document.querySelector('input[name="cal"]:checked')?.value||'solar';const g=document.querySelector('input[name="g"]:checked')?.value||'男';return{y:parseInt($('y').value),m:parseInt($('m').value),d:parseInt($('d').value),h:parseInt($('h').value),min:parseInt($('min').value||'0'),gender:g,cal:c}}
 
 function getAdjustedHour(h,min,lng){const o=Math.round((lng-120)*4);let t=h*60+min+o;if(t<0)t+=1440;if(t>=1440)t-=1440;return{hour:Math.floor(t/60),minute:Math.round(t%60),offset:o}}
@@ -611,14 +652,32 @@ $('btn-render').addEventListener('click',()=>{
 
     fetch('/api/ziwei/paipan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year:b.y,month:b.m,day:b.d,hour:hh,minute:mm,gender:b.gender,is_lunar:b.cal==='lunar',longitude:parseFloat($('longitude').value)||120,location:$('location').value||''})})
 
-    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d);
-      // input_time: 原始输入时:分（嗅探整点率）；unknown_time: 时辰不确定勾选（UI 上线前恒 false，字段结构先占位）
+    .then(r=>r.json()).then(d=>{
+      // 时辰不确定标志写入盘数据，随 session 传递到报告页
       var _ut=document.getElementById('unknown-time');
-      track('chart_created',{gender:b.gender,cal:b.cal,input_time:b.h+':'+b.min,unknown_time:!!(_ut&&_ut.checked)});})
+      if(_ut&&_ut.checked&&d.input){d.input.unknown_time=true;}
+      plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d);
+      // input_time: 原始输入时:分（嗅探整点率）；unknown_time: 时辰不确定勾选
+      var _ut2=document.getElementById('unknown-time');
+      track('chart_created',{gender:b.gender,cal:b.cal,input_time:b.h+':'+b.min,unknown_time:!!(_ut2&&_ut2.checked)});})
 
     .catch(()=>{$('loading-section').innerHTML='<p style="color:#ef5350;font-family:serif">排盘失败</p>'});
 
 });
+
+// 真太阳时：勾选展开高级选项，取消收起
+(function(){
+  var cb=document.getElementById('use-true-solar');
+  var row=document.getElementById('solar-row');
+  if(cb&&row){
+    cb.addEventListener('change',function(){row.style.display=cb.checked?'':'none'});
+  }
+  var ut=document.getElementById('unknown-time');
+  var hint=document.getElementById('unknown-time-hint');
+  if(ut&&hint){
+    ut.addEventListener('change',function(){hint.style.display=ut.checked?'inline':'none'});
+  }
+})();
 
 
 
