@@ -19,6 +19,15 @@
 - [ ] 支付接入（Stripe，已后置——先手动改库验证付费意愿）
 - [ ] Pro 专属功能：大限流年深度解读
 
+### P3 插件系统（Phase 1 已完成，ADR-006 已采纳）
+- [x] Phase 1：PluginManager + 六态状态机 + manifest 校验（`4249f86`，116/116 测试）
+- [ ] Phase 2 待办（来自 hanako 审阅钉项，勿沉底）：
+  - [ ] 依赖解析放 init 阶段 + 版本号比对（enable 只做结构校验，运行时解析已延迟）
+  - [ ] rw_paths_extra 与 forbidden 冲突优先级理清
+  - [ ] Sandbox 文件路径拦截真正接入 ToolRegistry.call()（方案A，路径参数标 format:path）
+- [ ] Phase 3：热升级（upgrading → swap 原子切换）+ 卸载不丢状态
+- [ ] Phase 4：外部插件发现（pip install / git clone → skills/ 目录）
+
 ### 部署
 `https://thewher.pythonanywhere.com`（PythonAnywhere 免费账户）
 
