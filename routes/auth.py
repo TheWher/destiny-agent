@@ -6,11 +6,25 @@ from flask import Blueprint, request, jsonify
 
 from models.user import create_user, authenticate, get_user_by_id, create_token, verify_token, get_db
 from utils.tier import VALID_TIERS
-from utils.auth import ADMIN_TOKEN
+from utils.auth import ADMIN_TOKEN, check_rate_limit
+from utils.email_check import check_email_quality
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 _EMAIL_RE = r"(?i)^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+
+# 弱密码黑名单（硬拦截：密码强度是用户可控的，不误伤）
+_WEAK_PASSWORDS = {
+    "123456", "1234567", "12345678", "123456789", "1234567890", "password",
+    "password1", "passw0rd", "qwerty", "abc123", "111111", "000000",
+    "654321", "666666", "888888", "999999", "123123", "123321",
+    "iloveyou", "admin", "welcome", "monkey", "dragon", "master",
+    "letmein", "football", "princess", "sunshine", "login", "test123",
+}
+
+# 注册 IP 限流：每小时每 IP 最多 10 次注册
+_REGISTER_RATE_MAX = 10
+_REGISTER_RATE_WINDOW = 60
 
 
 def _require_auth():
@@ -34,19 +48,35 @@ def register():
     import re
     if not re.match(_EMAIL_RE, email):
         return jsonify({"error": "邮箱格式不正确"}), 400
-    if len(password) < 6:
-        return jsonify({"error": "密码至少6位"}), 400
+
+    # 注册 IP 限流（防批量注册）
+    ip = request.remote_addr or "unknown"
+    if not check_rate_limit(f"{ip}:register", max_requests=_REGISTER_RATE_MAX,
+                            window_minutes=_REGISTER_RATE_WINDOW):
+        return jsonify({"error": "注册太频繁，请稍后再试"}), 429
+
+    # 密码规范：8 位以上 + 弱密码黑名单
+    if len(password) < 8:
+        return jsonify({"error": "密码至少 8 位"}), 400
+    if password.lower() in _WEAK_PASSWORDS:
+        return jsonify({"error": "密码太简单，换一个复杂点的"}), 400
+
+    # 邮箱质量软提示（不拦截，只提示）
+    quality = check_email_quality(email)
 
     user = create_user(email, password)
     if not user:
         return jsonify({"error": "该邮箱已注册"}), 409
 
     token = create_token(user)
-    return jsonify({
+    resp = {
         "success": True,
         "token": token,
         "user": {"id": user["id"], "email": user["email"], "tier": user["tier"]},
-    }), 201
+    }
+    if quality.get("warning"):
+        resp["warning"] = quality["warning"]
+    return jsonify(resp), 201
 
 
 @auth_bp.route("/login", methods=["POST"])

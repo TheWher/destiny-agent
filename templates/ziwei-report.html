@@ -574,6 +574,7 @@ async function doRptAuth(){
     _ziweiToken=d.token;localStorage.setItem('ziwei_token',d.token);
     updateRptAuthUI();closeRptAuth();
     loadSessionList();
+    if(d.warning)setTimeout(function(){alert(d.warning)},100);
   }catch(ex){err.style.display='block';err.textContent='网络错误'}
 }
 function rptLogout(){_ziweiToken='';localStorage.removeItem('ziwei_token');updateRptAuthUI();loadSessionList()}

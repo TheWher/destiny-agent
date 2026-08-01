@@ -879,6 +879,7 @@ async function confirmAnalyze(){
       updateAuthUI(d.user);closeAuthModal();
       checkClaimable();
       loadSessions();
+      if(d.warning)setTimeout(function(){alert(d.warning)},100);
     }catch(ex){err.style.display='block';err.textContent='网络错误'}
   }
   function logout(){_authToken='';localStorage.removeItem('ziwei_token');updateAuthUI(null);loadSessions()}
