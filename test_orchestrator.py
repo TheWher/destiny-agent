@@ -249,8 +249,8 @@ check("ziwei_analysis 包含 paipan_ziwei",
       "paipan_ziwei" in ziwei_tools)
 
 verify_tools = orch.get_tools_for_capability("verify_panel")
-check("verify_panel 关联 3 个 Tool",
-      len(verify_tools) == 3,
+check("verify_panel 关联 5 个 Tool（含 paipan）",
+      len(verify_tools) == 5,
       f"实际: {verify_tools}")
 check("verify_panel 包含 kb_retrieve",
       "kb_retrieve" in verify_tools)

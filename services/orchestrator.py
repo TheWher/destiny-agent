@@ -877,7 +877,7 @@ class AnalysisOrchestrator:
             fn=_cap_verify_panel,
             stages=["信号提取", "事件倒推", "等级标注", "合规校验"],
             category="verify",
-            tools=["kb_retrieve", "memory_retrieve", "memory_store"],
+            tools=["paipan_bazi", "paipan_ziwei", "kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
         # ── 交叉验证流水线 ──
