@@ -122,6 +122,30 @@ app.py (20 行入口)
 
 ---
 
+## 🚀 生产切换 embedding 检索后端
+
+知识库检索器支持双后端（`KB_BACKEND=lexical|embedding`），生产已切 embedding（粒度收益：
+平均返回 2.4KB→331B，token 省 ~86%）。切换三步：
+
+1. **下载模型**：`python scripts/fetch_embedding_model.py`（从 ModelScope 拉取 bge-small-zh-v1.5 到 `models/`，
+   幂等可重复执行；HuggingFace 直连在国内网络极慢，勿用）
+2. **设置环境变量**（PythonAnywhere 面板 → Web → 环境变量）：
+   - `KB_BACKEND=embedding`
+   - `KB_EMBEDDING_MODEL=<项目路径>/models/bge-small-zh-v1.5`
+   - `KB_EMBEDDING_MIN_SCORE=0.55`（阈值标定：0.60 完美分界但余量仅 0.02，0.55 留安全垫，误杀优先于假阳性）
+3. **升级套餐**：PythonAnywhere Developer 档（$10/mo，免费档 1 个月过期且单 worker/休眠不适合生产）
+
+**降级兜底**：embedding 模型加载失败（缺失/损坏/依赖不全）自动降级 lexical 并打印
+`[kb_embedding] WARN`，不挂服务。部署后留意日志，出现 WARN 说明模型路径/文件有问题。
+
+**生产档回归**（动 knowledge_base 数据后必跑）：
+```bash
+KB_BACKEND=embedding KB_EMBEDDING_MIN_SCORE=0.55 python evaluation_sets/dry_run_check.py
+# 预期：run=87 passed=87，文件级 0，平均 ~300B；同时重跑 threshold_eval.py 看 0.60 分界是否漂移
+```
+
+---
+
 ## 📡 API
 
 ### 八字

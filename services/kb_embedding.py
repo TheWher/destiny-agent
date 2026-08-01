@@ -94,19 +94,49 @@ def _extract_entries(kb_name: str, kb: dict) -> list:
     return entries
 
 
+class _EmbeddingUnavailable(Exception):
+    """模型不可用（加载失败或已降级）内部信号，retrieve 入口捕获后转发 lexical。"""
+
+
 class EmbeddingBackend(BaseBackend):
     """向量检索后端：匹配到条目拼条目，返回单位 = 答案单位。"""
 
     def __init__(self):
         self._model = None
         self._index = {}  # kb_name -> {"ids": [...], "texts": [...], "vecs": ndarray}
+        self._fallback = None  # 模型加载失败时降级 lexical（生产兜底，不挂服务）
 
     # ── 模型 / 索引 ──
     def _ensure_model(self):
         if self._model is None:
-            from sentence_transformers import SentenceTransformer
-            self._model = SentenceTransformer(_MODEL_NAME)
+            if self._fallback is not None:
+                raise _EmbeddingUnavailable()
+            try:
+                from sentence_transformers import SentenceTransformer
+                self._model = SentenceTransformer(_MODEL_NAME)
+            except Exception as e:
+                import sys
+                print(f"[kb_embedding] WARN: 模型加载失败，降级 lexical: {e}", file=sys.stderr)
+                from services.kb_loader import LexicalBackend
+                self._fallback = LexicalBackend()
+                raise _EmbeddingUnavailable() from e
         return self._model
+
+    def retrieve_str(self, query_keywords, kb_name, top_k=10):
+        if self._fallback is not None:
+            return self._fallback.retrieve_str(query_keywords, kb_name, top_k)
+        try:
+            return self._retrieve_embed_str(query_keywords, kb_name, top_k)
+        except _EmbeddingUnavailable:
+            return self._fallback.retrieve_str(query_keywords, kb_name, top_k)
+
+    def retrieve_hits(self, query_keywords, kb_name, top_k=10):
+        if self._fallback is not None:
+            return self._fallback.retrieve_hits(query_keywords, kb_name, top_k)
+        try:
+            return self._retrieve_embed_hits(query_keywords, kb_name, top_k)
+        except _EmbeddingUnavailable:
+            return self._fallback.retrieve_hits(query_keywords, kb_name, top_k)
 
     def _encode(self, texts):
         model = self._ensure_model()
@@ -130,7 +160,7 @@ class EmbeddingBackend(BaseBackend):
         return idx
 
     # ── 出口（与 lexical 同契约）──
-    def retrieve_str(self, query_keywords, kb_name, top_k=10):
+    def _retrieve_embed_str(self, query_keywords, kb_name, top_k=10):
         hits = self._rank(query_keywords, kb_name, top_k)
         if not hits:
             return ""
@@ -139,7 +169,7 @@ class EmbeddingBackend(BaseBackend):
             parts.append(f"### {eid}\n{text}")
         return "\n\n".join(parts)
 
-    def retrieve_hits(self, query_keywords, kb_name, top_k=10):
+    def _retrieve_embed_hits(self, query_keywords, kb_name, top_k=10):
         return [eid for eid, _ in self._rank(query_keywords, kb_name, top_k)]
 
     def _rank(self, query_keywords, kb_name, top_k):

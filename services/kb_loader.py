@@ -167,7 +167,11 @@ def _get_backend() -> BaseBackend:
                 from services.kb_embedding import register_embedding_backend
                 register_embedding_backend()
             except Exception as e:
-                raise ValueError(f"embedding 后端初始化失败: {e}")
+                # 生产兜底：embedding 初始化失败（模型缺失/损坏/依赖不全）时降级 lexical，
+                # 不挂服务；降级状态打印到 stderr，供部署监控抓取（见 README 生产切换节）
+                print(f"[kb_loader] WARN: embedding 后端初始化失败，降级 lexical: {e}", file=__import__("sys").stderr)
+                if "embedding" not in _BACKENDS:
+                    _BACKENDS["embedding"] = _BACKENDS["lexical"]
         else:
             raise ValueError(f"未知检索后端: {name}，可选 {sorted(_BACKENDS)}")
     return _BACKENDS[name]
