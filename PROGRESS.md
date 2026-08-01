@@ -36,6 +36,11 @@
     - 边界匹配通用规则（韩湘生补）：所有前缀匹配统一带分隔符边界（norm_path == path 或 startswith(path + os.sep)），防止 rw_paths_extra 等不带尾斜杠条目时 data/cache_evil 被放行
     - normpath 前提（hanako 补）：比较前声明条目与输入都先过 normpath（顺带消掉尾斜杠），再按边界匹配比较；否则声明 data/cache/ 时 path + os.sep 拼出 data/cache// 双斜杠，匹配失效
     - 协调点：依赖解析（外层，init_all 拓扑序）与 policy 注入（内层，单个插件 init 内）不冲突，外层定调用顺序，内层各自注入
+    - 纯函数已落地 `fc84c4b`：resolve_dependencies(dep_graph, available_versions) -> ResolveResult，47/47 测试
+    - prerelease 语义（hanako 审阅）：1.0.0-alpha 与 1.0.0 视为同版本（当前实现）；严格 SemVer 下 prerelease 只匹配 prerelease 约束，内部插件生态影响有限，记此约定不改实现
+    - 版本表活性（hanako 审阅）：available_versions 是存在性证据非活性证据；init_all 接入时版本表来源限定为已 active 插件，error/disabled 态不喂入，与依赖 error 同步传播相接
+    - 接入要求（hanako 钉）：接 init_all 时状态校验 + 版本表来源两件事不可漏
+    - 复杂度：Kahn O(V*E)，插件量小无所谓，量大了换反向邻接表
 - [ ] Phase 3：热升级（upgrading → swap 原子切换）+ 卸载不丢状态
 - [ ] Phase 4：外部插件发现（pip install / git clone → skills/ 目录）
 
