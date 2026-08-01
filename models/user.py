@@ -58,6 +58,16 @@ def init_db():
             created_at  TEXT NOT NULL,
             handled_at  TEXT
         );
+        CREATE TABLE IF NOT EXISTS events (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    TEXT,
+            device_id  TEXT,
+            event      TEXT NOT NULL,
+            meta       TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_events_event ON events(event, created_at);
+        CREATE INDEX IF NOT EXISTS idx_events_user ON events(user_id, created_at);
     """)
     # 迁移：旧 users 表可能缺少 tier 列
     try:
@@ -300,6 +310,46 @@ def reject_payment_order(order_id: str) -> dict | None:
         )
         conn.commit()
         return dict(conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone())
+    finally:
+        conn.close()
+
+
+def record_event(user_id: str | None, device_id: str | None, event: str, meta: dict | None = None) -> None:
+    """写入一条埋点事件。失败静默（埋点不能拖垮主流程）。"""
+    try:
+        conn = get_db()
+        try:
+            conn.execute(
+                "INSERT INTO events (user_id, device_id, event, meta, created_at) VALUES (?,?,?,?,?)",
+                (user_id, device_id, event,
+                 json.dumps(meta, ensure_ascii=False) if meta else None,
+                 _now_iso()),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception:
+        pass
+
+
+def query_events(event: str | None = None, since: str | None = None, limit: int = 200) -> list:
+    """查询埋点事件（管理端用）。"""
+    conn = get_db()
+    try:
+        sql = "SELECT * FROM events"
+        conds, args = [], []
+        if event:
+            conds.append("event = ?")
+            args.append(event)
+        if since:
+            conds.append("created_at >= ?")
+            args.append(since)
+        if conds:
+            sql += " WHERE " + " AND ".join(conds)
+        sql += " ORDER BY id DESC LIMIT ?"
+        args.append(limit)
+        rows = conn.execute(sql, args).fetchall()
+        return [dict(r) for r in rows]
     finally:
         conn.close()
 

@@ -611,7 +611,7 @@ $('btn-render').addEventListener('click',()=>{
 
     fetch('/api/ziwei/paipan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year:b.y,month:b.m,day:b.d,hour:hh,minute:mm,gender:b.gender,is_lunar:b.cal==='lunar',longitude:parseFloat($('longitude').value)||120,location:$('location').value||''})})
 
-    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d)})
+    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d);track('chart_created',{gender:b.gender,cal:b.cal})})
 
     .catch(()=>{$('loading-section').innerHTML='<p style="color:#ef5350;font-family:serif">排盘失败</p>'});
 
@@ -855,6 +855,17 @@ async function confirmAnalyze(){
   var _deviceId=localStorage.getItem('ziwei_device_id');
   if(!_deviceId){_deviceId=crypto.randomUUID();localStorage.setItem('ziwei_device_id',_deviceId)}
 
+  // ---------- Analytics (fire-and-forget) ----------
+  function track(event,meta){
+    try{
+      var body={event:event,device_id:_deviceId};
+      if(meta)body.meta=meta;
+      var h={'Content-Type':'application/json'};
+      if(_authToken)h.Authorization='Bearer '+_authToken;
+      fetch('/api/events',{method:'POST',headers:h,body:JSON.stringify(body)}).catch(function(){});
+    }catch(e){}
+  }
+
   // ---------- Auth ----------
   var _authMode='login', _authToken=localStorage.getItem('ziwei_token');
   function authHeaders(){
@@ -876,6 +887,7 @@ async function confirmAnalyze(){
       var d=await r.json();
       if(!r.ok){err.style.display='block';err.textContent=d.error||'请求失败';return}
       _authToken=d.token;localStorage.setItem('ziwei_token',d.token);
+      track(_authMode==='login'?'login':'register',{has_warning:!!d.warning});
       updateAuthUI(d.user);closeAuthModal();
       checkClaimable();
       loadSessions();
@@ -902,6 +914,7 @@ async function confirmAnalyze(){
   // ---------- Upgrade Pro ----------
   function showUpgradeModal(){
     if(!_authToken){showAuthModal('login');return}
+    track('upgrade_modal_open');
     $id('upgrade-result').style.display='none';
     $id('upgrade-cred').value='';$id('upgrade-invite').value='';
     $id('upgrade-overlay').style.display='flex';
@@ -920,6 +933,7 @@ async function confirmAnalyze(){
       var r=await fetch('/api/payment/order',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({credential:cred})});
       var d=await r.json();
       if(!r.ok){_setUpgradeResult(false,d.error||'提交失败');return}
+      track('upgrade_order_created',{method:'pay'});
       _setUpgradeResult(true,'已提交，人工核对后当天开通 Pro');
       setTimeout(closeUpgradeModal,2500);
     }catch(e){_setUpgradeResult(false,'网络错误，请重试')}
@@ -932,7 +946,8 @@ async function confirmAnalyze(){
     try{
       var r=await fetch('/api/payment/invite',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({code:code})});
       var d=await r.json();
-      if(!r.ok){_setUpgradeResult(false,d.error||'开通失败');return}
+      if(!r.ok){track('upgrade_invite_fail',{reason:d.error||'unknown'});_setUpgradeResult(false,d.error||'开通失败');return}
+      track('upgrade_invite_success');
       await checkAuth();
       _setUpgradeResult(true,'🎉 邀请码开通成功，已是 Pro');
       setTimeout(closeUpgradeModal,2000);

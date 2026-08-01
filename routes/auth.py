@@ -3,6 +3,7 @@
 """Auth routes — register, login, me, logout, admin tier management."""
 
 from flask import Blueprint, request, jsonify
+import time
 
 from models.user import create_user, authenticate, get_user_by_id, create_token, verify_token, get_db
 from utils.tier import VALID_TIERS
@@ -214,3 +215,44 @@ def reject_payment(order_id):
     if not order:
         return jsonify({"error": "订单不存在"}), 404
     return jsonify({"order": order})
+
+
+@admin_bp.route("/events", methods=["GET"])
+def list_events():
+    """埋点事件查询。?event=xxx&since=YYYY-MM-DD&limit=200
+    另附 /events/stats 返回按事件名的计数（看漏斗用）。"""
+    if not _check_admin():
+        return jsonify({"error": "unauthorized"}), 401
+    from models.user import query_events, get_db
+    event = request.args.get("event") or None
+    since = request.args.get("since") or None
+    try:
+        limit = min(int(request.args.get("limit", 200)), 2000)
+    except ValueError:
+        limit = 200
+    rows = query_events(event, since, limit)
+    return jsonify({"events": rows, "count": len(rows)})
+
+
+@admin_bp.route("/events/stats", methods=["GET"])
+def event_stats():
+    """漏斗统计：按事件名计数 + 今日注册/排盘/解读/升级。"""
+    if not _check_admin():
+        return jsonify({"error": "unauthorized"}), 401
+    from models.user import get_db
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT event, COUNT(*) AS cnt FROM events GROUP BY event ORDER BY cnt DESC"
+        ).fetchall()
+        today = time.strftime("%Y-%m-%dT00:00:00Z", time.gmtime())
+        today_rows = conn.execute(
+            "SELECT event, COUNT(*) AS cnt FROM events WHERE created_at >= ? GROUP BY event ORDER BY cnt DESC",
+            (today,),
+        ).fetchall()
+        return jsonify({
+            "all": [dict(r) for r in rows],
+            "today": [dict(r) for r in today_rows],
+        })
+    finally:
+        conn.close()

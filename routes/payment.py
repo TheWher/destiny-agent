@@ -17,25 +17,33 @@ from models.user import (
     get_payment_order,
     update_user_tier,
     verify_token,
+    record_event,
 )
 
 payment_bp = Blueprint("payment", __name__, url_prefix="/api/payment")
 
 
-# 邀请码：从 config.local.py 读取（默认关闭）
-INVITE_CODE = ""
+# 邀请码：优先读 INVITE_CODES 映射表 {code: owner}，兼容旧 INVITE_CODE 单码（归到 owner="king"）
+# 默认关闭
+INVITE_CODES = {}
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 try:
     import importlib.util as _iu
     _spec = _iu.spec_from_file_location("config_local", os.path.join(_ROOT, "config.local.py"))
     _cfg = _iu.module_from_spec(_spec)
     _spec.loader.exec_module(_cfg)
-    INVITE_CODE = getattr(_cfg, "INVITE_CODE", "")
+    _codes = getattr(_cfg, "INVITE_CODES", None)
+    _single = getattr(_cfg, "INVITE_CODE", "")
+    if isinstance(_codes, dict) and _codes:
+        INVITE_CODES = {str(k).strip(): str(v) for k, v in _codes.items() if str(k).strip()}
+    elif _single:
+        # 旧配置兼容：单码归到 owner=king
+        INVITE_CODES = {str(_single).strip(): "king"}
 except Exception:
     pass
 
-if not INVITE_CODE:
-    print("[payment] WARN: INVITE_CODE 为空，邀请码升级功能关闭。检查 config.local.py 是否已上传新版（含 INVITE_CODE 字段）。")
+if not INVITE_CODES:
+    print("[payment] WARN: 邀请码为空，邀请码升级功能关闭。检查 config.local.py 是否已上传新版（含 INVITE_CODE 字段）。")
 
 
 def _require_auth():
@@ -99,13 +107,15 @@ def redeem_invite():
 
     data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
-    if not INVITE_CODE:
+    if not INVITE_CODES:
         return jsonify({"error": "邀请码功能暂未开放"}), 400
     if not code:
         return jsonify({"error": "请填写邀请码"}), 400
-    if code != INVITE_CODE:
+    if code not in INVITE_CODES:
         return jsonify({"error": "邀请码无效"}), 400
 
     update_user_tier(user["id"], "pro")
-    order = create_payment_order(user["id"], user["email"], "invite", "邀请码:" + code)
+    order = create_payment_order(user["id"], user["email"], "invite", f"邀请码:{code}")
+    # 归因：记一条 invite_redeem 事件，meta 带码和发放人，复盘能对到人
+    record_event(user["id"], None, "invite_redeem", {"code": code, "owner": INVITE_CODES[code]})
     return jsonify({"success": True, "order": order})

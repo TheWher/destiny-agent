@@ -537,11 +537,38 @@ function copyReportLink(){
     const url=location.origin+'/ziwei/report/'+sid;
     if(navigator.clipboard){navigator.clipboard.writeText(url).catch(()=>prompt('复制链接:',url))}
     else{prompt('复制链接:',url)}
+    track('report_share');
 }
 let plateData = null;
 // auth
 let _ziweiToken = localStorage.getItem('ziwei_token');
 const _authHdrs = function(){ return _ziweiToken ? {'Authorization':'Bearer '+_ziweiToken} : {}; };
+
+// ── Analytics (fire-and-forget) ──
+let _rptDeviceId = localStorage.getItem('ziwei_device_id');
+if(!_rptDeviceId){ try{ _rptDeviceId = crypto.randomUUID(); localStorage.setItem('ziwei_device_id', _rptDeviceId); }catch(e){ _rptDeviceId=''; } }
+function track(event, meta){
+  try{
+    var body = {event:event, device_id:_rptDeviceId};
+    if(meta) body.meta = meta;
+    var h = {'Content-Type':'application/json'};
+    if(_ziweiToken) h.Authorization = 'Bearer '+_ziweiToken;
+    fetch('/api/events',{method:'POST',headers:h,body:JSON.stringify(body)}).catch(function(){});
+  }catch(e){}
+}
+// 页面停留时长：离开时上报秒数
+(function(){
+  var _t0 = Date.now();
+  function _reportStay(){
+    var secs = Math.round((Date.now()-_t0)/1000);
+    if(secs < 3) return;
+    track('report_stay',{seconds:secs});
+    _t0 = Date.now();
+  }
+  window.addEventListener('pagehide', _reportStay);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') _reportStay(); });
+  track('report_view',{sid:sid});
+})();
 // reportPw declared in ziwei-verify.js
 
 // ── Report Auth ──
@@ -1236,6 +1263,7 @@ async function analyzeScope(){
       await fetch('/api/ziwei/sessions/'+sid, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages: msgs}) });
       document.getElementById('analysis-text').innerHTML += '<hr style="border:none;border-top:1px dashed var(--line-faint);margin:14px 0"><h2>\ud83d\udcdc 叠盘分析</h2>' + formatText(d.analysis);
       document.getElementById('analysis-text').scrollIntoView({behavior:'smooth',block:'start'});
+      track('overlay_done',{scope: scope.yearly?('Y'+scope.yearly.year):(scope.decade?('D'+scope.decade.pName):'base')});
     } else {
       if(d.rate_limited){showUpgradeToast(d.error,d.tier);btn.disabled=false;btn.textContent='📜 叠盘分析';return;}
       alert('叠盘分析失败: '+(d.error||'未知错误'));
@@ -1271,6 +1299,7 @@ async function analyzeYearlyDeep(){
         el.innerHTML += '<hr style="border:none;border-top:1px dashed var(--line-faint);margin:14px 0"><h2>🔮 大限流年深度解读</h2>' + formatText(d.analysis);
         el.scrollIntoView({behavior:'smooth',block:'start'});
       }
+      track('yearly_deep_done',{target_year:targetYear});
     } else {
       if(d.rate_limited){ showUpgradeToast(d.error, d.tier); }
       else { alert('解读失败: '+(d.error||'未知错误')); }
@@ -1325,6 +1354,7 @@ async function startAnalysis(plate, password){
         }
         area.innerHTML = formatText(d.analysis);
         area.scrollIntoView({behavior:'smooth',block:'start'});
+        track('report_rendered',{tier: (d.tier||'')});
         await fetch('/api/ziwei/sessions/'+sid, {
           method:'PATCH', headers:{'Content-Type':'application/json'},
           body:JSON.stringify({messages:[{role:'assistant',content:d.analysis}]})
@@ -1432,6 +1462,7 @@ async function sendChat(){
     const d = await res.json();
     if(d.success){
       chatArea.innerHTML += `<div class="chat-msg agent"><div class="who">Agent</div>${formatText(d.analysis)}</div>`;
+      track('chat_turn',{len: reply.length});
       // 追加到 session
       msgs.push({role:'user', content: reply});
       msgs.push({role:'assistant', content: d.analysis});

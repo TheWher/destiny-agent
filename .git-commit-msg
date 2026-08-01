@@ -1,0 +1,4 @@
+fix: JWT_SECRET fallback to config.local.py for PA free tier
+
+PA free accounts cannot set Web env vars. Read JWT_SECRET
+from config.local.py as fallback, same pattern as ADMIN_TOKEN.
