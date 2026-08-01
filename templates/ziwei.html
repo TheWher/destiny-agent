@@ -611,7 +611,10 @@ $('btn-render').addEventListener('click',()=>{
 
     fetch('/api/ziwei/paipan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year:b.y,month:b.m,day:b.d,hour:hh,minute:mm,gender:b.gender,is_lunar:b.cal==='lunar',longitude:parseFloat($('longitude').value)||120,location:$('location').value||''})})
 
-    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d);track('chart_created',{gender:b.gender,cal:b.cal,input_time:b.h+':'+b.min})})
+    .then(r=>r.json()).then(d=>{plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d);
+      // input_time: 原始输入时:分（嗅探整点率）；unknown_time: 时辰不确定勾选（UI 上线前恒 false，字段结构先占位）
+      var _ut=document.getElementById('unknown-time');
+      track('chart_created',{gender:b.gender,cal:b.cal,input_time:b.h+':'+b.min,unknown_time:!!(_ut&&_ut.checked)});})
 
     .catch(()=>{$('loading-section').innerHTML='<p style="color:#ef5350;font-family:serif">排盘失败</p>'});
 
