@@ -23,6 +23,8 @@
 - [x] Phase 1：PluginManager + 六态状态机 + manifest 校验（`4249f86`，116/116 测试）
 - [ ] Phase 2 待办（来自 hanako 审阅钉项，勿沉底）：
   - [ ] 依赖解析放 init 阶段 + 版本号比对（enable 只做结构校验，运行时解析已延迟）
+    - 实现思路（hanako 提供）：init_all 对依赖图跑 Kahn 拓扑排序，依赖先 init；有环 → 进 error 态，错误信息列出环上插件名，不报"检测到循环依赖"；版本比对（>=1.0.0）与环检测同条落地
+    - 边界：依赖 init 失败进 error 时，依赖方应同步 error 并注明"依赖 X 处于 error 态"，符合优雅降级
   - [ ] rw_paths_extra 与 forbidden 冲突优先级理清
   - [ ] Sandbox 文件路径拦截真正接入 ToolRegistry.call()（方案A，路径参数标 format:path）
 - [ ] Phase 3：热升级（upgrading → swap 原子切换）+ 卸载不丢状态
