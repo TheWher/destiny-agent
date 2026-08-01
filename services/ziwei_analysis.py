@@ -12,6 +12,7 @@ import time
 import requests
 
 from services.kb_loader import _KB_DIR, _kb_cache, _load_json_kb, KB_PATH, KB_EXTENDED_PATH, retrieve_kb, extract_ziwei_keywords
+from services.kb_inject import join_classics_str
 from services.llm_client import API_CONFIG, _call_api, _call_api_stream
 
 # Agent 定义文件
@@ -227,11 +228,13 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
         parts.append("\n## 中州派辅佐煞曜参考（按命盘星曜检索）")
         parts.append(fuzuo_text)
 
-    # 古籍引用（格局→原文按需检索）
+    # 古籍引用（格局→原文按需检索；join annotations 分层呈现，转述不带引号，防假出处）
     patterns = plate_dict.get('patterns', [])
     if patterns:
-        pat_kw = [p.get('name', '') for p in patterns]
-        classics_text = retrieve_kb(pat_kw, "ziwei_classics.json", top_k=5)
+        pat_kw = [p.get('name', '') for p in patterns if p.get('name')]
+        # plate_ctx = 命盘格局名集合：hits 与之有交集才裁（命中格局不在盘里则回退全量，不裁空）
+        plate_ctx = set(pat_kw)
+        classics_text = join_classics_str(pat_kw, plate_ctx=plate_ctx, top_k=5)
         if classics_text:
             parts.append("## 📜 古籍引用（按格局检索）")
             parts.append(classics_text)

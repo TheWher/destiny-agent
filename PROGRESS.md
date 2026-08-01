@@ -72,6 +72,8 @@
 - 对比结果（`evaluation_reports/backend_compare_20260801.md`）：命中 100% 持平，平均返回 2423→331B（↓86%），文件级 25→0，≥1.6KB 占比 100%→0%，一致性 87/87 双后端通过。验收线：文件级 0 PASS、平均 331B 优良
 - 模型文件不入库（models/bge-small-zh-v1.5/ 已 gitignore），下载源 ModelScope（hf-mirror/直连超时或限速）；sentence-transformers>=2.7.0 入 requirements.txt
 - 注入层（`services/kb_inject.py`）：检索 hits → join classics annotations sidecar → 分层呈现（原文/混合带引文+出处，转述按语不带引号，假出处结构上编不出来）；条件式裁剪：plate_ctx 与 hits 有交集才裁（防 zc_ 纯提问裁空），∩ 空回退全量宁多勿空；数据层一致性检查 40 格局 1 矛盾（紫微独坐：混合但无 quotes，渲染已防御降级）
+- 生产路径切换（`services/ziwei_analysis.py`）：古籍引用段从 retrieve_kb 直拼改为 join_classics_str（plate_ctx=命盘格局名集合），假出处保证从评测路径进生产；fuzuo 保持 retrieve_kb（无引文语义）；test_ziwei 49/49 通过无回归
+- 注入层级断言（hanako）：`evaluation_sets/injection_check.py` 103 对全跑 81 对产引文块，结构违规 0；sidecar 两处数据修复（紫微独坐补引文、巨日同宫补出处），生成器同步修不回退
 
 ### 部署
 `https://thewher.pythonanywhere.com`（PythonAnywhere 免费账户）
