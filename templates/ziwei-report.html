@@ -567,7 +567,9 @@ function track(event, meta){
     var secs = Math.round((Date.now()-_t0)/1000);
     if(secs < 3) return;
     _t0 = Date.now();
-    var body = JSON.stringify({event:'report_stay', device_id:_rptDeviceId, meta:{seconds:secs}});
+    // rendered: 离开时解读是否已完成（交叉判别"未等到就关页"的流失，独立于完成者分布）
+    var _done = document.getElementById('analysis-text') && document.getElementById('analysis-text').textContent.length > 50;
+    var body = JSON.stringify({event:'report_stay', device_id:_rptDeviceId, meta:{seconds:secs, rendered:!!_done}});
     var h = {'Content-Type':'application/json'};
     if(_ziweiToken) h.Authorization = 'Bearer '+_ziweiToken;
     try{
