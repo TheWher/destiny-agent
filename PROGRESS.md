@@ -27,6 +27,8 @@
     - 边界：依赖 init 失败进 error 时，依赖方应同步 error 并注明"依赖 X 处于 error 态"，符合优雅降级
   - [ ] rw_paths_extra 与 forbidden 冲突优先级理清
   - [ ] Sandbox 文件路径拦截真正接入 ToolRegistry.call()（方案A，路径参数标 format:path）
+    - 归属关系（hanako 抛出）：Tool→Plugin 映射缺失，插件注册 Tool 时需绑定 SandboxPolicy；内建 Tool 免拦（可信代码）
+    - 落法建议：ToolDef 加 sandbox_policy 字段（内建为 None 免拦），插件 init 时 PluginManager 注入 policy，call() 层只查 tool.sandbox_policy，不反向依赖 PluginManager（避免 orchestrator→plugin_manager 循环）
 - [ ] Phase 3：热升级（upgrading → swap 原子切换）+ 卸载不丢状态
 - [ ] Phase 4：外部插件发现（pip install / git clone → skills/ 目录）
 
