@@ -34,6 +34,9 @@ try:
 except Exception:
     pass
 
+if not INVITE_CODE:
+    print("[payment] WARN: INVITE_CODE 为空，邀请码升级功能关闭。检查 config.local.py 是否已上传新版（含 INVITE_CODE 字段）。")
+
 
 def _require_auth():
     """Extract and verify JWT from Authorization header. Returns payload or None."""
