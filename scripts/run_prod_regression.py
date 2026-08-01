@@ -9,6 +9,7 @@
 """
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -33,7 +34,8 @@ def main() -> int:
     for line in out1.splitlines():
         if any(k in line for k in ("total=", "pass rate", "一致性", "文件级对", "平均返回长度")):
             print(line)
-    ok1 = "passed=87" in out1 or ("failed=0" in out1 and "run=87" in out1)
+    ok1 = ("passed=87" in out1 or ("failed=0" in out1 and "run=87" in out1)) \
+        and "文件级对: 0" in out1  # 粒度验收线进判定：降级 lexical 时文件级 25 必 FAIL
 
     print()
     print("=" * 60)
@@ -44,7 +46,7 @@ def main() -> int:
     for line in out2.splitlines():
         if "0.60" in line or "0.62" in line or "分界" in line:
             print(line)
-    ok2 = "min_score=0.60" in out2 and "过滤 100%" in out2
+    ok2 = bool(re.search(r"0\.60\s*\|\s*100\.0%\s*\|\s*100\.0%", out2))  # 0.60 档正负双 100%
 
     print()
     ok = ok1 and ok2
