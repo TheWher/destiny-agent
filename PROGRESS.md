@@ -71,6 +71,7 @@
 - 评测（dry_run_check）：三态验收线（文件级对→0 + 平均 1640 及格 / ~1KB 优良）、cff 16 对 graduated 跳过留档、粒度判定改动态（返回长度 vs 文件大小，不再硬编码 UNIT_MAP）、hits↔str 一致性第三道校验
 - 对比结果（`evaluation_reports/backend_compare_20260801.md`）：命中 100% 持平，平均返回 2423→331B（↓86%），文件级 25→0，≥1.6KB 占比 100%→0%，一致性 87/87 双后端通过。验收线：文件级 0 PASS、平均 331B 优良
 - 模型文件不入库（models/bge-small-zh-v1.5/ 已 gitignore），下载源 ModelScope（hf-mirror/直连超时或限速）；sentence-transformers>=2.7.0 入 requirements.txt
+- 注入层（`services/kb_inject.py`）：检索 hits → join classics annotations sidecar → 分层呈现（原文/混合带引文+出处，转述按语不带引号，假出处结构上编不出来）；条件式裁剪：plate_ctx 与 hits 有交集才裁（防 zc_ 纯提问裁空），∩ 空回退全量宁多勿空；数据层一致性检查 40 格局 1 矛盾（紫微独坐：混合但无 quotes，渲染已防御降级）
 
 ### 部署
 `https://thewher.pythonanywhere.com`（PythonAnywhere 免费账户）
