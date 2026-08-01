@@ -550,6 +550,7 @@ const _authHdrs = function(){ return _ziweiToken ? {'Authorization':'Bearer '+_z
 // ── Analytics (fire-and-forget) ──
 let _rptDeviceId = localStorage.getItem('ziwei_device_id');
 if(!_rptDeviceId){ try{ _rptDeviceId = crypto.randomUUID(); localStorage.setItem('ziwei_device_id', _rptDeviceId); }catch(e){ _rptDeviceId=''; } }
+let _rptT0 = Date.now();  // 页面加载时刻，解读等待时长从此起算
 function track(event, meta){
   try{
     var body = {event:event, device_id:_rptDeviceId};
@@ -561,7 +562,7 @@ function track(event, meta){
 }
 // 页面停留时长：离开时上报秒数（fetch keepalive，页面销毁也尽力送达；fallback sendBeacon）
 (function(){
-  var _t0 = Date.now();
+  var _t0 = _rptT0;
   function _reportStay(){
     var secs = Math.round((Date.now()-_t0)/1000);
     if(secs < 3) return;
@@ -1372,7 +1373,7 @@ async function startAnalysis(plate, password){
         }
         area.innerHTML = formatText(d.analysis);
         area.scrollIntoView({behavior:'smooth',block:'start'});
-        track('report_rendered',{tier: (d.tier||'')});
+        track('report_rendered',{tier: (d.tier||''), wait_seconds: Math.round((Date.now()-_rptT0)/1000)});
         await fetch('/api/ziwei/sessions/'+sid, {
           method:'PATCH', headers:{'Content-Type':'application/json'},
           body:JSON.stringify({messages:[{role:'assistant',content:d.analysis}]})
