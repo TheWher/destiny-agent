@@ -23,6 +23,10 @@ import os
 from services.kb_loader import BaseBackend, register_backend, _load_json_kb
 
 _MODEL_NAME = os.environ.get("KB_EMBEDDING_MODEL", "BAAI/bge-small-zh-v1.5")
+# 相似度阈值（可选）：默认不启用（None），评测基线不动；需要时设 KB_EMBEDDING_MIN_SCORE=0.4
+# 语义：过滤相似度低于阈值的条目，返回可能少于 top_k 甚至为空（真阳性误杀风险由负样本组评估）
+_MIN_SCORE_ENV = os.environ.get("KB_EMBEDDING_MIN_SCORE", "").strip()
+_MIN_SCORE = float(_MIN_SCORE_ENV) if _MIN_SCORE_ENV else None
 
 
 def _extract_entries(kb_name: str, kb: dict) -> list:
@@ -152,7 +156,13 @@ class EmbeddingBackend(BaseBackend):
         q = np.asarray(qs).mean(axis=0)
         q = q / np.linalg.norm(q)
         scores = np.asarray(idx["vecs"]) @ q  # 归一化后点积 = 余弦相似度
-        order = np.argsort(-scores)[:top_k]
+        if _MIN_SCORE is not None:
+            keep = np.where(scores >= _MIN_SCORE)[0]
+            if keep.size == 0:
+                return []
+            order = keep[np.argsort(-scores[keep])][:top_k]
+        else:
+            order = np.argsort(-scores)[:top_k]
         return [(idx["ids"][i], idx["texts"][i]) for i in order]
 
 
