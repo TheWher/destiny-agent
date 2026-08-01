@@ -29,6 +29,9 @@
   - [ ] Sandbox 文件路径拦截真正接入 ToolRegistry.call()（方案A，路径参数标 format:path）
     - 归属关系（hanako 抛出）：Tool→Plugin 映射缺失，插件注册 Tool 时需绑定 SandboxPolicy；内建 Tool 免拦（可信代码）
     - 落法建议：ToolDef 加 sandbox_policy 字段（内建为 None 免拦），插件 init 时 PluginManager 注入 policy，call() 层只查 tool.sandbox_policy，不反向依赖 PluginManager（避免 orchestrator→plugin_manager 循环）
+    - 注入时序（hanako 钉）：policy 注入必须在 register_fn 拿到 registered_tools 列表之后遍历注入，挂在 init() 后半段、ACTIVE 切换前，不与 register 前段打架
+    - 路径基准（hanako 钉）：validate_path 需统一基准，拦截前 normpath + 转相对项目根（建议 SandboxPolicy.validate_path 带 base_dir 参数），否则绝对路径被误拦、插件功能直接坏
+    - 协调点：依赖解析（外层，init_all 拓扑序）与 policy 注入（内层，单个插件 init 内）不冲突，外层定调用顺序，内层各自注入
 - [ ] Phase 3：热升级（upgrading → swap 原子切换）+ 卸载不丢状态
 - [ ] Phase 4：外部插件发现（pip install / git clone → skills/ 目录）
 
