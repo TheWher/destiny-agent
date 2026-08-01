@@ -74,6 +74,8 @@
 - 注入层（`services/kb_inject.py`）：检索 hits → join classics annotations sidecar → 分层呈现（原文/混合带引文+出处，转述按语不带引号，假出处结构上编不出来）；条件式裁剪：plate_ctx 与 hits 有交集才裁（防 zc_ 纯提问裁空），∩ 空回退全量宁多勿空；数据层一致性检查 40 格局 1 矛盾（紫微独坐：混合但无 quotes，渲染已防御降级）
 - 生产路径切换（`services/ziwei_analysis.py`）：古籍引用段从 retrieve_kb 直拼改为 join_classics_str（plate_ctx=命盘格局名集合），假出处保证从评测路径进生产；fuzuo 保持 retrieve_kb（无引文语义）；test_ziwei 49/49 通过无回归
 - 注入层级断言（hanako）：`evaluation_sets/injection_check.py` 103 对全跑 81 对产引文块，结构违规 0；sidecar 两处数据修复（紫微独坐补引文、巨日同宫补出处），生成器同步修不回退
+- 生产切换落地（King 拍 A）：EmbeddingBackend 模型加载失败降级 lexical（WARN 可观测不挂服务）；`scripts/fetch_embedding_model.py` 从 ModelScope 幂等拉模型；README 生产切换节（环境变量三件套 + Developer 档 + 降级说明）
+- 阈值标定（hanako）：negative_pairs 20 组 + threshold_eval 扫描，0.60 完美分界（正 100%/负 100%）、0.62 悬崖（正 96.6%），生产取 0.55 留安全垫；`scripts/run_prod_regression.py` 一键生产档回归（dry-run 87/87 + 0.60 分界漂移检查）；test_ziwei import 路径修复后 50/50 全绿
 
 ### 部署
 `https://thewher.pythonanywhere.com`（PythonAnywhere 免费账户）

@@ -209,7 +209,7 @@ def _t_lunar(name):
     check(name, ok)
 
 def _t_cache_key(name):
-    from app import _make_ziwei_cache_key
+    from utils.cache import _make_ziwei_cache_key  # 函数在 utils/cache.py（app 无此导出）
     plate = plate_to_dict(ziwei_paipan(1991,8,15,1,0,'男'), {})
     try:
         key = _make_ziwei_cache_key(plate)
