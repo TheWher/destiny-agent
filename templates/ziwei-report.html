@@ -549,13 +549,17 @@ var _rptAuthMode='login';
 function updateRptAuthUI(){
   if(_ziweiToken){
     $('rp-auth-placeholder').style.display='none';$('rp-auth-user').style.display='flex';
-    try{
-      var payload=JSON.parse(atob(_ziweiToken.split('.')[1]));
-      $('rp-auth-email').textContent=payload.email||'';
-      var tier=payload.tier||'free';
-      $('rp-auth-tier').textContent=tier==='free'?'免费':tier==='pro'?'Pro':'基础';
-      $('rp-auth-tier').style.background=tier==='pro'?'linear-gradient(135deg,#d4a843,#b8860b)':'var(--ink-faint)';
-    }catch(e){}
+    // tier 从 /me 实时读（数据库为准），升级后立即生效，不依赖 JWT 冻结值
+    fetch('/api/auth/me',{headers:_authHdrs()})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        var u=(d&&d.user)||{};
+        $('rp-auth-email').textContent=u.email||'';
+        var tier=u.tier||'free';
+        $('rp-auth-tier').textContent=tier==='free'?'免费':tier==='pro'?'Pro':'基础';
+        $('rp-auth-tier').style.background=tier==='pro'?'linear-gradient(135deg,#d4a843,#b8860b)':'var(--ink-faint)';
+      })
+      .catch(function(){});
   }else{
     $('rp-auth-placeholder').style.display='flex';$('rp-auth-user').style.display='none';
   }
