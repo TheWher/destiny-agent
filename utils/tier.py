@@ -59,9 +59,10 @@ def resolve_tier(payload: dict | None) -> str:
 
 def resolve_user_from_request(request) -> tuple[str | None, str]:
     """从 Flask request 解析 JWT，返回 (user_id, tier)。
-    未登录返回 (None, 'free')。
+    tier 以数据库为准（升级/降级即时生效，不依赖 token 刷新），
+    JWT payload 仅作身份凭证。未登录返回 (None, 'free')。
     """
-    from models.user import verify_token
+    from models.user import verify_token, get_user_by_id
     header = request.headers.get("Authorization", "")
     m = re.match(r"^Bearer\s+(.+)$", header)
     if not m:
@@ -69,4 +70,8 @@ def resolve_user_from_request(request) -> tuple[str | None, str]:
     payload = verify_token(m.group(1))
     if not payload:
         return None, TIER_FREE
-    return payload["user_id"], resolve_tier(payload)
+    user = get_user_by_id(payload["user_id"])
+    if not user:
+        return payload["user_id"], TIER_FREE
+    tier = user.get("tier") or TIER_FREE
+    return payload["user_id"], tier if tier in VALID_TIERS else TIER_FREE

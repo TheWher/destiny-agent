@@ -285,6 +285,13 @@ def api_ziwei_analyze_yearly():
                f"<a href='#' onclick='document.getElementById(\"authModal\").style.display=\"flex\";return false'>升级 Pro</a> 解锁 20 次/时") if tier == "free" else "请求过于频繁，请稍后再试"
         return jsonify({"error": msg, "rate_limited": True, "tier": tier, "redirect_auth": tier == "free"}), 429
 
+    # Pro 专属门槛：大限流年深度解读
+    if tier == "free":
+        return jsonify({
+            "error": "大限流年深度解读是 Pro 专属功能，升级后解锁",
+            "pro_required": True, "tier": tier,
+        }), 403
+
     try:
         # 本命盘
         plate_data = ziwei_paipan(year, month, day, hour, 0, gender, is_lunar)
@@ -317,6 +324,67 @@ def api_ziwei_analyze_yearly():
         patterns = plate_dict.get('patterns', [])
         pattern_str = ' · '.join(p['name'] for p in patterns) if patterns else '无特殊格局'
 
+        # ── 大限十年全景 + 流年三年（Pro 深度注入，引擎已算好禁止自行推算） ──
+        GAN_SIHUA = {
+            '甲': {'化禄': '廉贞', '化权': '破军', '化科': '武曲', '化忌': '太阳'},
+            '乙': {'化禄': '天机', '化权': '天梁', '化科': '紫微', '化忌': '太阴'},
+            '丙': {'化禄': '天同', '化权': '天机', '化科': '文昌', '化忌': '廉贞'},
+            '丁': {'化禄': '太阴', '化权': '天同', '化科': '天机', '化忌': '巨门'},
+            '戊': {'化禄': '贪狼', '化权': '太阴', '化科': '右弼', '化忌': '天机'},
+            '己': {'化禄': '武曲', '化权': '贪狼', '化科': '天梁', '化忌': '文曲'},
+            '庚': {'化禄': '太阳', '化权': '武曲', '化科': '太阴', '化忌': '天同'},
+            '辛': {'化禄': '巨门', '化权': '太阳', '化科': '文曲', '化忌': '文昌'},
+            '壬': {'化禄': '天梁', '化权': '紫微', '化科': '左辅', '化忌': '武曲'},
+            '癸': {'化禄': '破军', '化权': '巨门', '化科': '太阴', '化忌': '贪狼'},
+        }
+        GAN = '甲乙丙丁戊己庚辛壬癸'
+        ZHI = '子丑寅卯辰巳午未申酉戌亥'
+        import datetime as _dt
+        now_year = _dt.date.today().year
+        birth_str = plate_dict.get('input', {}).get('birth_datetime', '')
+        birth_year = int(birth_str[:4]) if birth_str and birth_str[:4].isdigit() else 0
+        current_age = now_year - birth_year if birth_year else 0
+
+        decadal_rows = []
+        current_dec = None
+        for pal in plate_dict.get('palaces', []):
+            dz = pal.get('decadal_dizhi', '')
+            gan = dz[0] if dz and len(dz) >= 1 else ''
+            fly = GAN_SIHUA.get(gan, {})
+            decadal_rows.append(f"| {pal['name']} | {dz or '—'} | {fly.get('化禄','—')} | {fly.get('化权','—')} | {fly.get('化科','—')} | {fly.get('化忌','—')} |")
+            dr = pal.get('decadal_range', '')
+            if dr and '-' in dr and current_age > 0:
+                try:
+                    lo, hi = dr.split('-')
+                    if int(lo) <= current_age <= int(hi):
+                        current_dec = pal
+                except ValueError:
+                    pass
+        decadal_extra = ''
+        if current_dec:
+            cd_dz = current_dec.get('decadal_dizhi', '?')
+            cd_fly = GAN_SIHUA.get(cd_dz[0], {}) if cd_dz else {}
+            decadal_extra = (f"当前 {current_age} 岁，正行 **{current_dec['name']}** 大限（{current_dec.get('decadal_range','')}），"
+                             f"大限四化：{'、'.join(f'{mu}→{star}' for mu, star in cd_fly.items())}")
+            for mu, star in cd_fly.items():
+                for pal in plate_dict.get('palaces', []):
+                    hit = False
+                    for s in pal.get('major_stars', []) + pal.get('minor_stars', []):
+                        sn = s['name'] if isinstance(s, dict) else s
+                        if sn == star:
+                            decadal_extra += f"；{mu} {star} 在 {pal['name']} 宫"
+                            hit = True
+                            break
+                    if hit:
+                        break
+
+        liunian_rows = []
+        for offset, label in [(-1, f'{now_year-1}年'), (0, f'{now_year}年（当前）'), (1, f'{now_year+1}年')]:
+            yg = GAN[(now_year + offset - 4) % 10]
+            yz = ZHI[(now_year + offset - 4) % 12]
+            yf = GAN_SIHUA.get(yg, {})
+            liunian_rows.append(f"| {label} | {yg}{yz} | {'、'.join(f'{mu}→{star}' for mu, star in yf.items())} |")
+
         # 流年聚焦
         liuyao = horo.get('liuyao', {})
         liuyao_str = ' · '.join(f"{k}→{v}" for k, v in liuyao.items()) if liuyao else '无'
@@ -335,6 +403,17 @@ def api_ziwei_analyze_yearly():
 ## 当前大限
 干支: {horo['decadal_gz']}
 落宫: {horo['decadal_palace']}
+
+## 大限十年全景（深度）
+| 宫位 | 大限干支 | 化禄 | 化权 | 化科 | 化忌 |
+|------|----------|------|------|------|------|
+{chr(10).join(decadal_rows)}
+{decadal_extra}
+
+## 流年三年
+| 年份 | 干支 | 流年四化 |
+|------|------|----------|
+{chr(10).join(liunian_rows)}
 
 ## {target_year}年流年
 干支: {horo['yearly_gz']}

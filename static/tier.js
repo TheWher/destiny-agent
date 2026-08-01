@@ -25,7 +25,7 @@
     let body = '<div style="margin-bottom:4px">' + escapeHtml(msg) + '</div>';
     if (isFree) {
       body += '<div style="color:var(--ink-faint,#999);font-size:11px;margin-bottom:10px">';
-      body += 'Pro 解锁 20 次/时 · 无限追问 · 大限流年解读即将上线';
+      body += 'Pro 解锁 20 次/时 · 无限追问 · 大限流年深度解读';
       body += '</div>';
       body += '<button id="tier-upgrade-btn" style="';
       body += 'background:linear-gradient(135deg,#d4a843,#b8860b);color:#fff;border:none;';

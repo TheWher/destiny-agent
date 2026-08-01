@@ -457,6 +457,7 @@
     <span class="ss-label">📍 当前叠盘</span>
     <span id="ss-chips"></span>
     <button id="btn-scope-analyze" class="btn btn-accent" onclick="analyzeScope()" style="display:none;font-size:11px;padding:3px 10px;margin:0 8px">📜 叠盘分析</button>
+    <button id="btn-yearly-deep" class="btn btn-gold" onclick="analyzeYearlyDeep()" style="display:inline-flex;font-size:11px;padding:3px 10px;margin:0 4px">🔮 大限流年解读<span style="font-size:9px;margin-left:4px;opacity:.85">Pro</span></button>
     <span class="ss-clear" onclick="clearAllScope()">清除全部 ✕</span>
   </div>
   <!-- 运限三层架构 -->
@@ -1237,6 +1238,41 @@ async function analyzeScope(){
     }
   }catch(e){ alert('网络错误: '+e.message); }
   btn.disabled = false; btn.textContent = '\ud83d\udcdc 叠盘分析';
+}
+// ── 大限流年深度解读（Pro 专属） ──
+async function analyzeYearlyDeep(){
+  if(!plateData) return;
+  const btn = document.getElementById('btn-yearly-deep');
+  if(!btn) return;
+  btn.disabled = true; btn.textContent = '解读中...';
+  const info = plateData.input||{};
+  const bd = info.birth_datetime||'';
+  const m = bd.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2})/);
+  if(!m){ alert('无法解析生辰'); btn.disabled=false; btn.textContent='🔮 大限流年解读'; return; }
+  const targetYear = new Date().getFullYear();
+  try{
+    const res = await fetch('/api/ziwei/analyze/yearly', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({year:+m[1], month:+m[2], day:+m[3], hour:+m[4], gender:info.gender||'男', target_year:targetYear, is_lunar:false})
+    });
+    const d = await res.json();
+    if(res.status===403 && d.pro_required){
+      if(_ziweiToken){ showUpgradeToast('大限流年深度解读是 Pro 专属功能，升级后解锁', 'free'); }
+      else { showRptAuth('login'); alert('请先登录，升级 Pro 解锁大限流年深度解读'); }
+      btn.disabled=false; btn.textContent='🔮 大限流年解读'; return;
+    }
+    if(d.success && d.analysis){
+      const el = document.getElementById('analysis-text');
+      if(el){
+        el.innerHTML += '<hr style="border:none;border-top:1px dashed var(--line-faint);margin:14px 0"><h2>🔮 大限流年深度解读</h2>' + formatText(d.analysis);
+        el.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    } else {
+      if(d.rate_limited){ showUpgradeToast(d.error, d.tier); }
+      else { alert('解读失败: '+(d.error||'未知错误')); }
+    }
+  }catch(e){ alert('网络错误: '+e.message); }
+  btn.disabled=false; btn.textContent='🔮 大限流年解读';
 }
 // ── 流式分析 ──
 async function startAnalysis(plate, password){
