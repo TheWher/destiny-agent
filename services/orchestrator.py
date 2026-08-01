@@ -13,10 +13,14 @@
 """
 
 import json
+import os
 import time
 import traceback
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
+
+if TYPE_CHECKING:
+    from services.plugin_manager import SandboxPolicy
 
 # ── 类型定义 ─────────────────────────────────────────────
 
@@ -28,6 +32,8 @@ class ToolDef:
     fn: Callable[..., dict]                   # 实际执行函数
     parameters: dict = field(default_factory=dict)  # 参数 schema（JSON Schema 格式）
     category: str = "general"                 # 分类：paipan / query / render / external
+    sandbox_policy: Optional["SandboxPolicy"] = None  # 沙箱策略：内建 Tool 为 None（可信免拦），
+                                                      # 插件 init 时由 PluginManager 注入
 
 @dataclass
 class CapabilityDef:
@@ -69,7 +75,10 @@ class ToolRegistry:
     所有工具必须返回 dict，包含 success 字段。
     """
 
-    def __init__(self):
+    def __init__(self, base_dir: Optional[str] = None):
+        """base_dir: 沙箱路径校验的唯一基准（项目根），默认取本文件上级的上级目录"""
+        self.base_dir = base_dir or os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))
         self._tools: dict[str, ToolDef] = {}
 
     def register(self, tool: ToolDef) -> None:
@@ -87,10 +96,21 @@ class ToolRegistry:
         return [t for t in self._tools.values() if t.category == category]
 
     def call(self, name: str, **kwargs) -> ToolResult:
-        """执行一个已注册的工具"""
+        """执行一个已注册的工具
+
+        Phase 2 Sandbox：插件 Tool（sandbox_policy 非 None）在 call() 层统一拦截
+        format:path 参数；内建 Tool（policy 为 None）视为可信代码直接放行。
+        """
         tool = self._tools.get(name)
         if not tool:
             return ToolResult(success=False, error=f"Tool '{name}' not found")
+
+        # Phase 2 Sandbox：带 policy 的插件 Tool 先过路径拦截
+        if tool.sandbox_policy is not None:
+            denied = self._enforce_sandbox(tool, kwargs)
+            if denied:
+                return ToolResult(success=False, error=denied)
+
         t0 = time.perf_counter()
         try:
             data = tool.fn(**kwargs)
@@ -101,6 +121,32 @@ class ToolRegistry:
         except Exception as e:
             elapsed = (time.perf_counter() - t0) * 1000
             return ToolResult(success=False, error=f"{e}", elapsed_ms=elapsed)
+
+    def _enforce_sandbox(self, tool: ToolDef, kwargs: dict) -> Optional[str]:
+        """校验插件 Tool 的 format:path 参数（方案 A：声明式拦截）
+
+        约定（PROGRESS.md Phase 2）：
+        - parameters.properties 里 format:path 标注路径参数，write: true 标注写意图（默认读）
+        - 只拦显式标注的参数；未标注的不受拦（方案 A 固有边界，硬约束挂 Phase 4 manifest 校验）
+        - 基准：self.base_dir（项目根）唯一基准，validate_path 内部先 relpath 归一
+
+        Returns:
+            违规时返回错误描述，全部通过返回 None
+        """
+        policy = tool.sandbox_policy
+        props = (tool.parameters or {}).get("properties", {})
+        for param_name, schema in props.items():
+            if not isinstance(schema, dict) or schema.get("format") != "path":
+                continue
+            if param_name not in kwargs or kwargs[param_name] is None:
+                continue
+            is_write = bool(schema.get("write", False))
+            value = str(kwargs[param_name])
+            if not policy.validate_path(value, is_write=is_write, base_dir=self.base_dir):
+                action = "写入" if is_write else "读取"
+                return (f"沙箱拦截: 工具 '{tool.name}' 参数 '{param_name}' "
+                        f"尝试{action}路径 '{value}'，超出插件允许范围")
+        return None
 
     def to_json_schema(self) -> list[dict]:
         """导出为 LLM function-calling 兼容的 JSON Schema"""

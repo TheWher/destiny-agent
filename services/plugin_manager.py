@@ -14,6 +14,10 @@ ADR-006 落地 Phase 1：在 SkillRegistry 外层包生命周期和校验壳。
   ① 六态全部可达且转移路径经过测试
   ② manifest 校验覆盖格式错误/版本不兼容/依赖缺失三类
   ③ 优雅降级：崩溃插件不污染主 Cycle（dummy crash 插件测试）
+
+Phase 2（Sandbox 落地 + 依赖解析，ADR-006）：
+  ④ 文件路径拦截接入 ToolRegistry.call()（方案 A：format:path 声明 + call() 层统一拦）
+  ⑤ 依赖解析：init_all 拓扑序 + 版本比对 + 依赖 error 同步传播
 """
 
 import json
@@ -77,33 +81,48 @@ class SandboxPolicy:
         policy.requires_network = sandbox.get("requires_network", False)
         return policy
 
-    def validate_path(self, file_path: str, is_write: bool = False) -> bool:
-        """校验文件路径是否在允许范围内
+    def validate_path(self, file_path: str, is_write: bool = False,
+                      base_dir: Optional[str] = None) -> bool:
+        """校验文件路径是否在允许范围内（Phase 2 在 ToolRegistry.call() 层调用）
 
-        Phase 2 在 ToolRegistry.call() 层统一调用此方法拦截。
-        Phase 1 仅完成策略定义，不做实际拦截。
+        规则（PROGRESS.md Phase 2 设计面）：
+        - 路径基准：base_dir（项目根）是唯一基准；绝对路径先 relpath 归一，
+          相对路径约定为项目根相对（不做 relpath，避免对相对输入按 CWD 解析导致基准漂移）
+        - 跨盘兜底：Windows 上跨盘 relpath 抛 ValueError，兜住当越界拦截，不穿透到 call()
+        - normpath 前提：声明条目与输入都先 normpath（顺带消掉尾斜杠）再比较
+        - 边界匹配：norm_path == path 或 startswith(path + os.sep)，防 data/cache_evil 类漏拦
+        - 优先级：forbidden 先于 allowed（deny-first），声明冲突时禁止胜出
         """
+        # 归一化：绝对路径先转相对项目根；相对路径直接视为项目根相对
+        if base_dir is not None and os.path.isabs(file_path):
+            try:
+                file_path = os.path.relpath(file_path, base_dir)
+            except ValueError:
+                # 跨盘（如 D:\ 相对 C:\）无法归一，当越界拦截
+                return False
         norm_path = os.path.normpath(file_path)
 
-        # 先检查禁止路径
+        # 禁止路径优先（deny-first）：与 rw/ro 冲突时禁止胜出
         for forbidden in self.forbidden_paths:
-            forbidden_norm = os.path.normpath(forbidden)
-            if norm_path.startswith(forbidden_norm):
+            if _path_within(norm_path, os.path.normpath(forbidden)):
                 return False
 
-        # 检查允许路径
+        # 允许路径（写只允许 rw，读允许 rw + ro）
         allowed = self.rw_paths if is_write else (self.rw_paths + self.ro_paths)
         for path in allowed:
-            path_norm = os.path.normpath(path)
-            if norm_path.startswith(path_norm):
-                return True
-
-        # 共享知识库默认允许读取
-        if not is_write and "knowledge_base/" not in str(allowed):
-            if norm_path.startswith("knowledge_base"):
+            if _path_within(norm_path, os.path.normpath(path)):
                 return True
 
         return False
+
+
+def _path_within(norm_path: str, norm_prefix: str) -> bool:
+    """带分隔符边界的路径前缀匹配
+
+    两侧都必须先 normpath（调用方保证）。完全相等或 startswith(prefix + os.sep)
+    才算命中，防止无边界前缀（如声明 data/cache 不带尾斜杠时 data/cache_evil）被误放行。
+    """
+    return norm_path == norm_prefix or norm_path.startswith(norm_prefix + os.sep)
 
 
 # ── Manifest 定义和校验 ───────────────────────────────────
@@ -440,6 +459,12 @@ class PluginManager:
                 except Exception as e:
                     raise RuntimeError(f"插件 register() 执行失败: {e}")
 
+            # Phase 2 Sandbox：policy 注入。
+            # 时序约定（PROGRESS.md）：register_fn 拿到 registered_tools 列表 → 遍历注入
+            # → 切 ACTIVE。外层 init_all 拓扑序只定 init 调用顺序，这里每个插件各自注入，
+            # 两层不打架。只注入插件显式声明的 Tool，内建 Tool 保持 None（可信免拦）。
+            self._inject_sandbox_policy(runtime)
+
             runtime.state = PluginState.ACTIVE
             runtime.loaded_at = _now()
             runtime.state_changed_at = _now()
@@ -447,6 +472,21 @@ class PluginManager:
 
         except Exception as e:
             return self._set_error(plugin_name, f"init 失败: {e}", traceback.format_exc())
+
+    def _inject_sandbox_policy(self, runtime: PluginRuntime) -> None:
+        """把插件的 SandboxPolicy 注入其显式声明的 Tool
+
+        只注入插件 register() 返回的 tools 列表里的 Tool；ToolRegistry 不反向依赖
+        PluginManager（避免 orchestrator→plugin_manager 循环依赖），call() 层只查
+        tool.sandbox_policy，None 直接放行。
+        未显式声明的 Tool（或 orchestrator 缺失时）保持 None，不注入、不拦截。
+        """
+        if not self.orchestrator or not runtime.registered_tools:
+            return
+        for tool_name in runtime.registered_tools:
+            tool = self.orchestrator.tools.get(tool_name)
+            if tool is not None:
+                tool.sandbox_policy = runtime.sandbox_policy
 
     def disable(self, plugin_name: str) -> PluginRuntime:
         """禁用插件，保留注册但不路由新请求

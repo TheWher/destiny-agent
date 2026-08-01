@@ -24,6 +24,7 @@ from services.plugin_manager import (
 )
 from services.orchestrator import (
     AnalysisOrchestrator, ToolDef, CapabilityDef, SkillDef,
+    ToolRegistry,
 )
 
 # ── 颜色和计数 ──
@@ -735,6 +736,203 @@ def _make_plugin_dir(tmpdir, name, manifest_extra=None, init_body="return {'tool
     return d
 
 
+# ══════════════════════════════════════════════════════════
+# 8. Phase 2: Sandbox 拦截接入 ToolRegistry
+# ══════════════════════════════════════════════════════════
+
+# 插件 register() 注册一个带 format:path 标注的真实 Tool（读 + 写 + 未标注参数）
+_SANDBOX_TOOL_PLUGIN_INIT = '''
+from services.orchestrator import ToolDef
+
+
+def _read_file(**kw):
+    return {"success": True, "content": "ok"}
+
+
+def register(orch):
+    orch.tools.register(ToolDef(
+        name="plugin_read",
+        description="读取文件（沙箱演示）",
+        fn=_read_file,
+        parameters={
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string", "format": "path"},
+                "out_path": {"type": "string", "format": "path", "write": True},
+                "plain_text": {"type": "string"},
+            },
+            "required": [],
+        },
+        category="plugin",
+    ))
+    return {"tools": ["plugin_read"], "capabilities": [], "skills": []}
+'''
+
+# 注册两个 Tool 但只显式声明一个 → 未声明的不得注入
+_SANDBOX_PARTIAL_PLUGIN_INIT = '''
+from services.orchestrator import ToolDef
+
+
+def _mk(name):
+    return ToolDef(
+        name=name,
+        description="沙箱演示",
+        fn=lambda **kw: {"success": True},
+        parameters={
+            "type": "object",
+            "properties": {"file_path": {"type": "string", "format": "path"}},
+            "required": [],
+        },
+        category="plugin",
+    )
+
+
+def register(orch):
+    orch.tools.register(_mk("plugin_declared"))
+    orch.tools.register(_mk("plugin_undeclared"))
+    return {"tools": ["plugin_declared"], "capabilities": [], "skills": []}
+'''
+
+
+def _make_sandbox_plugin(tmpdir, name, init_body=_SANDBOX_TOOL_PLUGIN_INIT):
+    """构造一个注册真实 Tool 的插件目录"""
+    d = os.path.join(tmpdir, name)
+    os.makedirs(d, exist_ok=True)
+    manifest = {"name": name, "version": "1.0.0", "api_version": CURRENT_API_VERSION}
+    with open(os.path.join(d, "manifest.yaml"), "w", encoding="utf-8") as f:
+        f.write(json.dumps(manifest))
+    with open(os.path.join(d, "__init__.py"), "w", encoding="utf-8") as f:
+        f.write(init_body)
+    return d
+
+
+def test_sandbox_interception():
+    print(f"\n{B}═══ 8. Phase 2: Sandbox 拦截接入 ToolRegistry ═══{N}\n")
+    import shutil
+    tmpdir = tempfile.mkdtemp(prefix="sandbox_test_")
+
+    # ── 8.1 ToolDef 默认 None（内建可信免拦）──
+    t = ToolDef(name="trusted", description="内建", fn=lambda **kw: {"success": True})
+    check("ToolDef 默认 sandbox_policy=None", t.sandbox_policy is None)
+
+    # ── 8.2 注入时序：register_fn 拿列表 → 遍历注入 → 切 ACTIVE ──
+    orch = AnalysisOrchestrator()
+    orch.register_defaults()
+    pm = PluginManager(orch)
+    d = _make_sandbox_plugin(tmpdir, "sandbox_plug")
+    pm.register(PluginManifest.from_dict(
+        {"name": "sandbox_plug", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=d), d)
+    pm.enable("sandbox_plug")
+    r = pm.init("sandbox_plug")
+    check("注入-插件 init 后 ACTIVE", r.state == PluginState.ACTIVE,
+          f"state={r.state.value}")
+    tool = orch.tools.get("plugin_read")
+    check("注入-插件 Tool 拿到 policy",
+          tool is not None and tool.sandbox_policy is not None)
+    check("注入-内建 Tool 仍为 None",
+          orch.tools.get("paipan_bazi").sandbox_policy is None)
+
+    # ── 8.3 call() 拦截语义 ──
+    res = orch.tools.call("plugin_read", file_path="sessions/sandbox_plug/x.txt")
+    check("拦截-允许读 sessions 内", res.success, res.error or "")
+    res = orch.tools.call("plugin_read", file_path="knowledge_base/bazi.json")
+    check("拦截-允许读 knowledge_base", res.success, res.error or "")
+    res = orch.tools.call("plugin_read", out_path="sessions/sandbox_plug/out.json",
+                          file_path="knowledge_base/bazi.json")
+    check("拦截-允许写 sessions", res.success, res.error or "")
+
+    res = orch.tools.call("plugin_read", file_path="config.local.py")
+    check("拦截-拒绝读 config.local.py",
+          not res.success and "沙箱拦截" in res.error, res.error or "")
+    res = orch.tools.call("plugin_read", out_path="data/secret.json",
+                          file_path="knowledge_base/bazi.json")
+    check("拦截-拒绝写 data/", not res.success, res.error or "")
+    res = orch.tools.call("plugin_read", file_path="D:\\outside\\evil.txt")
+    check("拦截-拒绝基准外绝对路径", not res.success, res.error or "")
+
+    # 未标注 format:path 的参数不受拦（方案 A 声明式边界）
+    res = orch.tools.call("plugin_read", plain_text="config.local.py")
+    check("拦截-未标注参数放行（声明式边界）", res.success, res.error or "")
+
+    # 内建 Tool（None policy）即使标注 format:path 也免拦
+    orch.tools.register(ToolDef(
+        name="trusted_path",
+        description="内建路径工具",
+        fn=lambda **kw: {"success": True},
+        parameters={"type": "object",
+                    "properties": {"file_path": {"type": "string", "format": "path"}},
+                    "required": []},
+    ))
+    res = orch.tools.call("trusted_path", file_path="config.local.py")
+    check("拦截-内建 Tool 免拦", res.success, res.error or "")
+
+    # ── 8.4 只注入显式声明的 Tool ──
+    orch2 = AnalysisOrchestrator()
+    orch2.register_defaults()
+    pm2 = PluginManager(orch2)
+    d2 = _make_sandbox_plugin(tmpdir, "partial_plug", _SANDBOX_PARTIAL_PLUGIN_INIT)
+    pm2.register(PluginManifest.from_dict(
+        {"name": "partial_plug", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=d2), d2)
+    pm2.enable("partial_plug")
+    r2 = pm2.init("partial_plug")
+    check("部分声明-插件 ACTIVE", r2.state == PluginState.ACTIVE,
+          f"state={r2.state.value}")
+    check("部分声明-声明的 Tool 注入",
+          orch2.tools.get("plugin_declared").sandbox_policy is not None)
+    check("部分声明-未声明的 Tool 不注入",
+          orch2.tools.get("plugin_undeclared").sandbox_policy is None)
+
+    # ── 8.5 validate_path 单元：基准/跨盘/边界/fallback/优先级 ──
+    base_dir = ToolRegistry().base_dir
+    sp = SandboxPolicy.default("base_test")
+    check("vpath-相对 sessions 写",
+          sp.validate_path("sessions/base_test/a.json", is_write=True, base_dir=base_dir))
+    abs_ok = os.path.join(base_dir, "sessions", "base_test", "a.json")
+    check("vpath-基准内绝对路径归一后允许",
+          sp.validate_path(abs_ok, is_write=True, base_dir=base_dir))
+    abs_out = os.path.join(os.path.dirname(base_dir), "outside", "evil.json")
+    check("vpath-基准外绝对路径拒绝",
+          sp.validate_path(abs_out, is_write=False, base_dir=base_dir) == False)
+
+    # 跨盘兜底：挑一个与项目根不同的盘符，relpath 必抛 ValueError
+    proj_drive = os.path.splitdrive(os.path.abspath(base_dir))[0].upper()
+    other = "C:" if proj_drive != "C:" else "D:"
+    cross = other + os.sep + "evil" + os.sep + "x.txt"
+    check("vpath-跨盘 relpath ValueError 兜底拒绝",
+          sp.validate_path(cross, is_write=False, base_dir=base_dir) == False)
+
+    # 边界匹配：声明 data/cache/（带尾斜杠）→ 命中 data/cache，拒绝 data/cache_evil
+    sp_b = SandboxPolicy(plugin_name="edge", rw_paths=["data/cache/"],
+                         ro_paths=[], forbidden_paths=[])
+    check("边界-尾斜杠声明 data/cache 命中",
+          sp_b.validate_path("data/cache/x.json", is_write=True, base_dir=base_dir))
+    check("边界-data/cache 精确命中",
+          sp_b.validate_path("data/cache", is_write=True, base_dir=base_dir))
+    check("边界-data/cache_evil 拒绝",
+          sp_b.validate_path("data/cache_evil/x.json", is_write=True, base_dir=base_dir) == False)
+
+    # normpath 前提：声明带双斜杠仍命中（两侧先归一再比较）
+    sp_n = SandboxPolicy(plugin_name="norm", rw_paths=["data//cache/"],
+                         ro_paths=[], forbidden_paths=[])
+    check("normpath-声明双斜杠仍命中",
+          sp_n.validate_path("data/cache/x.json", is_write=True, base_dir=base_dir))
+
+    # fallback 清理：knowledge_base_evil 不再被旧 fallback 分支放行
+    sp_f = SandboxPolicy(plugin_name="fb", rw_paths=["sessions/fb/"],
+                         ro_paths=["knowledge_base/"], forbidden_paths=[])
+    check("fallback-清理后 knowledge_base_evil 拒绝",
+          sp_f.validate_path("knowledge_base_evil/x.json", is_write=False, base_dir=base_dir) == False)
+
+    # deny-first：rw_paths_extra 与默认 forbidden data/ 冲突 → 禁止胜出
+    sp_p = SandboxPolicy.from_manifest("prio", {"sandbox": {"rw_paths_extra": ["data/cache/"]}})
+    check("优先级-rw 与 forbidden 冲突时禁止胜出",
+          sp_p.validate_path("data/cache/x.json", is_write=True, base_dir=base_dir) == False)
+
+    shutil.rmtree(tmpdir)
+
+
 def test_init_all_dependencies():
     print(f"\n{B}═══ 7. init_all 依赖解析集成 ═══{N}\n")
 
@@ -878,6 +1076,7 @@ if __name__ == "__main__":
     test_builtin_register()
     test_orchestrator_integration()
     test_init_all_dependencies()
+    test_sandbox_interception()
 
     # 汇总
     print(f"\n\n{B}{'='*60}{N}")
@@ -890,6 +1089,7 @@ if __name__ == "__main__":
         print(f"  ① 六态全部可达且转移路径经过测试 ✓")
         print(f"  ② manifest 校验覆盖格式/版本/依赖 ✓")
         print(f"  ③ 优雅降级：crash 插件不污染主 Cycle ✓")
+        print(f"  {G}✅ Phase 2 Sandbox 拦截已接入 ToolRegistry.call()（方案 A）{N}")
     else:
         print(f"\n  {R}{B}❌ 有 {fail_count} 项失败，Phase 1 不满足完工标准{N}")
 
