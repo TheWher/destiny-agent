@@ -360,17 +360,10 @@ class PluginManager:
                     message=f"api_version 不兼容：需要 {CURRENT_API_VERSION}，得到 {manifest.api_version}"
                 )
 
-            # 校验依赖
-            if manifest.requires:
-                plugins_req = manifest.requires.get("plugins", {})
-                for dep_name, dep_ver in plugins_req.items():
-                    dep = self._plugins.get(dep_name)
-                    if not dep or not dep.state.is_working():
-                        raise ManifestValidationError(
-                            field="requires.plugins",
-                            message=f"依赖插件 '{dep_name}' 不存在或未激活"
-                        )
-                    # Phase 2 补充版本号比对
+            # 依赖校验：Phase 1 只保留 requires 结构校验（from_dict 已做），
+            # 不做运行时依赖解析——enable 阶段依赖插件最多是 ENABLED，
+            # 硬校验 is_working()（ACTIVE/UPGRADING）会导致任何插件间依赖必然失败。
+            # Phase 2 在 init 阶段做依赖解析（依赖插件此时已 active）。
 
             runtime.state = PluginState.ENABLED
             runtime.error_message = ""
@@ -400,38 +393,40 @@ class PluginManager:
             if not plugin_dir or not os.path.isdir(plugin_dir):
                 raise RuntimeError(f"插件目录不存在: {plugin_dir}")
 
+            # 命名空间隔离：插件模块挂在 destiny_plugins.{name} 下，
+            # 避免插件名（如 "os"、"json"、"config"）直接占用 sys.modules
+            # 顶层名字，污染标准库或与现有模块冲突。
+            import importlib
+            import importlib.util
+            import types
+
+            ns_name = "destiny_plugins"
+            if ns_name not in sys.modules:
+                ns = types.ModuleType(ns_name)
+                ns.__path__ = []
+                sys.modules[ns_name] = ns
+
+            mod_name = f"{ns_name}.{plugin_name}"
             # 清除旧缓存（recovery / 重新 init 场景）
-            if plugin_name in sys.modules:
-                del sys.modules[plugin_name]
+            if mod_name in sys.modules:
+                del sys.modules[mod_name]
 
-            # 将插件目录加入 sys.path（如果不在其中）
-            parent_dir = os.path.dirname(plugin_dir)
-            if parent_dir not in sys.path:
-                sys.path.insert(0, parent_dir)
+            init_path = os.path.join(plugin_dir, "__init__.py")
+            if not os.path.exists(init_path):
+                raise ImportError(
+                    f"无法导入插件 '{plugin_name}'："
+                    f"插件目录缺少 __init__.py（{init_path}）"
+                )
 
-            # 尝试导入插件模块
-            try:
-                import importlib
-                mod = importlib.import_module(plugin_name)
-                runtime.module = mod
-            except ImportError:
-                # 回退：从文件路径直接加载
-                init_path = os.path.join(plugin_dir, "__init__.py")
-                if os.path.exists(init_path):
-                    spec = importlib.util.spec_from_file_location(
-                        plugin_name,
-                        init_path,
-                        submodule_search_locations=[plugin_dir],
-                    )
-                    mod = importlib.util.module_from_spec(spec)
-                    sys.modules[plugin_name] = mod
-                    spec.loader.exec_module(mod)
-                    runtime.module = mod
-                else:
-                    raise ImportError(
-                        f"无法导入插件 '{plugin_name}'。"
-                        f"请确保插件目录包含 __init__.py 或可通过 PYTHONPATH 访问"
-                    )
+            spec = importlib.util.spec_from_file_location(
+                mod_name,
+                init_path,
+                submodule_search_locations=[plugin_dir],
+            )
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[mod_name] = mod
+            spec.loader.exec_module(mod)
+            runtime.module = mod
 
             # 调用 register(registry) 函数把插件内容注册到 SkillRegistry
             if hasattr(runtime.module, "register") and callable(runtime.module.register):

@@ -173,7 +173,12 @@ def test_state_machine():
     # 用无依赖的 manifest 测试基本状态转移
     base = {"name": "tmp", "version": "1.0.0", "api_version": CURRENT_API_VERSION}
     m1 = PluginManifest.from_dict({**base, "name": "plugin_1"})
-    m2 = PluginManifest.from_dict({**base, "name": "plugin_2", "version": "2.0.0"})
+    m2 = PluginManifest.from_dict({
+        **base,
+        "name": "plugin_2",
+        "version": "2.0.0",
+        "requires": {"plugins": {"plugin_1": ">=1.0.0"}},
+    })
 
     # ── 2.1 absent → registered ──
     r = pm.register(m1, "/fake/path/1")
@@ -198,11 +203,14 @@ def test_state_machine():
           f"state={r.state.value}")
     check("enabled 后 error_message 为空", r.error_message == "")
 
-    # ── 2.4 依赖缺失：plugin_2 依赖 plugin_1 → enable 应通过（plugin_1 已 enabled）
+    # ── 2.4 真依赖：plugin_2 声明依赖 plugin_1 → enable 应通过 ──
+    # Phase 1 不做运行时依赖解析（依赖插件此时最多 ENABLED），
+    # 结构与格式校验通过即可；解析延迟到 Phase 2 init。
     r2 = pm.enable("plugin_2")
-    check("registered→enabled(2) 依赖满足", r2.state == PluginState.ENABLED)
+    check("registered→enabled(2) 依赖声明通过", r2.state == PluginState.ENABLED,
+          f"state={r2.state.value}")
 
-    # ── 2.5 依赖缺失：不存在的插件 → enable 失败
+    # ── 2.5 依赖缺失：依赖插件不存在 → enable 不阻塞（延迟到 Phase 2 init）──
     pm3 = PluginManager()
     m_dep = PluginManifest.from_dict({
         "name": "plugin_has_dep",
@@ -212,9 +220,8 @@ def test_state_machine():
     })
     pm3.register(m_dep, "/fake")
     r_dep = pm3.enable("plugin_has_dep")
-    check("依赖缺失-enable失败", r_dep.state == PluginState.ERROR,
+    check("依赖缺失-enable不阻塞(Phase 2 init 解析)", r_dep.state == PluginState.ENABLED,
           f"state={r_dep.state.value}")
-    check("依赖缺失-error信息", "no_such_plugin" in r_dep.error_message)
 
     # ── 2.6 enabled → active ──
     # 正常插件目录不存在 → error，这是预期行为（init 需要真实目录）
@@ -351,6 +358,37 @@ def test_state_machine():
         shutil.rmtree(tmpdir)
     except Exception:
         pass
+
+    # ── 2.12 模块命名空间隔离：插件名不污染 sys.modules ──
+    import json as real_json
+    import os as real_os
+    tmpdir_ns = tempfile.mkdtemp(prefix="ns_test_")
+    ns_dir = os.path.join(tmpdir_ns, "json")
+    os.makedirs(ns_dir, exist_ok=True)
+    with open(os.path.join(ns_dir, "manifest.yaml"), "w", encoding="utf-8") as f:
+        f.write(json.dumps(
+            {"name": "json", "version": "1.0.0", "api_version": CURRENT_API_VERSION}
+        ))
+    with open(os.path.join(ns_dir, "__init__.py"), "w", encoding="utf-8") as f:
+        f.write("def register(orch): return {'tools': [], 'capabilities': [], 'skills': []}\n")
+
+    pm_ns = PluginManager()
+    m_ns = PluginManifest.from_dict(
+        {"name": "json", "version": "1.0.0", "api_version": CURRENT_API_VERSION},
+        source_path=ns_dir,
+    )
+    pm_ns.register(m_ns, ns_dir)
+    pm_ns.enable("json")
+    r_ns = pm_ns.init("json")
+    check("命名空间-插件可 init", r_ns.state == PluginState.ACTIVE,
+          f"state={r_ns.state.value}")
+    check("命名空间-sys.modules[os] 未被污染",
+          sys.modules.get("os") is real_os)
+    check("命名空间-sys.modules[json] 仍是标准库",
+          sys.modules.get("json") is real_json)
+    check("命名空间-插件模块名带前缀",
+          r_ns.module.__name__ == "destiny_plugins.json")
+    shutil.rmtree(tmpdir_ns)
 
     print(f"\n{Y}  注: 状态机测试完整覆盖{N}")
     print(f"  absent → registered → enabled → active → upgrading → active(swap)")
