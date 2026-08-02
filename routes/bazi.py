@@ -509,7 +509,14 @@ def api_verify():
 
 @bazi_bp.route("/feedback/list", methods=["GET"])
 def api_feedback_list():
-    """列出所有反馈日志的摘要信息，用于评估面板。"""
+    """列出所有反馈日志的摘要信息，用于评估面板。仅 ADMIN_TOKEN 可访问（含命盘摘要，属隐私数据）。"""
+    token = request.headers.get("Authorization", "")
+    if token.startswith("Bearer "):
+        token = token[7:]
+    else:
+        token = request.headers.get("X-Admin-Token", "")
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        return jsonify({"error": "unauthorized"}), 401
     limit = request.args.get("limit", 50, type=int)
     verified_only = request.args.get("verified_only", "0") == "1"
 
