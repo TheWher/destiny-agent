@@ -709,6 +709,78 @@ def api_ziwei_session_migrate():
     return jsonify({"migrated": count})
 
 
+# ═══ 分享快照（安全分享：独立 share_id，原会话 ID 不外传） ═══
+_SHARE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'share')
+
+
+def _save_share(share: dict) -> None:
+    os.makedirs(_SHARE_DIR, exist_ok=True)
+    fp = os.path.join(_SHARE_DIR, f"{share['share_id']}.json")
+    with open(fp, "w", encoding="utf-8") as f:
+        json.dump(share, f, ensure_ascii=False)
+
+
+def _load_share(share_id: str) -> dict | None:
+    fp = os.path.join(_SHARE_DIR, f"{share_id}.json")
+    if not os.path.exists(fp):
+        return None
+    try:
+        with open(fp, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+@ziwei_bp.route("/share", methods=["POST"])
+def api_ziwei_create_share():
+    """创建分享快照：登录用户分享自己拥有的会话（含盘面+解读快照）。
+    分享链接公开只读，原会话 ID 永不外传，分享者不能操作原会话。"""
+    user_id = _get_auth_user()
+    if not user_id:
+        return jsonify({"error": "请先登录"}), 401
+    from models.user import get_user_by_id
+    _u = get_user_by_id(user_id)
+    _sharer = "一位用户"
+    if _u and _u.get("email"):
+        _sharer = _u["email"].split("@")[0][:12] or "一位用户"
+    data = request.get_json(silent=True) or {}
+    sid = (data.get("sid") or "").strip()
+    s = _ziwei_sessions.get(sid)
+    if not s or s.get("user_id") != user_id:
+        return jsonify({"error": "not found"}), 404
+    share_id = str(_uuid.uuid4())
+    share = {
+        "share_id": share_id,
+        "sid": sid,  # 内部引用，响应不返回
+        "title": s.get("title", "命盘分享"),
+        "plate_summary": s.get("plate_summary", ""),
+        "plate_data": s.get("plate_data", {}),
+        "messages": s.get("messages", []),
+        "sharer": _sharer,
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "user_id": user_id,
+    }
+    _save_share(share)
+    return jsonify({"share_id": share_id, "url": f"/ziwei/report/share/{share_id}"})
+
+
+@ziwei_bp.route("/share/<share_id>", methods=["GET"])
+def api_ziwei_get_share(share_id):
+    """读取分享快照（公开只读）。只返回分享时刻的盘面与解读，不含任何用户身份信息。"""
+    share = _load_share(share_id)
+    if not share:
+        return jsonify({"error": "not found"}), 404
+    return jsonify({
+        "id": share["share_id"],
+        "title": share.get("title", ""),
+        "plate_summary": share.get("plate_summary", ""),
+        "plate_data": share.get("plate_data", {}),
+        "messages": share.get("messages", []),
+        "sharer": share.get("sharer", ""),
+        "created_at": share.get("created_at", ""),
+    })
+
+
 # ═══ 验盘反馈保存 ═══
 _FEEDBACK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'feedback', 'ziwei')
 

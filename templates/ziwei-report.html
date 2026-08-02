@@ -533,11 +533,18 @@
 function toggleTheme(){ var n=document.documentElement.getAttribute('data-theme')==='dark'?'':'dark'; document.documentElement.setAttribute('data-theme',n); localStorage.setItem('ziwei_theme',n); document.getElementById('btn-theme').textContent=n==='dark'?'☀️':'🌙'; }
 document.addEventListener('DOMContentLoaded',function(){ document.getElementById('btn-theme').textContent=document.documentElement.getAttribute('data-theme')==='dark'?'☀️':'🌙'; });
 const $ = id => document.getElementById(id);
-const sid = window.location.pathname.split('/').pop();
+// 分享模式：/ziwei/report/share/<share_id>，公开只读快照；owner 模式：/ziwei/report/<sid>
+const _shareMode = location.pathname.includes('/share/');
+const sid = _shareMode ? location.pathname.split('/share/')[1].split('/')[0] : window.location.pathname.split('/').pop();
+// 分享模式隐藏全部写操作/个人化 UI，只留盘面 + 解读展示
+function _applyShareMode(){
+  ['session-switcher','btn-scope-analyze','btn-yearly-deep','chat-area','rp-auth-placeholder','rp-auth-user','link-interactive'].forEach(function(id){var el=$(id);if(el)el.style.display='none'});
+  ['重命名当前会话','删除当前会话'].forEach(function(t){var el=document.querySelector('[title="'+t+'"]');if(el)el.style.display='none'});
+}
 // 更新交互盘链接
-(function(){var l=$('link-interactive');if(l)l.href='/ziwei?sid='+encodeURIComponent(sid);})();
+(function(){var l=$('link-interactive');if(l&&!_shareMode)l.href='/ziwei?sid='+encodeURIComponent(sid);})();
 function copyReportLink(){
-    const url=location.origin+'/ziwei/report/'+sid;
+    const url=_shareMode?location.href:(location.origin+'/ziwei/report/'+sid);
     if(navigator.clipboard){navigator.clipboard.writeText(url).catch(()=>prompt('复制链接:',url))}
     else{prompt('复制链接:',url)}
     track('report_share');
@@ -635,7 +642,8 @@ updateRptAuthUI();
 // ── 加载数据 ──
 async function load(){
   try{
-    const r = await fetch(`/api/ziwei/sessions/${sid}`,{headers:_authHdrs()});
+    const url = _shareMode ? '/api/ziwei/share/'+sid : '/api/ziwei/sessions/'+sid;
+    const r = await fetch(url, _shareMode ? {} : {headers:_authHdrs()});
     if(!r.ok){ $('grid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-soft)">报告未找到或已过期</div>'; return }
     const s = await r.json();
     plateData = s.plate_data || null;
@@ -643,6 +651,33 @@ async function load(){
     var _utw = document.getElementById('unknown-time-warning');
     if(_utw && plateData && plateData.input && plateData.input.unknown_time){ _utw.style.display='block'; }
     renderInfo(s);
+    if(_shareMode){
+      // 公开只读：不加载会话列表、不触发分析、隐藏写操作
+      _applyShareMode();
+      track('share_view', {});  // 分享页曝光（获客漏斗第一环）
+      // 署名（软性水印，扩散可溯源）
+      var _sharer = s.sharer || '一位用户';
+      var _titleEl = document.querySelector('.nav-bar .title');
+      if(_titleEl) _titleEl.textContent = '🔮 紫微斗数 · 命盘报告（由 '+_sharer+' 分享）';
+      // CTA：分享页变获客入口
+      var _cta = document.createElement('div');
+      _cta.style.cssText = 'text-align:center;font-size:13px;color:var(--ink-soft);padding:18px 10px;border-top:1px dashed var(--line-faint);margin-top:8px';
+      _cta.innerHTML = '这是 <b style="color:var(--ink)">'+_sharer+'</b> 的命盘。想看自己的完整解读？<a href="/ziwei" onclick="track(\'share_cta_click\')" style="color:var(--vermillion);font-weight:600;text-decoration:none">免费排一个 →</a>';
+      var _analysisArea = document.getElementById('analysis');
+      if(_analysisArea){ _analysisArea.appendChild(_cta); }
+      if(plateData && plateData.palaces){
+        renderGrid(plateData);
+        renderYunDecade(plateData);
+        renderFlowYears();
+        applyAllScope();
+        setTimeout(renderSanheLines, 200);
+      }
+      const msgs = s.messages || [];
+      const validAnalysis = msgs.find(m => m.role === 'assistant' && m.content && m.content.length > 50);
+      if(validAnalysis) renderAnalysis(msgs);
+      else $('analysis-text').innerHTML = '<span style="color:var(--ink-soft)">此分享暂不含解读内容</span>';
+      return;
+    }
     loadSessionList();  // 填充会话切换器
     if(plateData && plateData.palaces){
       renderGrid(plateData);

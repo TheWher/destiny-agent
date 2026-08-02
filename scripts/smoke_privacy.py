@@ -121,9 +121,38 @@ def main():
                        headers={"Authorization": f"Bearer {tok_a}", "X-Device-Id": dev_a})
         d = r.get_json()
         assert d.get("orphan_list") == [] and d.get("orphans") == 0, f"orphan 列表不应暴露: {d}"
-        print("[7/7] claimable 不暴露无指纹会话 OK")
+        print("[7/10] claimable 不暴露无指纹会话 OK")
 
-        print("\nSMOKE PASS：会话隐私隔离全绿")
+        # ── 安全分享：独立 share_id 快照，原会话不外传 ──
+        # 8. A 分享自己的会话 → 拿到 share_id + url
+        r = client.post("/api/ziwei/share", json={"sid": sid_a},
+                        headers={"Authorization": f"Bearer {tok_a}", "X-Device-Id": dev_a})
+        d = r.get_json()
+        assert r.status_code == 200 and d.get("share_id"), f"分享失败: {d}"
+        share_id = d["share_id"]
+        assert d["url"].startswith("/ziwei/report/share/"), f"分享链接格式错: {d}"
+        print("[8/10] 创建分享快照 OK")
+
+        # 9. 公开只读：无鉴权可读快照，且不含用户身份
+        r = client.get(f"/api/ziwei/share/{share_id}")
+        d = r.get_json()
+        assert r.status_code == 200 and d.get("id") == share_id, f"读分享失败: {d}"
+        assert "user_id" not in d and "sid" not in d, "分享快照不应含用户身份/原会话 ID"
+        assert d.get("plate_data") is not None, "分享快照应含盘面"
+        assert d.get("sharer") == emails[0].split("@")[0][:12], f"分享应含署名: {d.get('sharer')}"
+        print("[9/10] 分享公开只读 OK，含署名、不含用户身份")
+
+        # 10. 越权：A 不能分享 B 的会话；未登录分享 401；坏 share_id 404
+        r = client.post("/api/ziwei/share", json={"sid": sid_b},
+                        headers={"Authorization": f"Bearer {tok_a}", "X-Device-Id": dev_a})
+        assert r.status_code == 404, f"分享他人会话应 404，实际 {r.status_code}"
+        r = client.post("/api/ziwei/share", json={"sid": sid_a})
+        assert r.status_code == 401, "未登录分享应 401"
+        r = client.get("/api/ziwei/share/no-such-id")
+        assert r.status_code == 404, "坏 share_id 应 404"
+        print("[10/10] 分享越权/未登录/坏ID 全拦截 OK")
+
+        print("\nSMOKE PASS：会话隐私隔离 + 安全分享全绿")
         sys.exit(0)
     finally:
         _cleanup(emails)

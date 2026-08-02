@@ -885,12 +885,19 @@ async function createShareSession(plate){
     }catch(e){console.warn('createShareSession failed',e)}
 }
 
-function shareChart(){
+async function shareChart(){
     if(!_shareSid){alert('请先排盘');return}
-    const url=location.origin+'/ziwei/report/'+_shareSid;
-    if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>{const t=$('btn-share');t.textContent='✓ 已复制';setTimeout(()=>t.textContent='🔗 分享',2000)}).catch(()=>prompt('复制链接:',url))}
-    else{prompt('复制链接:',url)}
-}
+    const btn=$('btn-share');btn.disabled=true;btn.textContent='生成中...';
+    try{
+      const r=await fetch('/api/ziwei/share',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({sid:_shareSid})});
+      const d=await r.json();
+      if(!r.ok){alert(d.error||'分享失败');btn.disabled=false;btn.textContent='🔗 分享';return}
+      const url=location.origin+d.url;
+      if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>{btn.textContent='✓ 已复制';setTimeout(()=>{btn.textContent='🔗 分享';btn.disabled=false},2000)}).catch(()=>{prompt('复制链接:',url);btn.disabled=false;btn.textContent='🔗 分享'})}
+    else{prompt('复制链接:',url);btn.disabled=false;btn.textContent='🔗 分享'}
+      track('share_created');
+    }catch(e){alert('网络错误: '+e.message);btn.disabled=false;btn.textContent='🔗 分享'}
+  }
 
 // ── URL参数自动加载（?sid=xxx）──
 
