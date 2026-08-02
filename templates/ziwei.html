@@ -422,9 +422,15 @@ body::after{
       <h2 style="font-size:1.05rem;color:var(--text);margin:0">升级 Pro</h2>
       <button class="btn" style="padding:2px 10px;font-size:.8em" onclick="closeUpgradeModal()">✕</button>
     </div>
-    <div id="upgrade-msg" style="color:var(--text);font-size:.8em;margin-bottom:10px">新用户福利：<b>5 元永久</b> Pro。微信扫码支付后，填写转账单号+昵称，人工核对，<b>当天开通</b>。</div>
+    <div id="upgrade-msg" style="color:var(--text);font-size:.8em;margin-bottom:10px">新用户福利：<b><span id="upgrade-price-txt">5</span> 元永久</b> Pro。微信扫码支付后填写转账信息，<b>提交即开通</b>。</div>
     <img src="/static/pay_qr.jpg" alt="微信收款码" style="width:180px;height:180px;display:block;margin:0 auto 12px;border-radius:8px;border:1px solid var(--border)">
-    <input id="upgrade-cred" placeholder="微信转账单号 + 昵称" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88em;background:var(--bg);color:var(--text);outline:none;margin-bottom:10px;font-family:inherit">
+    <input id="upgrade-single" placeholder="转账单号（字母数字 6-40 位）" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88em;background:var(--bg);color:var(--text);outline:none;margin-bottom:10px;font-family:inherit">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input id="upgrade-amount" placeholder="转账金额（元）" inputmode="decimal" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88em;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
+      <input id="upgrade-nickname" placeholder="付款人昵称（可空）" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88em;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
+    </div>
+    <label for="upgrade-shot" style="display:block;width:100%;padding:10px 12px;border:1px dashed var(--border);border-radius:8px;font-size:.82em;background:var(--bg);color:var(--text-muted);text-align:center;cursor:pointer;margin-bottom:10px;box-sizing:border-box">📷 上传转账截图（必传，自动压缩）</label>
+    <input id="upgrade-shot" type="file" accept="image/*" style="display:none">
     <button id="upgrade-pay-btn" class="btn btn-gold" style="width:100%;padding:9px;font-size:.9em" onclick="submitPayment()">我已支付，提交凭证</button>
     <div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px;color:var(--text-muted);font-size:.75em">
       <div style="flex:1;height:1px;background:var(--border)"></div>有邀请码？<div style="flex:1;height:1px;background:var(--border)"></div>
@@ -989,8 +995,13 @@ async function confirmAnalyze(){
     if(!_authToken){showAuthModal('login');return}
     track('upgrade_modal_open');
     $id('upgrade-result').style.display='none';
-    $id('upgrade-cred').value='';$id('upgrade-invite').value='';
+    $id('upgrade-single').value='';$id('upgrade-amount').value='';
+    $id('upgrade-nickname').value='';$id('upgrade-shot').value='';
     $id('upgrade-overlay').style.display='flex';
+    // 预填定价：改价只动 config，前端从接口读
+    fetch('/api/payment/price').then(function(r){return r.json()}).then(function(d){
+      if(d&&d.price){$id('upgrade-amount').value=d.price;$id('upgrade-price-txt').textContent=d.price}
+    }).catch(function(){});
   }
   function closeUpgradeModal(){$id('upgrade-overlay').style.display='none'}
   function _setUpgradeResult(ok,msg){
@@ -998,17 +1009,45 @@ async function confirmAnalyze(){
     el.style.color=ok?'var(--accent)':'var(--vermillion)';
     el.textContent=msg;
   }
+  function compressImage(file,maxEdge,quality){
+    // 前端压缩：最长边压到 maxEdge，JPEG quality，返回 dataURL。
+    // 微信转账原图几百 KB 到一两 MB，不压缩直接传会把免费档库吃胖
+    return new Promise(function(resolve,reject){
+      var reader=new FileReader();
+      reader.onload=function(e){
+        var img=new Image();
+        img.onload=function(){
+          var w=img.width,h=img.height,scale=Math.min(1,maxEdge/Math.max(w,h));
+          var cv=document.createElement('canvas');
+          cv.width=Math.max(1,Math.round(w*scale));cv.height=Math.max(1,Math.round(h*scale));
+          cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+          resolve(cv.toDataURL('image/jpeg',quality));
+        };
+        img.onerror=function(){reject(new Error('图片解析失败'))};
+        img.src=e.target.result;
+      };
+      reader.onerror=function(){reject(new Error('文件读取失败'))};
+      reader.readAsDataURL(file);
+    });
+  }
   async function submitPayment(){
-    var cred=$id('upgrade-cred').value.trim(),btn=$id('upgrade-pay-btn');
-    if(!cred){_setUpgradeResult(false,'请填写转账单号+昵称');return}
-    btn.disabled=true;btn.textContent='提交中...';
+    var single=$id('upgrade-single').value.trim();
+    var amount=$id('upgrade-amount').value.trim();
+    var nickname=$id('upgrade-nickname').value.trim();
+    var fileEl=$id('upgrade-shot'),btn=$id('upgrade-pay-btn');
+    if(!single){_setUpgradeResult(false,'请填写转账单号');return}
+    if(!amount){_setUpgradeResult(false,'请填写转账金额');return}
+    if(!fileEl.files||!fileEl.files[0]){_setUpgradeResult(false,'请上传转账截图');return}
+    btn.disabled=true;btn.textContent='处理中...';
     try{
-      var r=await fetch('/api/payment/order',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({credential:cred})});
+      var dataUrl=await compressImage(fileEl.files[0],1000,0.7);
+      var r=await fetch('/api/payment/order',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({single_no:single,amount:amount,nickname:nickname,screenshot:dataUrl})});
       var d=await r.json();
       if(!r.ok){_setUpgradeResult(false,d.error||'提交失败');return}
       track('upgrade_order_created',{method:'pay'});
-      _setUpgradeResult(true,'已提交，人工核对后当天开通 Pro');
-      setTimeout(closeUpgradeModal,2500);
+      await checkAuth();
+      _setUpgradeResult(true,'🎉 提交成功，Pro 已开通');
+      setTimeout(closeUpgradeModal,2000);
     }catch(e){_setUpgradeResult(false,'网络错误，请重试')}
     btn.disabled=false;btn.textContent='我已支付，提交凭证';
   }

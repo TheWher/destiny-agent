@@ -217,6 +217,19 @@ def reject_payment(order_id):
     return jsonify({"order": order})
 
 
+@admin_bp.route("/payments/<order_id>/revoke", methods=["POST"])
+def revoke_payment(order_id):
+    """撤销已开通订单：用户 tier 降回 free + 订单标记 revoked。
+    安全阀：自动开通路径防白嫖的事后回收手段。"""
+    if not _check_admin():
+        return jsonify({"error": "unauthorized"}), 401
+    from models.user import revoke_payment_order
+    order = revoke_payment_order(order_id)
+    if not order:
+        return jsonify({"error": "订单不存在"}), 404
+    return jsonify({"order": order})
+
+
 @admin_bp.route("/events", methods=["GET"])
 def list_events():
     """埋点事件查询。?event=xxx&since=YYYY-MM-DD&limit=200

@@ -54,6 +54,8 @@ def init_db():
             email       TEXT,
             order_type  TEXT NOT NULL DEFAULT 'pay',
             credential  TEXT,
+            amount      TEXT,
+            screenshot  TEXT,
             status      TEXT NOT NULL DEFAULT 'pending',
             created_at  TEXT NOT NULL,
             handled_at  TEXT
@@ -74,6 +76,15 @@ def init_db():
         conn.execute("ALTER TABLE users ADD COLUMN tier TEXT NOT NULL DEFAULT 'free'")
     except sqlite3.OperationalError:
         pass  # 列已存在
+    # 迁移：payment_orders 加 amount / screenshot 列（付费自动开通用）
+    try:
+        conn.execute("ALTER TABLE payment_orders ADD COLUMN amount TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE payment_orders ADD COLUMN screenshot TEXT")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
@@ -236,22 +247,26 @@ def update_user_tier(user_id: str, tier: str) -> bool:
 # ------------------------------------------------------------
 # Payment orders（付费升级 + 邀请码升级）
 # ------------------------------------------------------------
-def create_payment_order(user_id: str, email: str, order_type: str, credential: str) -> dict:
-    """建订单。invite 类型直接 confirmed（邀请码即支付确认），pay 类型 pending 待人工核对。"""
+def create_payment_order(user_id: str, email: str, order_type: str, credential: str,
+                         amount: float | None = None, screenshot: str | None = None,
+                         auto_confirm: bool = False) -> dict:
+    """建订单。invite 或 auto_confirm 直接 confirmed（邀请码即支付确认 / 付费自动开通），
+    否则 pay 类型 pending 待人工核对。"""
     conn = get_db()
     try:
         oid = str(uuid.uuid4())
         now = _now_iso()
-        status = "confirmed" if order_type == "invite" else "pending"
-        handled = now if order_type == "invite" else None
+        status = "confirmed" if (order_type == "invite" or auto_confirm) else "pending"
+        handled = now if status == "confirmed" else None
         conn.execute(
-            "INSERT INTO payment_orders (id, user_id, email, order_type, credential, status, created_at, handled_at) "
-            "VALUES (?,?,?,?,?,?,?,?)",
-            (oid, user_id, email, order_type, credential, status, now, handled),
+            "INSERT INTO payment_orders (id, user_id, email, order_type, credential, amount, screenshot, status, created_at, handled_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (oid, user_id, email, order_type, credential, amount, screenshot, status, now, handled),
         )
         conn.commit()
         return {"id": oid, "user_id": user_id, "email": email, "order_type": order_type,
-                "credential": credential, "status": status, "created_at": now, "handled_at": handled}
+                "credential": credential, "amount": amount, "screenshot": screenshot,
+                "status": status, "created_at": now, "handled_at": handled}
     finally:
         conn.close()
 
@@ -309,6 +324,29 @@ def reject_payment_order(order_id: str) -> dict | None:
             (_now_iso(), order_id),
         )
         conn.commit()
+        return dict(conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone())
+    finally:
+        conn.close()
+
+
+def revoke_payment_order(order_id: str) -> dict | None:
+    """撤销已开通订单：若订单 confirmed，把用户 tier 降回 free，订单标记 revoked。
+    安全阀：白嫖防护的核心在事后收不收得回来。"""
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone()
+        if not row:
+            return None
+        if row["status"] == "confirmed":
+            conn.execute(
+                "UPDATE users SET tier = 'free' WHERE id = ? AND tier = 'pro'",
+                (row["user_id"],),
+            )
+            conn.execute(
+                "UPDATE payment_orders SET status = 'revoked', handled_at = ? WHERE id = ?",
+                (_now_iso(), order_id),
+            )
+            conn.commit()
         return dict(conn.execute("SELECT * FROM payment_orders WHERE id = ?", (order_id,)).fetchone())
     finally:
         conn.close()
