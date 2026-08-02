@@ -597,12 +597,11 @@ def api_ziwei_sessions():
     """会话列表 / 创建"""
     user_id = _get_auth_user()
     if request.method == "GET":
-        items = []; uid = user_id
+        device_fp = (request.headers.get("X-Device-Id") or "").strip() or None
+        items = []
         for s in _ziwei_sessions.values():
-            if uid and s.get("user_id") and s["user_id"] != uid:
-                continue  # 已登录用户只看到自己的会话
-            if not uid and s.get("user_id"):
-                continue  # 匿名用户看不到已绑定的会话
+            if not _session_visible_to(s, user_id, device_fp):
+                continue  # 只可见自己的会话：已绑定看 user_id，匿名看设备指纹
             items.append({"id": s["id"], "title": s.get("title",""), "plate_summary": s.get("plate_summary",""),
                          "created_at": s.get("created_at",""), "message_count": len(s.get("messages",[]))})
         return jsonify(sorted(items, key=lambda x: x["created_at"], reverse=True))
@@ -624,11 +623,17 @@ def api_ziwei_sessions():
 
 @ziwei_bp.route("/sessions/<sid>", methods=["GET", "PUT", "PATCH", "DELETE"])
 def api_ziwei_session(sid):
-    """获取 / 更新 / 追加 / 删除单个会话"""
+    """获取 / 更新 / 追加 / 删除单个会话（仅归属者可见可改）"""
+    s = _ziwei_sessions.get(sid)
+    if not s:
+        return jsonify({"error": "not found"}), 404
+    user_id = _get_auth_user()
+    device_fp = (request.headers.get("X-Device-Id") or "").strip() or None
+    if not _session_visible_to(s, user_id, device_fp):
+        return jsonify({"error": "not found"}), 404  # 非归属者一律 404，不暴露存在性
     if request.method == "GET":
-        s = _ziwei_sessions.get(sid); return jsonify(s) if s else (jsonify({"error": "not found"}), 404)
+        return jsonify(s)
     if request.method == "PUT":
-        if sid not in _ziwei_sessions: return jsonify({"error": "not found"}), 404
         data = request.get_json(force=True)
         if "title" in data: _ziwei_sessions[sid]["title"] = data["title"]
         if "messages" in data: _ziwei_sessions[sid]["messages"] = data["messages"]
@@ -637,20 +642,27 @@ def api_ziwei_session(sid):
         return jsonify({"ok": True})
     if request.method == "PATCH":
         """追加 messages（用于流式完成后保存）"""
-        if sid not in _ziwei_sessions: return jsonify({"error": "not found"}), 404
         data = request.get_json(force=True)
         if "messages" in data:
             _ziwei_sessions[sid]["messages"] = data["messages"]
         _save_session_to_disk(sid)
         return jsonify({"ok": True})
     if request.method == "DELETE":
-        if sid in _ziwei_sessions:
-            del _ziwei_sessions[sid]
-            # 删除磁盘文件
-            fp = os.path.join(_SESSIONS_DIR, f'{sid}.json')
-            if os.path.exists(fp):
-                os.remove(fp)
+        del _ziwei_sessions[sid]
+        fp = os.path.join(_SESSIONS_DIR, f'{sid}.json')
+        if os.path.exists(fp):
+            os.remove(fp)
         return jsonify({"ok": True})
+
+def _session_visible_to(s: dict, user_id: str | None, device_fp: str | None) -> bool:
+    """会话可见性：已绑定看 user_id 归属；匿名会话看设备指纹归属。
+    任何人只能看到自己的会话，杜绝跨用户泄露。"""
+    owner = s.get("user_id")
+    if owner:
+        return bool(user_id) and owner == user_id
+    # 匿名会话：仅设备指纹匹配可见（未登录用户按设备隔离，登录用户可看自己设备的未认领会话）
+    return bool(device_fp) and s.get("device_fingerprint") == device_fp
+
 
 # ═══ 会话归属迁移 ═══
 @ziwei_bp.route("/sessions/claimable", methods=["GET"])
@@ -662,21 +674,13 @@ def api_ziwei_session_claimable():
     device_fp = (request.headers.get("X-Device-Id") or "").strip() or None
     
     matched = 0
-    orphans = []
     for s in _ziwei_sessions.values():
         if s.get("user_id"):
             continue  # 已归属
         if device_fp and s.get("device_fingerprint") == device_fp:
             matched += 1
-        elif not s.get("device_fingerprint"):
-            # 部署前旧会话，无指纹
-            orphans.append({
-                "id": s["id"],
-                "title": s.get("title", ""),
-                "created_at": s.get("created_at", ""),
-                "plate_summary": s.get("plate_summary", ""),
-            })
-    return jsonify({"matched": matched, "orphans": len(orphans), "orphan_list": orphans})
+    # 注意：不列 orphan_list 详情，旧无指纹会话不向任何用户暴露，防跨用户认领
+    return jsonify({"matched": matched, "orphans": 0, "orphan_list": []})
 
 
 @ziwei_bp.route("/sessions/migrate", methods=["POST"])
