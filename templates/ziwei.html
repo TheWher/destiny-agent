@@ -250,7 +250,7 @@ body::after{
 }
 </style>
 
-<script src="/static/tier.js"></script>
+<script src="/static/tier.js?v={{ static_ver }}"></script>
 
 </head>
 
@@ -423,7 +423,7 @@ body::after{
       <button class="btn" style="padding:2px 10px;font-size:.8em" onclick="closeUpgradeModal()">✕</button>
     </div>
     <div id="upgrade-msg" style="color:var(--text);font-size:.8em;margin-bottom:10px">新用户福利：<b><span id="upgrade-price-txt">5</span> 元永久</b> Pro。微信扫码支付后填写转账信息，<b>提交即开通</b>。</div>
-    <img src="/static/pay_qr.jpg" alt="微信收款码" style="width:180px;height:180px;display:block;margin:0 auto 12px;border-radius:8px;border:1px solid var(--border)">
+    <img src="/static/pay_qr.jpg?v={{ static_ver }}" alt="微信收款码" style="width:180px;height:180px;display:block;margin:0 auto 12px;border-radius:8px;border:1px solid var(--border)">
     <input id="upgrade-single" placeholder="转账单号（字母数字 6-40 位）" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88em;background:var(--bg);color:var(--text);outline:none;margin-bottom:10px;font-family:inherit">
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <input id="upgrade-amount" placeholder="转账金额（元）" inputmode="decimal" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88em;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
@@ -576,7 +576,7 @@ async function renameSession(sid){
   const nw=prompt('重命名会话：',old);
   if(!nw||nw===old) return;
   try{
-    await fetch('/api/ziwei/sessions/'+sid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:nw})});
+    await fetch('/api/ziwei/sessions/'+sid,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({title:nw})});
     span.textContent=nw.slice(0,20);
     flashMsg('已重命名');
   }catch(e){alert('重命名失败');}
@@ -585,7 +585,7 @@ async function renameSession(sid){
 async function deleteSession(sid){
   if(!confirm('确定删除此历史会话？')) return;
   try{
-    await fetch('/api/ziwei/sessions/'+sid,{method:'DELETE'});
+    await fetch('/api/ziwei/sessions/'+sid,{method:'DELETE',headers:authHeaders()});
     const el=document.querySelector('[data-sid="'+sid+'"]');
     if(el) el.remove();
     const cnt=document.querySelectorAll('#session-list [data-sid]').length;
@@ -906,7 +906,7 @@ async function shareChart(){
     const sid=p.get('sid');
     if(!sid)return;
     try{
-        const r=await fetch('/api/ziwei/sessions/'+sid);
+        const r=await fetch('/api/ziwei/sessions/'+sid,{headers:authHeaders()});
         if(!r.ok)return;
         const s=await r.json();
         if(!s.plate_data||!s.plate_data.palaces)return;

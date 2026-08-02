@@ -524,9 +524,9 @@
   </div>
 </div>
 
-<script src="/static/tier.js"></script>
-<script src="/static/thinking-orbs.js"></script>
-<script src="/static/ziwei-verify.js"></script>
+<script src="/static/tier.js?v={{ static_ver }}"></script>
+<script src="/static/thinking-orbs.js?v={{ static_ver }}"></script>
+<script src="/static/ziwei-verify.js?v={{ static_ver }}"></script>
 <script>
 // 暗色主题
 (function(){ var t=localStorage.getItem('ziwei_theme'); if(t){ document.documentElement.setAttribute('data-theme',t); } })();
@@ -552,7 +552,7 @@ function copyReportLink(){
 let plateData = null;
 // auth
 let _ziweiToken = localStorage.getItem('ziwei_token');
-const _authHdrs = function(){ return _ziweiToken ? {'Authorization':'Bearer '+_ziweiToken} : {}; };
+const _authHdrs = function(){ var h = _ziweiToken ? {'Authorization':'Bearer '+_ziweiToken} : {}; if(_rptDeviceId) h['X-Device-Id'] = _rptDeviceId; return h; };
 
 // ── Analytics (fire-and-forget) ──
 let _rptDeviceId = localStorage.getItem('ziwei_device_id');
@@ -1287,7 +1287,7 @@ async function analyzeScope(){
       const fly = p.flying_sihua || [];
       if(fly.length > 0) prompt += p.name + '(' + p.dizhi + ')：' + fly.map(f => f.type+f.star+'\u2192'+f.to).join('、') + '\n';
     }
-    const r = await fetch('/api/ziwei/sessions/'+sid);
+    const r = await fetch('/api/ziwei/sessions/'+sid,{headers:_authHdrs()});
     const s = await r.json();
     const msgs = s.messages || [];
     let res = await fetch('/api/ziwei/analyze/continue', {
@@ -1295,6 +1295,12 @@ async function analyzeScope(){
       body:JSON.stringify({messages: msgs, reply: prompt, password: reportPw})
     });
     if(res.status === 403){
+      const _e403 = await res.json().catch(()=>({}));
+      if(!_e403.need_password){
+        if(_e403.rate_limited){ showUpgradeToast(_e403.error, _e403.tier); }
+        btn.disabled = false; btn.textContent = '\ud83d\udcdc 叠盘分析';
+        return;
+      }
       reportPw = await new Promise(resolve => {
         const ov = document.createElement('div');
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;font-family:Noto Serif SC,serif';
@@ -1316,7 +1322,7 @@ async function analyzeScope(){
     if(d.success && d.analysis){
       msgs.push({role:'user', content: prompt});
       msgs.push({role:'assistant', content: d.analysis});
-      await fetch('/api/ziwei/sessions/'+sid, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages: msgs}) });
+      await fetch('/api/ziwei/sessions/'+sid, { method:'PATCH', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()), body:JSON.stringify({messages: msgs}) });
       document.getElementById('analysis-text').innerHTML += '<hr style="border:none;border-top:1px dashed var(--line-faint);margin:14px 0"><h2>\ud83d\udcdc 叠盘分析</h2>' + formatText(d.analysis);
       document.getElementById('analysis-text').scrollIntoView({behavior:'smooth',block:'start'});
       track('overlay_done',{scope: scope.yearly?('Y'+scope.yearly.year):(scope.decade?('D'+scope.decade.pName):'base')});
@@ -1403,7 +1409,7 @@ async function startAnalysis(plate, password){
         if(d.verification || d.analysis.includes('## 命盘验证') || d.analysis.includes('验盘环节')){
           renderVerification(d.analysis);
           await fetch('/api/ziwei/sessions/'+sid, {
-            method:'PATCH', headers:{'Content-Type':'application/json'},
+            method:'PATCH', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()),
             body:JSON.stringify({messages:[{role:'assistant',content:d.analysis}]})
           });
           return;
@@ -1412,7 +1418,7 @@ async function startAnalysis(plate, password){
         area.scrollIntoView({behavior:'smooth',block:'start'});
         track('report_rendered',{tier: (d.tier||''), wait_seconds: Math.round((Date.now()-_rptT0)/1000)});
         await fetch('/api/ziwei/sessions/'+sid, {
-          method:'PATCH', headers:{'Content-Type':'application/json'},
+          method:'PATCH', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()),
           body:JSON.stringify({messages:[{role:'assistant',content:d.analysis}]})
         });
         return;

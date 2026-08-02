@@ -6,8 +6,8 @@
     <title>八字排盘</title>
     <!-- 关键 CSS 内联 — 消除渲染阻塞，LCP 秒级 -->
     <!-- 完整样式异步加载 — 不阻塞首屏渲染 -->
-    <link rel="preload" href="/static/style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="/static/style.css"></noscript>
+    <link rel="preload" href="/static/style.css?v={{ static_ver }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/static/style.css?v={{ static_ver }}"></noscript>
 </head>
 <body>
 <div class="app-layout">
@@ -277,7 +277,7 @@
             <button id="btn-ziwei-analyze" class="btn btn-gold" style="flex:1">🧠 开始解读</button>
         </div>
     </div>
-<script src="/static/tier.js"></script>
-<script src="/static/app.js" defer></script>
+<script src="/static/tier.js?v={{ static_ver }}"></script>
+<script src="/static/app.js?v={{ static_ver }}" defer></script>
 </body>
 </html>

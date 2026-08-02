@@ -4,6 +4,13 @@ let reportPw = sessionStorage.getItem('ziwei_pw') || '';
 let verificationData = null;
 let verifiedEvents = null;
 
+// 会话请求统一补 X-Device-Id：匿名会话按设备指纹归属，缺头后端一律 404
+function _sessHdrs(base) {
+  var h = base || {};
+  try { var did = localStorage.getItem('ziwei_device_id'); if (did) h['X-Device-Id'] = did; } catch (e) {}
+  return h;
+}
+
 // 渲染验盘确认面板
 function renderVerification(analysisText) {
   const area = document.getElementById('analysis-text');
@@ -244,7 +251,7 @@ async function loadSessionList() {
   try {
     var token = localStorage.getItem('ziwei_token') || '';
     var hdrs = token ? {'Authorization':'Bearer '+token} : {};
-    var r = await fetch('/api/ziwei/sessions',{headers:hdrs});
+    var r = await fetch('/api/ziwei/sessions',{headers:_sessHdrs(hdrs)});
     var list = await r.json();
     var sel = document.getElementById('session-switcher');
     if (!sel) return;
@@ -272,7 +279,7 @@ async function renameCurrentSession() {
   if (!sid) return;
   var old = '';
   try {
-    var r = await fetch('/api/ziwei/sessions/' + sid);
+    var r = await fetch('/api/ziwei/sessions/' + sid, {headers: _sessHdrs()});
     var s = await r.json();
     old = s.title || s.plate_summary || '';
   } catch (e) { }
@@ -280,7 +287,7 @@ async function renameCurrentSession() {
   if (!nw || nw === old) return;
   try {
     await fetch('/api/ziwei/sessions/' + sid, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      method: 'PUT', headers: _sessHdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ title: nw })
     });
     // 只更新当前选中项文字，不全量重建
@@ -298,7 +305,7 @@ async function deleteCurrentSession() {
   if (!sid) return;
   if (!confirm('确定删除当前命盘会话？')) return;
   try {
-    await fetch('/api/ziwei/sessions/' + sid, { method: 'DELETE' });
+    await fetch('/api/ziwei/sessions/' + sid, { method: 'DELETE', headers: _sessHdrs() });
     toast('已删除，即将返回');
     setTimeout(function() { window.location.href = '/ziwei'; }, 600);
   } catch (e) { alert('删除失败'); }

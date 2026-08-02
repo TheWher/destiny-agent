@@ -35,3 +35,9 @@ scripts/evaluate_ziwei_verify.py
 # embedding 模型（本地下载，不入库）
 models/bge-small-zh-v1.5/
 
+# 分享快照（盘面+解读全文，公开数据，绝不入库）
+routes/share/
+
+# 会话归档（发码前数据卫生用，绝不入库）
+sessions_archive/
+

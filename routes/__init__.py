@@ -56,6 +56,20 @@ def create_app():
     app = Flask(__name__, template_folder=_os.path.join(_root, "templates"), static_folder=_os.path.join(_root, "static"))
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 7 * 24 * 3600  # 静态文件缓存 7 天
 
+    # ── 静态资源版本号：模板里 ?v={{ static_ver }} 破微信内置浏览器顽固缓存 ──
+    # HTML 不缓存而静态文件长缓存，新旧 JS 会混合加载（曾导致功能错乱）；
+    # 每次部署版本号变化（git 短 hash，git 不可用时回落启动时间戳），旧缓存自然失效。
+    import subprocess as _sp
+    _ver = ""
+    try:
+        _ver = _sp.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=_root, text=True).strip()
+    except Exception:
+        _ver = _os.environ.get("DEPLOY_VERSION", "")
+    if not _ver:
+        from datetime import datetime as _dt
+        _ver = _dt.now().strftime("%Y%m%d%H%M%S")
+    app.jinja_env.globals["static_ver"] = _ver
+
     # ── 性能：静态资源长缓存 + gzip 压缩 + HTML 不缓存（2026-08-01） ──
     import gzip as _gzip
 
