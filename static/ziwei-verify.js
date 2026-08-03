@@ -247,7 +247,28 @@ async function startAnalysisFull() {
     }
     reader.cancel();
     if (rawText) {
-      area.innerHTML = formatText(rawText);
+      var html = formatText(rawText);
+      // 可视化标注（2026-08-04 加）：报告内错误引用标红（值来自引擎校验 issues）
+      var _iss2 = window._interpretationIssues;
+      if (_iss2 && _iss2.length) {
+        for (var k = 0; k < _iss2.length; k++) {
+          var it = _iss2[k];
+          var wrongPhrase = '';
+          if (it.type === 'star_palace') { wrongPhrase = it.star + '在' + it.found; }
+          else if (it.type === 'mutagen') { wrongPhrase = it.star + it.mutagen + (it.found_palace ? '在' + it.found_palace : ''); }
+          else if (it.type === 'decadal_dir') { wrongPhrase = '大限' + it.found; }
+          else if (it.type === 'decadal_start') { wrongPhrase = it.found + '岁起'; }
+          else if (it.type === 'geju') { wrongPhrase = it.found; }
+          else if (it.found) { wrongPhrase = it.found; }
+          if (wrongPhrase) {
+            try {
+              var re = new RegExp(wrongPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+              html = html.replace(re, '<span style="color:var(--vermillion);text-decoration:underline;font-weight:600">$&</span>');
+            } catch (e) { }
+          }
+        }
+      }
+      area.innerHTML = html;
       // 加强审查提示：机器校验逮到的盘面引用不一致（值来自引擎 oracle，机器渲染）
       var _iss = window._interpretationIssues;
       var _unv = window._interpretationUnverified;
