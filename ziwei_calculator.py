@@ -41,16 +41,26 @@ FIVE_ELEMENTS_CN = {
 MUTAGEN_CN = {'禄': '化禄', '权': '化权', '科': '化科', '忌': '化忌'}
 
 # 时辰索引映射 (hour 0-23 → iztro-py hour_index 0-12)
-# 0=早子(23:00), 1=丑(01-03), 2=寅(03-05), ..., 11=亥(21-23), 12=晚子(23-00)
-_HOUR_TO_SHICHEN = {23: 0}
-for _h in range(0, 23):
-    _HOUR_TO_SHICHEN[_h] = ((_h + 1) // 2) % 12
+# 0=早子(00-01), 1=丑(01-03), 2=寅(03-05), ..., 11=亥(21-23), 12=晚子(23-24)
+# ⚠️ 23 点必须是 12(晚子)：iztro 晚子时安星日数按次日；映射成 0(早子)会把晚子时盘
+# 排成当天早子时盘（紫微/命宫/四化全错位）。历史写法 {23: 0} 是 bug，已修正。
+_HOUR_TO_SHICHEN = {_h: (_h + 1) // 2 for _h in range(23)}
+_HOUR_TO_SHICHEN[23] = 12
 
 # 十二宫名称 (iztro-py index order: 疾厄/财帛/子女/夫妻/兄弟/命宫/父母/福德/田宅/官禄/交友/迁移)
 PALACE_NAMES_CN = [
     '疾厄', '財帛', '子女', '夫妻', '兄弟', '命宮',
     '父母', '福德', '田宅', '官祿', '交友', '遷移',
 ]
+# ⚠️ PALACE_NAMES_CN 是按地支序(index 0=寅)排列的固定表，恰好等于"命宫在未"时的
+# 功能分布，不能直接当功能名用（命宫不在未时全部错位）。
+# 功能名必须按命宫相对旋转，唯一正确来源是 iztro-py 原生 palace.name（英文功能码）。
+
+# iztro-py 原生 palace.name(英文功能码) → 中文功能名
+_PALACE_KEY_MAP = {'spousePalace':'夫妻','siblingsPalace':'兄弟','soulPalace':'命宮',
+    'parentsPalace':'父母','spiritPalace':'福德','propertyPalace':'田宅','careerPalace':'官祿',
+    'friendsPalace':'交友','surfacePalace':'遷移','healthPalace':'疾厄','wealthPalace':'財帛',
+    'childrenPalace':'子女'}
 
 # 宫位地支 → 4x4 网格坐标 (for frontend display)
 BRANCH_GRID = {
@@ -159,7 +169,7 @@ def ziwei_paipan(year: int, month: int, day: int, hour: int, minute: int = 0,
                 year_mutagens.append({
                     'star': _translate_name(s),
                     'mutagen': MUTAGEN_CN.get(s.mutagen, s.mutagen),
-                    'palace': _translate_name(p),
+                    'palace': _PALACE_KEY_MAP.get(p.name, _translate_name(p)),
                     'branch': BRANCH_CN.get(p.earthly_branch, ''),
                 })
 
@@ -219,7 +229,7 @@ def ziwei_paipan(year: int, month: int, day: int, hour: int, minute: int = 0,
 
         palaces.append({
             'index': p.index,
-            'name': PALACE_NAMES_CN[p.index] if p.index < len(PALACE_NAMES_CN) else str(p.index),
+            'name': _PALACE_KEY_MAP.get(p.name, PALACE_NAMES_CN[p.index] if p.index < len(PALACE_NAMES_CN) else str(p.index)),
             'heavenly_stem': stem,
             'earthly_branch': branch,
             'dizhi': stem + branch,
@@ -323,7 +333,10 @@ def get_horoscope(year: int, month: int, day: int, hour: int, gender: str,
     else:
         chart = astro.by_solar(date_str, shichen_idx, gender, 'zh-CN')
 
-    horo = chart.horoscope(f"{target_year}-01-01", 0)
+    # ⚠️ iztro 的流年按"目标日期所在农历年"(正月初一分界, horoscopeDivide=normal)取干支。
+    # 用 {Y}-01-01 探测会永远落在农历年前一年（春节最晚 2/20），导致整个流年盘错一年。
+    # 改用 {Y}-03-01：春节恒在 1/21~2/20 之间，03-01 必在农历 Y 年内，零边界风险。
+    horo = chart.horoscope(f"{target_year}-03-01", 0)
     yi = horo.yearly
     dec = horo.decadal
 
@@ -334,21 +347,16 @@ def get_horoscope(year: int, month: int, day: int, hour: int, gender: str,
             # sname is like 'lianzhenMaj' — need to translate
             yearly_mutagen_stars.append(_translate_star_key(sname))
 
-    # 流年落宫
+    # 流年落宫（流年命宫=年支宫，功能名按本命盘相对命宫旋转）
     yi_idx = yi.index if hasattr(yi, 'index') else -1
-    yi_palace_name = PALACE_NAMES_CN[yi_idx] if 0 <= yi_idx < 12 else '?'
+    yi_palace_name = _PALACE_KEY_MAP.get(chart.palaces[yi_idx].name, '?') if 0 <= yi_idx < 12 else '?'
 
-    # 流年十二宫映射
-    _PALACE_KEY_MAP = {'spousePalace':'夫妻','siblingsPalace':'兄弟','soulPalace':'命宮',
-        'parentsPalace':'父母','spiritPalace':'福德','propertyPalace':'田宅','careerPalace':'官祿',
-        'friendsPalace':'交友','surfacePalace':'遷移','healthPalace':'疾厄','wealthPalace':'財帛',
-        'childrenPalace':'子女'}
-
+    # 流年十二宫映射（pn 为 iztro-py 原生功能码，直接映射中文功能名）
     yearly_palaces = []
     pns = getattr(yi, 'palace_names', [])
     for i, pn in enumerate(pns):
-        cn_name = PALACE_NAMES_CN[i] if i < len(PALACE_NAMES_CN) else str(i)
-        yearly_palaces.append({'index': i, 'name': cn_name, 'maps_to': _PALACE_KEY_MAP.get(pn, pn)})
+        cn_name = _PALACE_KEY_MAP.get(pn, pn)
+        yearly_palaces.append({'index': i, 'name': cn_name, 'maps_to': cn_name})
 
     # 大限
     decadal_info = {
@@ -356,7 +364,7 @@ def get_horoscope(year: int, month: int, day: int, hour: int, gender: str,
         'earthly_branch': BRANCH_CN.get(dec.earthly_branch, '') if hasattr(dec, 'earthly_branch') else '',
         'palace_index': dec.index if hasattr(dec, 'index') else -1,
     }
-    dec_palace = PALACE_NAMES_CN[decadal_info['palace_index']] if 0 <= decadal_info['palace_index'] < 12 else '?'
+    dec_palace = _PALACE_KEY_MAP.get(chart.palaces[decadal_info['palace_index']].name, '?') if 0 <= decadal_info['palace_index'] < 12 else '?'
 
     # 流曜
     yi_gan = STEM_CN.get(yi.heavenly_stem, '') if hasattr(yi, 'heavenly_stem') else ''
@@ -366,7 +374,7 @@ def get_horoscope(year: int, month: int, day: int, hour: int, gender: str,
     natal_list = []
     for p in natal_palaces:
         natal_list.append({
-            'name': PALACE_NAMES_CN[p.index] if p.index < len(PALACE_NAMES_CN) else str(p.index),
+            'name': _PALACE_KEY_MAP.get(p.name, PALACE_NAMES_CN[p.index] if p.index < len(PALACE_NAMES_CN) else str(p.index)),
             'earthly_branch': BRANCH_CN.get(p.earthly_branch, ''),
         })
     liuyao = calculate_liuyao(yi_gan, yi_zhi, natal_list)
@@ -384,7 +392,7 @@ def get_horoscope(year: int, month: int, day: int, hour: int, gender: str,
             for sname in mo.mutagen:
                 monthly_mutagen_stars.append(_translate_star_key(sname))
         mo_idx = mo.index if hasattr(mo, 'index') else -1
-        monthly_palace_name = PALACE_NAMES_CN[mo_idx] if 0 <= mo_idx < 12 else '?'
+        monthly_palace_name = _PALACE_KEY_MAP.get(chart.palaces[mo_idx].name, '?') if 0 <= mo_idx < 12 else '?'
         monthly_palace_index = mo_idx
         monthly_gan = STEM_CN.get(mo.heavenly_stem, '') if hasattr(mo, 'heavenly_stem') else ''
         monthly_zhi = BRANCH_CN.get(mo.earthly_branch, '') if hasattr(mo, 'earthly_branch') else ''

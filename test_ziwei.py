@@ -53,8 +53,18 @@ def run():
     test_group('时辰映射', [
         ('hour  1→丑时', lambda n: check(n, hour_to_shichen_index(1)==1)),
         ('hour 12→午时', lambda n: check(n, hour_to_shichen_index(12)==6)),
-        ('hour 23→夜子', lambda n: check(n, hour_to_shichen_index(23)==0)),
+        ('hour 23→晚子', lambda n: check(n, hour_to_shichen_index(23)==12)),
         ('hour  0→早子', lambda n: check(n, hour_to_shichen_index(0)==0)),
+    ])
+
+    # ── 晚子时映射层回归（第八雷常驻监控：2005-08-19 23:10 / 经度113.75 / 男）──
+    # 任何改动若让 hour_to_shichen_index 或晚子时安星回归，这里立刻现形。
+    test_group('晚子时映射层', [
+        ('hour23→晚子12', lambda n: check(n, hour_to_shichen_index(23)==12)),
+        ('紫微@父母(酉)', lambda n: check(n, _zw_palace(2005,8,19,23,10,'男')=='父母')),
+        ('命宫甲申', lambda n: check(n, _ming_gz(2005,8,19,23,10,'男')=='甲申')),
+        ('五行局水二', lambda n: check(n, ziwei_paipan(2005,8,19,23,10,'男')['five_elements_class']=='水二局')),
+        ('太阴忌@命宮', lambda n: check(n, _has_mutagen(2005,8,19,23,10,'男','太阴','化忌','命宮'))),
     ])
 
     # ── 星曜结构 ──
@@ -154,6 +164,24 @@ def run():
     return fail_count == 0 and error_count == 0
 
 # ── 辅助 ──
+def _zw_palace(y,m,d,h,mi,g):
+    pl = ziwei_paipan(y,m,d,h,mi,g)
+    for p in pl['palaces']:
+        if any(s['name']=='紫微' for s in p['major_stars']):
+            return p['name']
+    return '?'
+
+def _ming_gz(y,m,d,h,mi,g):
+    pl = ziwei_paipan(y,m,d,h,mi,g)
+    for p in pl['palaces']:
+        if '命宫' in p.get('tags', []):
+            return p['heavenly_stem']+p['earthly_branch']
+    return '?'
+
+def _has_mutagen(y,m,d,h,mi,g,star,mu,palace):
+    pl = ziwei_paipan(y,m,d,h,mi,g)
+    return any(m['star']==star and m['mutagen']==mu and m['palace']==palace for m in pl['year_mutagens'])
+
 def _t_paipan(name, y,m,d,h,mi,g, fec_exp, pal_exp, ym_exp):
     data = ziwei_paipan(y,m,d,h,mi,g)
     p = plate_to_dict(data, {})
@@ -161,7 +189,8 @@ def _t_paipan(name, y,m,d,h,mi,g, fec_exp, pal_exp, ym_exp):
     if fec_exp: ok = ok and p['five_elements_class']==fec_exp
     ok = ok and len(p['palaces'])==pal_exp
     ok = ok and len(p['year_mutagens'])==ym_exp
-    stars = [s['name'] for s in p['palaces'][0]['major_stars']] if p['palaces'][0]['major_stars'] else ['空宫']
+    ming = next((pp for pp in p['palaces'] if '命宫' in pp.get('tags', [])), p['palaces'][0])
+    stars = [s['name'] for s in ming['major_stars']] if ming['major_stars'] else ['空宫']
     check(name, ok, f'{p["five_elements_class"]} 命{p["soul_palace"]} 身{p["body_palace"]} P0={"/".join(stars)}')
 
 def _t_patterns(name, y,m,d,h,mi,g):
