@@ -545,6 +545,11 @@ def continue_ziwei_analysis(messages: list[dict], user_reply: str, timeout: int 
 # ════════════════════════════════════════════════════════
 
 _ZW_PALACE_NORM = {'命宮': '命宫', '財帛': '财帛', '官祿': '官禄', '遷移': '迁移'}
+# 省略'宫'字的单字宫名 → 全名（2026-08-04 加：LLM 写'在命/坐命'等省略形式，
+# 不归一化会导致 found='命' vs oracle '命宫' 误报）
+_SINGLE_PALACE = {'命': '命宫', '兄': '兄弟', '夫': '夫妻', '子': '子女', '财': '财帛',
+                  '疾': '疾厄', '迁': '迁移', '友': '交友', '官': '官禄', '田': '田宅',
+                  '福': '福德', '父': '父母'}
 _ZW_STARS = ['紫微', '天机', '太阳', '武曲', '天同', '廉贞', '天府', '太阴', '贪狼', '巨门',
              '天相', '天梁', '七杀', '破军', '禄存', '左辅', '右弼', '文昌', '文曲', '天魁',
              '天钺', '擎羊', '陀罗', '火星', '铃星', '地空', '地劫', '天马']
@@ -578,7 +583,7 @@ def _normalize_text(text: str) -> str:
 
 
 def _norm_palace(name: str) -> str:
-    """宫名归一化：繁体→简体，去'宫'后缀（'命宫'本身保留）"""
+    """宫名归一化：繁体→简体，去'宫'后缀（'命宫'本身保留），单字省略补全"""
     n = name or ''
     for k, v in _ZW_PALACE_NORM.items():
         n = n.replace(k, v)
@@ -586,7 +591,11 @@ def _norm_palace(name: str) -> str:
     # '命宫'/'身宫' 特殊：去掉末尾'宫'后是'命'，需要还原
     if n in ('命宫', '身宫'):
         return n
-    return n[:-1] if n.endswith('宫') and len(n) > 1 else n
+    if n.endswith('宫') and len(n) > 1:
+        return n[:-1]
+    if n in _SINGLE_PALACE:  # 省略宫字的单字（'在命'/'坐命'）补全
+        return _SINGLE_PALACE[n]
+    return n
 
 
 def _build_plate_oracle(plate_dict: dict) -> dict:
@@ -766,8 +775,11 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                        '紫微天府': '紫府同宫', '君臣庆会': '君臣庆会', '月朗天门': '月朗天门',
                        '日照雷门': '日照雷门'}
         _known_names = sorted(set(engine_pats) | set(_GEJU_ALIAS.keys()) | set(_GEJU_ALIAS.values()), key=len, reverse=True)
+        _reported_geju = set()  # 按 canon 去重（'日月并明'与'日月并明格'同源只报一次）
         for gname in _known_names:
             canon = _GEJU_ALIAS.get(gname, gname)
+            if canon in _reported_geju:
+                continue
             for m in re.finditer(re.escape(gname), text):
                 pre = text[max(0, m.start() - 6):m.start()]
                 if any(neg in pre for neg in ('无', '未', '不', '非', '不成', '没有', '不具备')):
@@ -775,6 +787,7 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                 if canon not in engine_pats:
                     issues.append({'type': 'geju', 'found': gname, 'expected': '盘面无此格局',
                                   'raw': m.group(0)})
+                    _reported_geju.add(canon)
                     break
     else:
         unverified.append('geju')  # 引擎格局判读不可用时诚实标注
