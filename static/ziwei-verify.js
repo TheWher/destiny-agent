@@ -5,9 +5,11 @@ let verificationData = null;
 let verifiedEvents = null;
 
 // 会话请求统一补 X-Device-Id：匿名会话按设备指纹归属，缺头后端一律 404
+// 另补 Authorization（登录 token）：解读/验盘接口对已登录用户免密放行，缺头会被当未登录 403
 function _sessHdrs(base) {
   var h = base || {};
   try { var did = localStorage.getItem('ziwei_device_id'); if (did) h['X-Device-Id'] = did; } catch (e) {}
+  try { var tok = localStorage.getItem('ziwei_token'); if (tok) h['Authorization'] = 'Bearer ' + tok; } catch (e) {}
   return h;
 }
 
@@ -183,7 +185,7 @@ async function verifyConfirm() {
   try { _verifyDeviceId = localStorage.getItem('ziwei_device_id'); } catch (e) {}
   if (!_verifyDeviceId) { try { _verifyDeviceId = crypto.randomUUID(); localStorage.setItem('ziwei_device_id', _verifyDeviceId); } catch (e) {} }
   fetch('/api/ziwei/verify', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: _sessHdrs({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       session_id: (typeof sid !== 'undefined' ? sid : ''),
       plate: plateData,
@@ -209,7 +211,7 @@ async function startAnalysisFull() {
     var body = { plate: plateData, password: reportPw || '' };
     if (verifiedEvents) { body.verified_events = verifiedEvents; }
     var r = await fetch('/api/ziwei/analyze/stream', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: _sessHdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body)
     });
     if (!r.ok) { area.innerHTML = '<span style="color:var(--vermillion)">请求失败</span>'; return; }
@@ -241,7 +243,7 @@ async function startAnalysisFull() {
       area.innerHTML = formatText(rawText);
       area.scrollIntoView({ behavior: 'smooth', block: 'start' });
       await fetch('/api/ziwei/sessions/' + sid, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH', headers: _sessHdrs({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ messages: [{ role: 'assistant', content: rawText }] })
       });
     }
