@@ -564,12 +564,18 @@ def api_ziwei_analyze_stream():
                                                'feedback', 'ziwei_issues')
                     _os.makedirs(_issue_dir, exist_ok=True)
                     _fn = _dt.datetime.now().strftime('%Y%m%d_%H%M%S_%f') + '.json'
+                    # 每条 issue 预留 _review 标记（误报监控用：user_ignored / confirmed_false_positive / confirmed_true）
+                    _issues_out = []
+                    for _it in verdict.get('issues', []):
+                        _it2 = dict(_it)
+                        _it2['_review'] = None
+                        _issues_out.append(_it2)
                     with open(_os.path.join(_issue_dir, _fn), 'w', encoding='utf-8') as _f:
                         json.dump({
                             'ts': _dt.datetime.now().isoformat(timespec='seconds'),
                             'birth': (plate_dict.get('input') or {}).get('birth_datetime', ''),
                             'gender': (plate_dict.get('input') or {}).get('gender', ''),
-                            'issues': verdict.get('issues', []),
+                            'issues': _issues_out,
                             'unverified': verdict.get('unverified', []),
                             'text_len': len(text),
                         }, _f, ensure_ascii=False, indent=1)
