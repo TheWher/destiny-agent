@@ -18,6 +18,21 @@
     --ink:var(--text-primary);--ink-soft:var(--text-secondary);--ink-faint:var(--text-muted);
     --ease-spring:cubic-bezier(0.16,1,0.3,1);
   }
+  /* 亮色主题（明暗切换：data-theme 空值 = 亮色，2026-08-04 加，此前缺亮色变量导致切换无效） */
+  :root[data-theme=""] {
+    --bg-deep:#F6F1E7; --glass:rgba(255,255,255,0.75); --glass-hover:rgba(255,255,255,0.88);
+    --glass-input:rgba(255,255,255,0.65); --glass-border:rgba(120,90,50,0.16);
+    --champagne:#A87B2E; --champagne-light:#8a6a2f; --amber:#8a5a1a;
+    --text-primary:rgba(40,30,18,0.92); --text-secondary:rgba(40,30,18,0.66); --text-muted:rgba(40,30,18,0.45);
+    --vermillion:#C1432F; --vermillion-deep:#A03020;
+    --azure:#2E6DA4; --jade:#3E7A44;
+    --line:rgba(40,30,18,0.14); --line-soft:rgba(40,30,18,0.09); --line-faint:rgba(40,30,18,0.05);
+    --paper:var(--bg-deep); --paper-deep:rgba(246,241,231,.94); --paper-card:var(--glass);
+    --ink:var(--text-primary); --ink-soft:var(--text-secondary); --ink-faint:var(--text-muted);
+  }
+  /* 历史会话下拉 option：暗色深底浅字 / 亮色白底黑字（2026-08-04 加，防白字白底看不清） */
+  #session-switcher option { background:#1a130a; color:#f0e6d5; }
+  :root[data-theme=""] #session-switcher option { background:#ffffff; color:#222222; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     background: var(--paper); color: var(--ink);
