@@ -621,6 +621,26 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                 issues.append({'type': 'changsheng', 'palace': found_palace,
                               'found': cs, 'expected': expected_cs})
 
+    # 4. 大限顺逆 + 起岁（简单版，低误报：限定"大限"上下文）
+    birth = (plate_dict.get('input') or {}).get('birth_datetime', '')
+    gender = (plate_dict.get('input') or {}).get('gender', '')
+    five = plate_dict.get('five_elements_class', '')
+    jushu = {'水二局': 2, '木三局': 3, '金四局': 4, '土五局': 5, '火六局': 6}
+    exp_start = jushu.get(five)
+    if len(birth) >= 4 and birth[:4].isdigit() and gender in ('男', '女'):
+        yang = ((int(birth[:4]) - 4) % 10) in (0, 2, 4, 6, 8)  # 甲丙戊庚壬=阳
+        expected_forward = (yang and gender == '男') or (not yang and gender == '女')
+        expected_dir = '顺行' if expected_forward else '逆行'
+        for m in re.finditer(r'大限[^。；\n]{0,12}?(顺行|逆行)', text):
+            if m.group(1) != expected_dir:
+                issues.append({'type': 'decadal_dir', 'found': m.group(1),
+                              'expected': expected_dir})
+    if exp_start:
+        for m in re.finditer(r'(\d{1,2})\s*岁起', text):
+            if int(m.group(1)) != exp_start:
+                issues.append({'type': 'decadal_start', 'found': int(m.group(1)),
+                              'expected': exp_start})
+
     return issues
 
 

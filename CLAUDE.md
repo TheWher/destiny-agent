@@ -7,6 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 八字排盘 Web 应用 — 符号计算（排盘引擎）+ LLM 推理（DeepSeek API）的混合 AI 架构。
 部署地址：`https://thewher.pythonanywhere.com`（PythonAnywhere 免费账户）。
 
+## 引擎透传铁律（紫微斗数）
+
+紫微排盘模块（ziwei_calculator.py）是 iztro-py 的**薄封装**：
+
+- **引擎有输出的字段，项目层一律透传，禁止自行计算命理值**。宫位名、五行局、长生12神、四化、亮度等全部来自 iztro 原生，项目层只做格式化/翻译
+- 曾踩过的坑：宫位功能名错位（PALACE_NAMES_CN 固定表）、十二长生排法（用八字日干长生顶紫微五行局长生）——根因都是"项目层自算覆盖原生"
+- 互证八字段（四柱/五行局/命身宫/紫微/十四主星/辅星/生年四化/大限起岁顺逆）是"禁止自算"的检查表：项目层出现这八类字段的自算逻辑 = 代码审查红旗
+- 需要自定义口径时（如展示格式），写在展示层，不进计算层
+
 ## 启动与测试
 
 ```bash

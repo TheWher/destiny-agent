@@ -95,4 +95,7 @@ def join_classics_str(
     blocks = join_classics(keywords, plate_ctx, top_k)
     if not blocks:
         return ""
-    return "\n".join(b["presentation"] for b in blocks)
+    # 口径声明（2026-08-04 加）：古籍原文可能含与引擎冲突的流派口径（庚干四化/铃星顺逆/五行局/晚子时等），
+    # 注入时显式声明引擎优先，防 LLM 用古籍数值"纠正"盘面（RAG 口径过滤的轻量版）
+    prefix = "（以下为古籍原文节选，流派口径可能与引擎不同。引用时只取意象与断法，具体安星/四化/数值一律以引擎数据为准，不引用古籍数值纠正盘面。）"
+    return prefix + "\n" + "\n".join(b["presentation"] for b in blocks)
