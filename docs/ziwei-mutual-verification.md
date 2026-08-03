@@ -48,6 +48,36 @@
 - `scripts/ziwei_ticket.py`：参数化贴票脚本（经度参数、四柱 raw/校正两套输出、原生宫位名），一条命令出票
 - `scripts/verify_palace_fix.py`：六雷修复验收脚本
 
+### 部署验证期新增修复（2026-08-04 凌晨，King 真机验证逮出）
+
+- **三合四正线 resize 错位**（templates/ziwei.html，61319d3）：renderSanheLines 坐标只在排盘时算一次，DevTools 开合/窗口缩放后错位。加 resize 监听 + rAF 重绘。
+- **登录态刷新丢失**（templates/ziwei.html，45d4d39）：938 行对动态元素 btn-confirm-analyze（排盘后才生成）裸绑事件，页面初始 null → TypeError 中断脚本 → auth 初始化全部跳过。修：元素存在才绑定。教训：页面级初始化对动态元素绑事件必须判空。
+- **label a11y 提示**（templates/ziwei.html，8944111）：年月日时分输入框 label 补 for 关联（提示级）。
+- **模型名错拼**（config.local.py）：deepseek-v4-flask → deepseek-v4-flash（flask 是 Python 框架名，DeepSeek API 400）。gitignored，服务器需手动改。
+- **报告页鉴权头缺失**（static/ziwei-verify.js，b071bdb）：验盘/解读/sessions 请求只带 Content-Type 没带登录 token → 后端当未登录 → 403 need_password。c2bff23 只给 app.js 补了 token，报告页漏网。修：_sessHdrs 统一补 Authorization。教训：鉴权头覆盖要逐端点核对。
+- **JWT_SECRET 安全洞**（建议服务器补）：config.local.py 无 JWT_SECRET 时走硬编码兜底，看过代码可伪造 token。生成随机 secret 写入服务器 config.local.py（gitignored）。
+
+### 加强审查层（2026-08-04 凌晨，King 定"加强审查"后全量实现）
+
+**机器校验器**（services/ziwei_analysis.py verify_interpretation_against_plate）：纯正则规则引擎，零新依赖（PythonAnywhere 基础版兼容）。七类字段：星曜落宫/生年四化/长生/大限顺逆/大限起岁/格局/未校验标注。策略：高置信低误报（宁漏检不误报）。关键设计：
+- **delivery gate**（DataAIHub 防幻觉指南）：缺失输入时标记 unverified 而非静默通过，宁缺勿假
+- **别名归一化**：宫位（仆役=交友等 7 个）+ 星曜（帝座=紫微等）+ 格局变体，防 LLM 用别名写盘面引用静默漏检
+- **原文 span 携带**：issue 带 raw（正则命中原文片段），标红/分析直接用，防措辞变体重构失配
+- **条件性 Reviewer**（MDPI 研究背书：多数幻觉前两轮迭代解决）：校验失败才触发一次 LLM 复核，值来自引擎 oracle、LLM 只写原因措辞（防二次幻觉）
+- **误报闭环**：样本落库（feedback/ziwei_issues/，每条带 _review 字段）→ 用户反馈按钮（/api/ziwei/issue_review 标记误报/确认）→ 分析期交叉统计校准（类型×星曜/宫位，normalized 键聚合）
+- **前端三层呈现**：顶部修正清单（机器渲染）+ 报告正文错误引用标红 + 未校验金色提示
+
+**古籍知识库四层**（全部公版 + 四道关：公版核验/口径过滤/安星诀排除/别名同步 + 体系标签 school）：
+- 结构化星曜数据（ziwei_stars 等，已有）
+- 诸星问答论 35 段（quanshu-qawenlun，按星检索）
+- 卷一赋文 9 篇（太微/形性/星垣/准绳/发微/重补/增补太微/男命骨髓/女命骨髓赋，quanshu-fu）
+- 格局诗 19 条（quanshu-geju，成格条件+断语，格名注入检索）
+- 抽取脚本：scripts/extract_qawenlun.py / extract_fu.py / extract_geju.py（wikisource 公版，模式可复用）
+- 口径标注：古籍注入前加"流派冲突以引擎为准"声明（kb_inject.py）
+
+### 提示词口径同频（ziwei-master.md）
+七点：盘面口径声明（立春/正月初一/晚子时次日/闰月十五分界）、四化流派锚（《全集》系庚干阳武阴同）、长生12神入契约（五行局）、防编造条款（博士/将前/岁前等）、全盘 3000-4500 字 + 深度展开、单主题 400-900 字。
+
 ## 五、协议沉淀
 
 ### 手核口径清单（春鳥橋，口诀链硬规则）
