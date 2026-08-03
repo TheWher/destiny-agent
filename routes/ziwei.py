@@ -553,39 +553,30 @@ def api_ziwei_analyze_stream():
                             text += evt['delta']['text']
                     except Exception:
                         pass
-            from services.ziwei_analysis import verify_interpretation_against_plate
-            verdict = verify_interpretation_against_plate(text, plate_dict)
-            if verdict.get('issues') or verdict.get('unverified'):
-                yield 'data: ' + json.dumps({'type': 'interpretation_issues', 'verdict': verdict}, ensure_ascii=False) + '\n\n'
-                # 条件性 Reviewer（2026-08-04 加，MDPI 研究背书：多数幻觉前两轮迭代解决，只复核一次不循环）：
-                # 值来自引擎、话来自 LLM — 修正清单的正确值直接取 issues 的 expected(机器值), 前端渲染;
-                # LLM 只负责写原因措辞(正确值作为不可改写的硬事实注入), 防复核层二次幻觉(违背 delivery gate)。
-                if verdict.get('issues'):
-                    try:
-                        from services.llm_client import _call_api
-                        fact_lines = '\n'.join(
-                            f"- {i.get('type')}: 报告写 {i.get('found') or i.get('found_palace') or i.get('star')}，引擎正确值为 {i.get('expected')}（此值为机器校验结果，不可修改）"
-                            for i in verdict['issues'])
-                        corr = _call_api(
-                            '你是紫微斗数盘面审查员。以下每条的"引擎正确值"是机器校验的硬事实，不可修改、不可复述错。请为每条写一句简短修正理由（为什么报告容易写错/正确值的含义），不要重复正确值。',
-                            [{'role': 'user', 'content': f'不一致清单（引擎正确值不可修改）：\n{fact_lines}\n\n解读原文（节选）：\n{text[:1500]}'}],
-                            max_tokens=512, temperature=0.3, timeout=60)
-                        if corr.get('success') and corr.get('text'):
-                            yield 'data: ' + json.dumps({'type': 'interpretation_correction', 'correction': corr['text']}, ensure_ascii=False) + '\n\n'
-                    except Exception:
-                        pass
-                # 样本积累（2026-08-04 加）：issues 落库，供高频错误模式校准（数据驱动防错）
+            from services.ziwei_analysis import apply_correction_loop, verify_interpretation_against_plate
+            # 修正循环（2026-08-04 加）：校验 → 短语级修正(值引擎) → 再校验，直到干净或达上限(2轮)
+            corr = apply_correction_loop(text, plate_dict, max_rounds=2)
+            if corr['fixed'] or corr['unfixed']:
+                yield 'data: ' + json.dumps({
+                    'type': 'interpretation_correction_final',
+                    'text': corr['text'],
+                    'fixed': [{'type': i.get('type'), 'raw': i.get('raw'), 'expected': i.get('expected')} for i in corr['fixed']],
+                    'unfixed': [{'type': i.get('type'), 'raw': i.get('raw'), 'found': i.get('found') or i.get('found_palace') or i.get('star'), 'expected': i.get('expected')} for i in corr['unfixed']],
+                    'unverified': corr.get('unverified', []),
+                }, ensure_ascii=False) + '\n\n'
+                # 样本积累（2026-08-04 加）：issues 落库（fixed 标 _resolved, 未修正显式可见）
                 try:
                     import os as _os, datetime as _dt
                     _issue_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
                                                'feedback', 'ziwei_issues')
                     _os.makedirs(_issue_dir, exist_ok=True)
                     _fn = _dt.datetime.now().strftime('%Y%m%d_%H%M%S_%f') + '.json'
-                    # 每条 issue 预留 _review 标记（误报监控用：user_ignored / confirmed_false_positive / confirmed_true）
                     _issues_out = []
-                    for _it in verdict.get('issues', []):
-                        _it2 = dict(_it)
-                        _it2['_review'] = None
+                    for _it in corr['fixed']:
+                        _it2 = dict(_it); _it2['_review'] = None; _it2['_resolved'] = 'fixed'
+                        _issues_out.append(_it2)
+                    for _it in corr['unfixed']:
+                        _it2 = dict(_it); _it2['_review'] = None; _it2['_resolved'] = 'unfixed'
                         _issues_out.append(_it2)
                     with open(_os.path.join(_issue_dir, _fn), 'w', encoding='utf-8') as _f:
                         json.dump({
@@ -593,7 +584,7 @@ def api_ziwei_analyze_stream():
                             'birth': (plate_dict.get('input') or {}).get('birth_datetime', ''),
                             'gender': (plate_dict.get('input') or {}).get('gender', ''),
                             'issues': _issues_out,
-                            'unverified': verdict.get('unverified', []),
+                            'unverified': corr.get('unverified', []),
                             'text_len': len(text),
                         }, _f, ensure_ascii=False, indent=1)
                 except Exception:

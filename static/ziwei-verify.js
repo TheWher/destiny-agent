@@ -240,9 +240,9 @@ async function startAnalysisFull() {
               // 加强审查：报告中的盘面引用与引擎盘面不一致（机器校验层）
               window._interpretationIssues = evt.verdict.issues || [];
               window._interpretationUnverified = evt.verdict.unverified || [];
-            } else if (evt.type === 'interpretation_correction' && evt.correction) {
-              // 条件性 Reviewer：LLM 给出的修正清单
-              window._interpretationCorrection = evt.correction;
+            } else if (evt.type === 'interpretation_correction_final' && evt.text) {
+              // 修正循环最终结果：修正后全文 + 已修正/未修正清单（2026-08-04）
+              window._correctionFinal = evt;
             }
           } catch (e) { }
         }
@@ -250,65 +250,66 @@ async function startAnalysisFull() {
     }
     reader.cancel();
     if (rawText) {
-      var html = formatText(rawText);
-      // 短语级自动修正（2026-08-04 加）：错误引用替换为引擎 oracle 正确值（值不过 LLM 之手），绿色高亮
-      var _iss2 = window._interpretationIssues;
-      if (_iss2 && _iss2.length) {
-        for (var k = 0; k < _iss2.length; k++) {
-          var it = _iss2[k];
-          var raw = it.raw || '';
-          var repl = '';
-          if (it.type === 'star_palace') { repl = it.star + '在' + it.expected; }
-          else if (it.type === 'mutagen') { repl = it.star + it.mutagen + (it.expected && it.expected !== '不在生年或大限四化表' ? '在' + it.expected : ''); }
-          else if (it.type === 'changsheng') { repl = (it.palace || '') + '坐' + it.expected; }
-          else if (it.type === 'decadal_dir') { repl = '大限' + it.expected; }
-          else if (it.type === 'decadal_start') { repl = it.expected + '岁起'; }
-          else if (it.type === 'geju') { repl = '盘面无' + (it.found || '') + '格局'; }
-          else if (it.found) { repl = it.expected; }
-          if (raw && repl) {
-            try {
-              var re = new RegExp(raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-              html = html.replace(re, '<span style="color:var(--jade);font-weight:600;text-decoration:underline">' + repl + '</span>');
-            } catch (e) { }
-          }
+      // 修正循环：用修正后全文渲染（fixed 绿高亮 / unfixed 红标）
+      var _cf = window._correctionFinal;
+      var finalText = _cf && _cf.text ? _cf.text : rawText;
+      var _fixedList = (_cf && _cf.fixed) || [];
+      var _unfixedList = (_cf && _cf.unfixed) || [];
+      var _unvFinal = (_cf && _cf.unverified) || [];
+      var html = formatText(finalText);
+      var escRe = function(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+      var buildRepl = function(it){
+        if (it.type === 'star_palace') { return it.star + '在' + it.expected; }
+        else if (it.type === 'mutagen') { return it.star + it.mutagen + (it.expected && it.expected !== '不在生年或大限四化表' ? '在' + it.expected : ''); }
+        else if (it.type === 'changsheng') { return (it.palace || '') + '坐' + it.expected; }
+        else if (it.type === 'decadal_dir') { return '大限' + it.expected; }
+        else if (it.type === 'decadal_start') { return it.expected + '岁起'; }
+        else if (it.type === 'geju') { return '盘面无' + (it.found || '') + '格局'; }
+        else if (it.found) { return it.expected; }
+        return '';
+      };
+      // fixed：修正后短语绿色高亮（值引擎，修正处可见）
+      for (var k = 0; k < _fixedList.length; k++) {
+        var repl = buildRepl(_fixedList[k]);
+        if (repl) {
+          try { html = html.replace(new RegExp(escRe(repl), 'g'), '<span style="color:var(--jade);font-weight:600">$&</span>'); } catch (e) { }
+        }
+      }
+      // unfixed：残留错误红标（交付 gate：残留必须可见）
+      for (var k2 = 0; k2 < _unfixedList.length; k2++) {
+        var raw2 = _unfixedList[k2].raw || '';
+        if (raw2) {
+          try { html = html.replace(new RegExp(escRe(raw2), 'g'), '<span style="color:var(--vermillion);text-decoration:underline;font-weight:600">$&</span>'); } catch (e) { }
         }
       }
       area.innerHTML = html;
-      // 加强审查提示：机器校验逮到的盘面引用不一致（值来自引擎 oracle，机器渲染）
-      var _iss = window._interpretationIssues;
-      var _unv = window._interpretationUnverified;
-      var _corr = window._interpretationCorrection;
-      if (_iss && _iss.length) {
-        var _desc = _iss[0].type === 'star_palace' ? (_iss[0].star + '应在' + _iss[0].expected + '（报告写' + _iss[0].found + '）')
-          : _iss[0].type === 'mutagen' ? (_iss[0].star + _iss[0].mutagen + '（报告写' + (_iss[0].found_palace || '无宫位') + '）')
-          : _iss[0].type === 'decadal_dir' ? ('大限方向应为' + _iss[0].expected + '（报告写' + _iss[0].found + '）')
-          : _iss[0].type === 'decadal_start' ? ('大限应' + _iss[0].expected + '岁起（报告写' + _iss[0].found + '岁）')
-          : _iss[0].type === 'geju' ? ('盘面无' + _iss[0].found + '格局')
-          : (_iss[0].palace + '宫应为' + _iss[0].expected + '（报告写' + _iss[0].found + '）');
-        // 修正清单主体 = 机器渲染全部 issues（值来自引擎 oracle，零 LLM 生成）
+      // 提示条：fixed 已修正(绿) + unfixed 未修正(红) + unverified(金)
+      var warnBars = '';
+      if (_fixedList.length || _unfixedList.length) {
         var fixList = '';
-        for (var k = 0; k < _iss.length; k++) {
-          var it = _iss[k];
-          var wrong = it.found || it.found_palace || it.star || '?';
-          // mutagen 类型: 显示 星+化 而非 found('?' 时)（2026-08-04 修：避免'报告写 ?'）
-          if (it.type === 'mutagen') {
-            wrong = it.star + it.mutagen + (it.found_palace && it.found_palace !== '?' ? ('在' + it.found_palace) : '');
-          }
-          fixList += '<div style="margin:3px 0">报告写 <b style="text-decoration:line-through">' + wrong + '</b> → 正确为 <b>' + it.expected + '</b>'
-            + ' <button onclick="markIssueReview(' + k + ',\'user_ignored\')" style="font-size:10px;padding:1px 6px;border:1px solid rgba(193,67,47,.4);background:none;color:var(--vermillion);border-radius:2px;cursor:pointer;margin-left:6px">这条有误？</button></div>';
+        for (var k = 0; k < _fixedList.length; k++) {
+          var it = _fixedList[k];
+          fixList += '<div style="margin:3px 0">' + (it.raw || '') + ' → <b style="color:var(--jade)">' + (it.expected || '') + '</b></div>';
+        }
+        for (var k3 = 0; k3 < _unfixedList.length; k3++) {
+          var it3 = _unfixedList[k3];
+          fixList += '<div style="margin:3px 0">⚠️ <b style="text-decoration:line-through">' + (it3.raw || '') + '</b> → <b>' + (it3.expected || '') + '</b>（未能自动修正）</div>';
         }
         var warn = document.createElement('div');
         warn.style.cssText = 'border:1px solid var(--jade);background:rgba(90,170,94,.08);color:var(--jade);padding:8px 12px;font-size:12px;margin-bottom:12px;border-radius:4px';
-        var warnHtml = '✅ 审查修正：报告中有 <b>' + _iss.length + '</b> 处盘面引用与引擎不一致，已自动按引擎盘面修正（绿色高亮处为修正后内容）：' + fixList;
-        if (_corr) { warnHtml += '<div style="margin-top:8px;border-top:1px dashed rgba(193,67,47,.3);padding-top:6px">🔧 审查员说明：' + formatText(_corr) + '</div>'; }
+        var warnHtml = '✅ 审查修正：已自动修正 <b>' + _fixedList.length + '</b> 处盘面引用';
+        if (_unfixedList.length) { warnHtml += '，<b style="color:var(--vermillion)">' + _unfixedList.length + ' 处未能自动修正（红标处请留意）</b>'; }
+        warnHtml += '：' + fixList;
         warn.innerHTML = warnHtml;
-        area.insertBefore(warn, area.firstChild);
-      } else if (_unv && _unv.length) {
+        warnBars += warn.outerHTML;
+      }
+      if (_unvFinal && _unvFinal.length) {
         var uwarn = document.createElement('div');
         uwarn.style.cssText = 'border:1px solid var(--champagne);background:rgba(228,184,99,.06);color:var(--champagne);padding:8px 12px;font-size:12px;margin-bottom:12px;border-radius:4px';
-        uwarn.innerHTML = 'ℹ️ 部分字段未校验（' + _unv.join('、') + '）：缺少出生信息，大限方向/起岁未做盘面比对。';
-        area.insertBefore(uwarn, area.firstChild);
+        uwarn.innerHTML = 'ℹ️ 部分字段未校验（' + _unvFinal.join('、') + '）：缺少出生信息，大限方向/起岁未做盘面比对。';
+        warnBars += uwarn.outerHTML;
       }
+      if (warnBars) { area.insertAdjacentHTML('afterbegin', warnBars); }
       area.scrollIntoView({ behavior: 'smooth', block: 'start' });
       await fetch('/api/ziwei/sessions/' + sid, {
         method: 'PATCH', headers: _sessHdrs({ 'Content-Type': 'application/json' }),

@@ -795,6 +795,56 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
     return {'issues': issues, 'unverified': unverified}
 
 
+def build_replacement(issue: dict) -> str:
+    """按 issue 构造修正短语（值来自引擎 oracle，零 LLM 生成）。
+    短语级修正：错误引用 → 正确值，模板化组装。"""
+    it = issue
+    if it.get('type') == 'star_palace':
+        return it['star'] + '在' + it['expected']
+    if it.get('type') == 'mutagen':
+        exp = it.get('expected', '')
+        return it['star'] + it.get('mutagen', '') + (('在' + exp) if exp and exp != '不在生年或大限四化表' else '')
+    if it.get('type') == 'changsheng':
+        return (it.get('palace') or '') + '坐' + it['expected']
+    if it.get('type') == 'decadal_dir':
+        return '大限' + it['expected']
+    if it.get('type') == 'decadal_start':
+        return str(it['expected']) + '岁起'
+    if it.get('type') == 'geju':
+        return '无' + (it.get('found') or '')  # '此盘无日月并明格'（避免'盘面无X格局格局'冗余）
+    if it.get('found'):
+        return str(it['expected'])
+    return ''
+
+
+def apply_correction_loop(analysis_text: str, plate_dict: dict, max_rounds: int = 2):
+    """修正循环（2026-08-04 加）：校验 → 短语级修正（值引擎） → 再校验，直到干净或达上限。
+
+    修正后的文本再过校验器（修正引入的新内容也验证，防修正本身成新错）。
+    2 轮后残留 issues 显式标记未修正（交付 gate：默认拒绝未验证，残留必须可见）。
+
+    返回: {'text': 修正后全文, 'fixed': [已修正 issue 列表], 'unfixed': [未修正残留]}
+    """
+    text = analysis_text or ''
+    verdict = verify_interpretation_against_plate(text, plate_dict)
+    fixed = []
+    rounds = 0
+    while verdict['issues'] and rounds < max_rounds:
+        rounds += 1
+        round_fixed = []
+        for it in verdict['issues']:
+            raw = it.get('raw')
+            repl = build_replacement(it)
+            if raw and repl and raw in text:
+                text = text.replace(raw, repl, 1)
+                round_fixed.append(it)
+        if not round_fixed:
+            break  # 本轮无可替换，防死循环
+        fixed.extend(round_fixed)
+        verdict = verify_interpretation_against_plate(text, plate_dict)
+    return {'text': text, 'fixed': fixed, 'unfixed': verdict['issues']}
+
+
 # ============================================================
 # 测试
 # ============================================================
