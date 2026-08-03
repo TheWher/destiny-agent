@@ -520,6 +520,31 @@ _ZW_STARS = ['紫微', '天机', '太阳', '武曲', '天同', '廉贞', '天府
              '天钺', '擎羊', '陀罗', '火星', '铃星', '地空', '地劫', '天马']
 _ZW_CHANGSHENG = ['长生', '沐浴', '冠带', '临官', '帝旺', '衰', '病', '死', '墓', '绝', '胎', '养']
 
+# 宫位/星曜别名归一化（2026-08-04 加，防静默漏检）
+# 来源：互证彩排验证（仆役=交友铁证）+ 经典别称（相貌=父母/出外=迁移）。
+# 策略：只加安全多字别名，单字（日/月）不映射防误替换。
+_PALACE_ALIAS = {'仆役': '交友', '奴仆': '交友', '相貌': '父母', '出外': '迁移'}
+_STAR_ALIAS = {'紫微帝星': '紫微', '帝星': '紫微', '月亮': '太阴',
+               '天机星': '天机', '太阳星': '太阳', '武曲星': '武曲', '天同星': '天同',
+               '廉贞星': '廉贞', '天府星': '天府', '太阴星': '太阴', '贪狼星': '贪狼',
+               '巨门星': '巨门', '天相星': '天相', '天梁星': '天梁', '七杀星': '七杀',
+               '破军星': '破军', '禄存星': '禄存', '左辅星': '左辅', '右弼星': '右弼',
+               '文昌星': '文昌', '文曲星': '文曲', '天魁星': '天魁', '天钺星': '天钺',
+               '擎羊星': '擎羊', '陀罗星': '陀罗', '火星星': '火星', '铃星星': '铃星',
+               '地空星': '地空', '地劫星': '地劫', '天马星': '天马'}
+
+
+def _normalize_text(text: str) -> str:
+    """文本别名归一化：LLM 语料别名 → 规范名，长名优先替换防子串。"""
+    mapping = []
+    mapping += [(k, v) for k, v in _STAR_ALIAS.items()]
+    mapping += [(k, v) for k, v in _PALACE_ALIAS.items()]
+    mapping.sort(key=lambda kv: len(kv[0]), reverse=True)
+    t = text
+    for k, v in mapping:
+        t = t.replace(k, v)
+    return t
+
 
 def _norm_palace(name: str) -> str:
     """宫名归一化：繁体→简体，去'宫'后缀（'命宫'本身保留）"""
@@ -571,7 +596,8 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
     oracle = _build_plate_oracle(plate_dict)
     issues = []
     unverified = []
-    text = analysis_text
+    # 别名归一化后再提取比对（防 LLM 写仆役/相貌等别名导致静默漏检）
+    text = _normalize_text(analysis_text or '')
     palaces = sorted(oracle['palace_names'], key=len, reverse=True)  # 长名优先
 
     # 1. 星曜落宫：X星在/坐/守/入/落 Y宫（含'X星在命宫'、'太阳坐命'等）
