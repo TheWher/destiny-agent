@@ -720,7 +720,7 @@ $('btn-render').addEventListener('click',()=>{
       // 时辰不确定标志写入盘数据，随 session 传递到报告页
       var _ut=document.getElementById('unknown-time');
       if(_ut&&_ut.checked&&d.input){d.input.unknown_time=true;}
-      plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);createShareSession(d);
+      plateData=d;$('loading-section').classList.add('hidden');$('result-section').classList.remove('hidden');renderInPlace(d);
       // input_time: 原始输入时:分（嗅探整点率）；unknown_time: 时辰不确定勾选
       var _ut2=document.getElementById('unknown-time');
       track('chart_created',{gender:b.gender,cal:b.cal,input_time:b.h+':'+b.min,unknown_time:!!(_ut2&&_ut2.checked)});})
@@ -933,7 +933,9 @@ async function createShareSession(plate){
 }
 
 async function shareChart(){
-    if(!_shareSid){alert('请先排盘');return}
+    if(!plateData){alert('请先排盘');return}
+    if(!_shareSid){ await createShareSession(plateData); }  // 懒创建：分享时才建会话（2026-08-04 排盘不再自动建）
+    if(!_shareSid){alert('会话创建失败');return}
     const btn=$('btn-share');btn.disabled=true;btn.textContent='生成中...';
     try{
       const r=await fetch('/api/ziwei/share',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({sid:_shareSid})});
@@ -977,9 +979,16 @@ async function confirmAnalyze(){
     btn.disabled=true;btn.textContent='分析中...';
     try{
         const title=document.getElementById('y').value+'-'+document.getElementById('m').value+'-'+document.getElementById('d').value+' '+document.getElementById('h').value+':00';
-        const sr=await fetch('/api/ziwei/sessions',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({title,messages:[],plate_data:plateData,plate_summary:title})});
-        const sd=await sr.json();
-        window.location.href='/ziwei/report/'+sd.id;
+        var sid2=_shareSid;
+        if(sid2){
+          // 已分享过：复用该会话，不新建（2026-08-04 防排一次盘两个历史命盘）
+          await fetch('/api/ziwei/sessions/'+sid2,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({title,messages:[],plate_data:plateData})});
+        }else{
+          const sr=await fetch('/api/ziwei/sessions',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({title,messages:[],plate_data:plateData,plate_summary:title})});
+          const sd=await sr.json();
+          sid2=sd.id;
+        }
+        window.location.href='/ziwei/report/'+sid2;
     }catch(e){btn.disabled=false;btn.textContent='重试';alert('创建会话失败: '+e.message);}
   };
   // ⚠️ btn-confirm-analyze 是排盘后才动态生成的按钮，页面初始不存在，
