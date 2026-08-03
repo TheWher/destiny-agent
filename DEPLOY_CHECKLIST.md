@@ -1,13 +1,14 @@
 # DEPLOY_CHECKLIST — 2026-08-02 发布（隐私隔离 + 反馈鉴权 + 安全分享 + 缓存机制）
 
 > 发布轮次：939530e（链：1e224e2 → a498511 → b168075 → 939530e）
+> 当前最新：841d8cb（2026-08-03，验盘反馈关联字段：verify 落 device_id + 覆盖率进 evaluate 管线）
 > 用途：部署机逐项勾选，每轮发布可复用。全部勾完才发码。
 
 ---
 
 ## 0. 拉取
 
-- [ ] `git pull` 一次拉全四个 commit，HEAD = 939530e
+- [ ] `git pull` 一次拉全，HEAD = 841d8cb（清单自带更新，若只到 e1ca0c1 说明拉少了）
 - [ ] 确认 `scripts/ziwei_sessions_tool.py` 存在
 - [ ] 确认 `.gitignore` 含 `routes/share/` 与 `sessions_archive/`
 
@@ -44,6 +45,13 @@
   `curl -s https://<域名>/api/admin/events/stats -H "X-Admin-Token: <token>"`（只看 POST 不算验了读口）
 - [ ] 明细过滤验证：`/api/admin/events?event=share_view` 里 `device_id=curl-test` 那条即测试发，真机漏斗可与之区分
 
+## 4b. 观测报告初始化（覆盖率/命中率上线即看，不跑则在线端点一直空）
+
+- [ ] 跑 evaluate 生成 report_cache，**必须 --output 到 feedback/ziwei/ 下的绝对路径**（在线端点与 previous 对比都读这里；默认相对路径会写到 scripts/ 下导致扑空）：
+  `python3 scripts/evaluate_ziwei_verify.py --output /绝对路径/feedback/ziwei/report_cache.json`
+- [ ] 部署机跑完 curl 验证在线端点有数：`curl -s https://<域名>/api/ziwei/feedback/report -H "X-Admin-Token: <token>"`
+- [ ] **首跑基线存档**：第一次跑没有 previous 可对比，这份数字就是准确率/覆盖率的历史锚点，单独复制存一份（如 `feedback/ziwei/report_cache.baseline.json`），之后每轮对比都拿它当基准
+
 ## 5. 真机闭环验收（产品视角，等 King 有空走）
 
 - [ ] 分享者真机：排盘 → 分享 → 复制链接
@@ -52,11 +60,11 @@
 - [ ] 回 stats 查漏斗三环：share_view → share_cta_click → chart_created 落在**同一 device_id**（接收者设备），串得起来
 - [ ] 注意：分享者自己那台产的是 report_share，与漏斗三环不同组，查 stats 别混着对
 
-## 6. 旧盘找回（待 King 邮箱，可与上述并行）
+## 6. ~~旧盘找回~~（已作废：2026-08-03 King 清空历史数据重新上线，此节不再执行）
 
-- [ ] 部署机先跑 `list` 出 CSV 备着
-- [ ] King 报邮箱 + 圈选范围（CSV 里 messages=0 的无主会话是"POST 已到但前端没跳转"的幽灵会话，扫 created_at 对卡住的时间点即可认领）→ `claim --email <邮箱>`（只动无 user_id 会话，自动查库校验 UUID）
-- [ ] 补完重启 → King 登录验证可见
+- [x] ~~部署机先跑 `list` 出 CSV 备着~~
+- [x] ~~King 报邮箱 + 圈选范围 → `claim --email <邮箱>`~~
+- [x] ~~补完重启 → King 登录验证可见~~
 
 ## 7. 发码
 
