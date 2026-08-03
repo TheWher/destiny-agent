@@ -1194,6 +1194,13 @@ function renderSanheLines(){
   });
 }
 
+// resize/布局变化时重绘三合四正线：线的坐标基于 getBoundingClientRect，
+// DevTools 开合/窗口缩放会改变宫格实际尺寸，不重绘就错位。rAF 合并高频触发。
+window.addEventListener('resize', function(){
+  const grid=document.getElementById('grid');
+  if(grid && grid.children.length) requestAnimationFrame(renderSanheLines);
+});
+
 // ── 运限三层架构 ──
 function renderYunDecade(plate){
   const palaces=plate.palaces||[];
