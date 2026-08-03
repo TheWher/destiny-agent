@@ -384,7 +384,14 @@ body::after{
 
     <div style="margin-top:auto;padding:12px 0;border-top:1px solid var(--border-light)">
 
-            <details id="session-details" open><summary style="cursor:pointer;font-size:.82em;color:var(--accent);margin-bottom:8px;font-weight:600">💬 历史会话 (<span id="session-count">0</span>)</summary>
+            <details id="session-details" open><summary style="cursor:pointer;font-size:.82em;color:var(--accent);margin-bottom:8px;font-weight:600">💬 历史会话 (<span id="session-count">0</span>) <span style="float:right;font-weight:400"><button onclick="event.stopPropagation();toggleBatchMode()" id="btn-batch" style="font-size:.72em;padding:1px 8px;border:1px solid var(--border-light);background:none;color:var(--text-muted);border-radius:3px;cursor:pointer;font-family:inherit">选择</button></span></summary>
+
+            <div id="session-batch-bar" style="display:none;margin-bottom:6px;font-size:.75em;color:var(--text-muted)">
+              <label style="cursor:pointer"><input type="checkbox" id="batch-select-all" onchange="toggleSelectAll(this.checked)"> 全选</label>
+              <span id="batch-selected-count" style="margin-left:8px">已选 0</span>
+              <button onclick="batchDelete()" style="margin-left:8px;font-size:.72em;padding:1px 8px;border:1px solid var(--vermillion);background:none;color:var(--vermillion);border-radius:3px;cursor:pointer;font-family:inherit">删除所选</button>
+              <button onclick="toggleBatchMode()" style="margin-left:4px;font-size:.72em;padding:1px 6px;border:1px solid var(--border-light);background:none;color:var(--text-muted);border-radius:3px;cursor:pointer;font-family:inherit">退出</button>
+            </div>
 
             <div id="session-list" style="max-height:240px;overflow-y:auto;font-size:.78em;line-height:1.6"></div>
 
@@ -563,7 +570,8 @@ async function loadSessions(){
       const summary=s.plate_summary||'';
       const title=s.title||summary||'';
       const mc=s.message_count||0;
-      return '<div style="padding:3px 0;border-bottom:1px solid var(--line-faint);display:flex;align-items:center;gap:4px" data-sid="'+s.id+'"><span style="flex:1;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="window.location.href=\'/ziwei/report/'+s.id+'\'">'+(date?date+' ':'')+'<span class="sess-title" data-sid="'+s.id+'">'+escHtml(title.slice(0,20))+'</span></span><span style="color:var(--ink-faint);font-size:.75em;flex-shrink:0">'+(mc?'💬'+mc:'新')+'</span><button onclick="event.stopPropagation();renameSession(\''+s.id+'\')" title="重命名" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✏</button><button onclick="event.stopPropagation();deleteSession(\''+s.id+'\')" title="删除" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✕</button></div>';
+      const cb=(typeof _batchMode!=='undefined'&&_batchMode)?'<input type="checkbox" class="batch-cb" data-sid="'+s.id+'" onchange="updateBatchCount()" style="flex-shrink:0">':'';
+      return '<div style="padding:3px 0;border-bottom:1px solid var(--line-faint);display:flex;align-items:center;gap:4px" data-sid="'+s.id+'">'+cb+'<span style="flex:1;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="window.location.href=\'/ziwei/report/'+s.id+'\'">'+(date?date+' ':'')+'<span class="sess-title" data-sid="'+s.id+'">'+escHtml(title.slice(0,20))+'</span></span><span style="color:var(--ink-faint);font-size:.75em;flex-shrink:0">'+(mc?'💬'+mc:'新')+'</span><button onclick="event.stopPropagation();renameSession(\''+s.id+'\')" title="重命名" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✏</button><button onclick="event.stopPropagation();deleteSession(\''+s.id+'\')" title="删除" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✕</button></div>';
     }).join('');
   }catch(e){}
 }
@@ -602,6 +610,38 @@ function flashMsg(msg){
   document.body.appendChild(div);
   requestAnimationFrame(()=>{ div.style.opacity='1'; });
   setTimeout(()=>{ div.style.opacity='0'; setTimeout(()=>div.remove(),300); },1500);
+}
+
+// ── 批量删除会话（2026-08-04 加）──
+var _batchMode=false;
+function toggleBatchMode(){
+  _batchMode=!_batchMode;
+  var bar=$('session-batch-bar');
+  if(bar) bar.style.display=_batchMode?'block':'none';
+  var btn=$('btn-batch');
+  if(btn) btn.textContent=_batchMode?'取消选择':'选择';
+  loadSessions();
+}
+function updateBatchCount(){
+  var n=document.querySelectorAll('#session-list .batch-cb:checked').length;
+  var el=$('batch-selected-count');
+  if(el) el.textContent='已选 '+n;
+}
+function toggleSelectAll(checked){
+  document.querySelectorAll('#session-list .batch-cb').forEach(function(cb){ cb.checked=checked; });
+  updateBatchCount();
+}
+async function batchDelete(){
+  var cbs=document.querySelectorAll('#session-list .batch-cb:checked');
+  if(!cbs.length){ alert('请先选择要删除的会话'); return; }
+  var sids=[].map.call(cbs,function(cb){ return cb.getAttribute('data-sid'); });
+  if(!confirm('确定删除所选 '+sids.length+' 个会话？')) return;
+  try{
+    var r=await fetch('/api/ziwei/sessions/batch_delete',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({sids:sids})});
+    var d=await r.json();
+    if(d.ok){ flashMsg('已删除 '+d.deleted+' 个会话'); toggleBatchMode(); }
+    else alert(d.error||'删除失败');
+  }catch(e){ alert('网络错误'); }
 }
 
 

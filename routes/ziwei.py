@@ -681,6 +681,32 @@ def api_ziwei_sessions():
     _save_session_to_disk(sid)
     return jsonify(_ziwei_sessions[sid])
 
+@ziwei_bp.route("/sessions/batch_delete", methods=["POST"])
+def api_ziwei_sessions_batch_delete():
+    """批量删除会话（仅归属者，匿名按设备指纹）"""
+    user_id = _get_auth_user()
+    device_fp = (request.headers.get("X-Device-Id") or "").strip() or None
+    data = request.get_json(silent=True) or {}
+    sids = data.get("sids") or []
+    if not isinstance(sids, list) or not sids:
+        return jsonify({"error": "sids 不能为空"}), 400
+    if len(sids) > 100:
+        return jsonify({"error": "单次最多 100 个"}), 400
+    deleted = 0
+    for sid in sids:
+        s = _ziwei_sessions.get(sid)
+        if not s:
+            continue
+        if not _session_visible_to(s, user_id, device_fp):
+            continue  # 非归属者跳过，不暴露存在性
+        del _ziwei_sessions[sid]
+        fp = os.path.join(_SESSIONS_DIR, f'{sid}.json')
+        if os.path.exists(fp):
+            os.remove(fp)
+        deleted += 1
+    return jsonify({"ok": True, "deleted": deleted})
+
+
 @ziwei_bp.route("/sessions/<sid>", methods=["GET", "PUT", "PATCH", "DELETE"])
 def api_ziwei_session(sid):
     """获取 / 更新 / 追加 / 删除单个会话（仅归属者可见可改）"""
