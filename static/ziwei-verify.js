@@ -253,13 +253,16 @@ async function startAnalysisFull() {
       if (_iss2 && _iss2.length) {
         for (var k = 0; k < _iss2.length; k++) {
           var it = _iss2[k];
-          var wrongPhrase = '';
-          if (it.type === 'star_palace') { wrongPhrase = it.star + '在' + it.found; }
-          else if (it.type === 'mutagen') { wrongPhrase = it.star + it.mutagen + (it.found_palace ? '在' + it.found_palace : ''); }
-          else if (it.type === 'decadal_dir') { wrongPhrase = '大限' + it.found; }
-          else if (it.type === 'decadal_start') { wrongPhrase = it.found + '岁起'; }
-          else if (it.type === 'geju') { wrongPhrase = it.found; }
-          else if (it.found) { wrongPhrase = it.found; }
+          // 优先用校验器正则命中的原文片段（hanako: 防措辞变体重构失配）
+          var wrongPhrase = it.raw || '';
+          if (!wrongPhrase) {
+            if (it.type === 'star_palace') { wrongPhrase = it.star + '在' + it.found; }
+            else if (it.type === 'mutagen') { wrongPhrase = it.star + it.mutagen + (it.found_palace ? '在' + it.found_palace : ''); }
+            else if (it.type === 'decadal_dir') { wrongPhrase = '大限' + it.found; }
+            else if (it.type === 'decadal_start') { wrongPhrase = it.found + '岁起'; }
+            else if (it.type === 'geju') { wrongPhrase = it.found; }
+            else if (it.found) { wrongPhrase = it.found; }
+          }
           if (wrongPhrase) {
             try {
               var re = new RegExp(wrongPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');

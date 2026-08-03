@@ -622,11 +622,13 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
     # 别名归一化后再提取比对（防 LLM 写仆役/相貌等别名导致静默漏检）
     text = _normalize_text(analysis_text or '')
     palaces = sorted(oracle['palace_names'], key=len, reverse=True)  # 长名优先
+    # 宫名正则允许省略'宫'字（'坐命'/'坐命宫'都匹配）
+    _pat_palaces = '|'.join(p.replace('宫', '') + r'宫?' for p in palaces)
 
     # 1. 星曜落宫：X星在/坐/守/入/落 Y宫（含'X星在命宫'、'太阳坐命'等）
     for star in _ZW_STARS:
         for m in re.finditer(
-            re.escape(star) + r'\s*星?\s*(?:在|坐|守|入|落于|落)\s*(' + '|'.join(p + r'宫?' for p in palaces) + ')',
+            re.escape(star) + r'\s*星?\s*(?:在|坐|守|入|落于|落)\s*(' + _pat_palaces + ')',
             text,
         ):
             found_palace = _norm_palace(m.group(1))
@@ -635,25 +637,28 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                 issues.append({
                     'type': 'star_palace', 'star': star,
                     'found': found_palace, 'expected': expected,
+                    'raw': m.group(0),  # 原文命中片段（标红直接用，防措辞变体重构失配）
                 })
 
     # 2. 生年四化：X化禄/权/科/忌（可带'在/于/入 Y宫'）
     for star in _ZW_STARS:
         for m in re.finditer(re.escape(star) + r'化(禄|权|科|忌)'
-                             r'(?:\s*(?:在|于|入|落)\s*(' + '|'.join(p + r'宫?' for p in palaces) + r'))?',
+                             r'(?:\s*(?:在|于|入|落)\s*(' + _pat_palaces + r'))?',
                              text):
             mu = '化' + m.group(1)
             found_palace = _norm_palace(m.group(2)) if m.group(2) else ''
             matches = [(s, mu2, p) for (s, mu2, p) in oracle['mutagens'] if s == star and mu2 == mu]
             if not matches:
                 issues.append({'type': 'mutagen', 'star': star, 'mutagen': mu,
-                              'found_palace': found_palace or '?', 'expected': '不在生年四化表'})
+                              'found_palace': found_palace or '?', 'expected': '不在生年四化表',
+                              'raw': m.group(0)})
             elif found_palace:
                 expected_palaces = {p for (_, _, p) in matches}
                 if found_palace not in expected_palaces:
                     issues.append({'type': 'mutagen', 'star': star, 'mutagen': mu,
                                   'found_palace': found_palace,
-                                  'expected': '或'.join(sorted(expected_palaces))})
+                                  'expected': '或'.join(sorted(expected_palaces)),
+                                  'raw': m.group(0)})
 
     # 3. 长生：X宫(坐/逢/临/守)长生... 或 长生(在/于)X宫
     cs_alt = '|'.join(_ZW_CHANGSHENG)
@@ -663,14 +668,16 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
             expected_cs = oracle['changsheng'].get(p, '')
             if expected_cs and found_cs != expected_cs:
                 issues.append({'type': 'changsheng', 'palace': p,
-                              'found': found_cs, 'expected': expected_cs})
+                              'found': found_cs, 'expected': expected_cs,
+                              'raw': m.group(0)})
     for cs in _ZW_CHANGSHENG:
-        for m in re.finditer(re.escape(cs) + r'\s*(?:在|于|落)\s*(' + '|'.join(p + r'宫?' for p in palaces) + ')', text):
+        for m in re.finditer(re.escape(cs) + r'\s*(?:在|于|落)\s*(' + _pat_palaces + ')', text):
             found_palace = _norm_palace(m.group(1))
             expected_cs = oracle['changsheng'].get(found_palace, '')
             if expected_cs and expected_cs != cs:
                 issues.append({'type': 'changsheng', 'palace': found_palace,
-                              'found': cs, 'expected': expected_cs})
+                              'found': cs, 'expected': expected_cs,
+                              'raw': m.group(0)})
 
     # 4. 大限顺逆 + 起岁（简单版，低误报：限定"大限"上下文）
     birth = (plate_dict.get('input') or {}).get('birth_datetime', '')
@@ -685,14 +692,14 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
         for m in re.finditer(r'大限[^。；\n]{0,12}?(顺行|逆行)', text):
             if m.group(1) != expected_dir:
                 issues.append({'type': 'decadal_dir', 'found': m.group(1),
-                              'expected': expected_dir})
+                              'expected': expected_dir, 'raw': m.group(0)})
     else:
         unverified.append('decadal_dir')  # 缺少出生信息，不静默通过
     if exp_start:
         for m in re.finditer(r'(\d{1,2})\s*岁起', text):
             if int(m.group(1)) != exp_start:
                 issues.append({'type': 'decadal_start', 'found': int(m.group(1)),
-                              'expected': exp_start})
+                              'expected': exp_start, 'raw': m.group(0)})
     else:
         unverified.append('decadal_start')
 
@@ -716,7 +723,8 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                 if any(neg in pre for neg in ('无', '未', '不', '非', '不成', '没有', '不具备')):
                     continue
                 if canon not in engine_pats:
-                    issues.append({'type': 'geju', 'found': gname, 'expected': '盘面无此格局'})
+                    issues.append({'type': 'geju', 'found': gname, 'expected': '盘面无此格局',
+                                  'raw': m.group(0)})
                     break
     else:
         unverified.append('geju')  # 引擎格局判读不可用时诚实标注
