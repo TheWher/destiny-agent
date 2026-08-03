@@ -617,10 +617,9 @@ def _build_plate_oracle(plate_dict: dict) -> dict:
 def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) -> dict:
     """加强审查：提取解读文本中的盘面引用，与引擎盘面比对。
 
-    覆盖：星曜落宫、生年四化、长生、大限顺逆/起岁、格局。
-    第八类候选（2026-08-04 记档，hanako/mose）：大限四化——oracle = 宫位 decadal 干支
-    + 钉死四化表（壬=梁紫左武），上下文限定"大限"防误报（跟大限顺逆同套路），
-    等真出几例再上（当前 King 样本的四化值均正确，仅格式问题）。
+    覆盖：星曜落宫、生年四化、长生、大限顺逆/起岁、格局、大限四化。
+    大限四化（第八类，2026-08-04 实现）：oracle = 各宫位 decadal 干支 + 钉死四化表并集，
+    上下文限定"大限"防误报（跟大限顺逆同套路）。
     返回: {'issues': [不一致项], 'unverified': [因缺少输入未校验的类别]}。
     delivery gate 原则（DataAIHub 防幻觉指南）：缺失输入时标记"未校验"而非静默通过，
     宁缺勿假——默认拒绝未验证声明。
@@ -651,9 +650,9 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                     'raw': m.group(0),  # 原文命中片段（标红直接用，防措辞变体重构失配）
                 })
 
-    # 2. 生年四化：X化禄/权/科/忌（可带'在/于/入 Y宫'）
+    # 2. 生年四化：X化禄/权/科/忌（可带'在/于/入 Y宫'；(?<!大限) 排除大限四化误捕）
     for star in _ZW_STARS:
-        for m in re.finditer(re.escape(star) + r'化(禄|权|科|忌)'
+        for m in re.finditer(r'(?<!大限)' + re.escape(star) + r'化(禄|权|科|忌)'
                              r'(?:\s*(?:在|于|入|落)\s*(' + _pat_palaces + r'))?',
                              text):
             mu = '化' + m.group(1)
@@ -713,6 +712,28 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                               'expected': exp_start, 'raw': m.group(0)})
     else:
         unverified.append('decadal_start')
+
+    # 6. 大限四化（第八类，2026-08-04 实现）：各宫位大限干支四化并集作 oracle，
+    #    上下文限定"大限"防误报（跟大限顺逆同套路）
+    try:
+        from ziwei_calculator import _GAN_SIHUA_TABLE
+        decadal_mutagens = set()
+        for p in plate_dict.get('palaces', []) or []:
+            dz = p.get('decadal_dizhi', '') if isinstance(p, dict) else ''
+            if dz and dz[0]:
+                for mu_type, star_name in _GAN_SIHUA_TABLE.get(dz[0], []):
+                    decadal_mutagens.add((star_name, '化' + mu_type))
+    except Exception:
+        decadal_mutagens = set()
+    if decadal_mutagens:
+        for star in _ZW_STARS:
+            for m in re.finditer(r'大限[^。；\n]{0,10}?' + re.escape(star) + r'化(禄|权|科|忌)', text):
+                mu = '化' + m.group(1)
+                if (star, mu) not in decadal_mutagens:
+                    issues.append({'type': 'decadal_mutagen', 'star': star, 'mutagen': mu,
+                                  'expected': '不在大限四化表', 'raw': m.group(0)})
+    else:
+        unverified.append('decadal_mutagen')
 
     # 5. 格局引用（肯定语境）：LLM 声称有某格局但盘面引擎判无 → 逮
     try:
