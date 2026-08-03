@@ -228,6 +228,12 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
         parts.append("\n## 中州派辅佐煞曜参考（按命盘星曜检索）")
         parts.append(fuzuo_text)
 
+    # ═══ 诸星问答论按需检索（2026-08-04 加，公版古籍，按盘面星曜取对应问答）═══
+    qawenlun_text = retrieve_kb(keywords, "ziwei_qawenlun.json", top_k=5)
+    if qawenlun_text:
+        parts.append("\n## 📖 诸星问答论（全书卷一，公版古籍；星曜特质权威问答，引用时以引擎盘面为准）")
+        parts.append(qawenlun_text)
+
     # 古籍引用（格局→原文按需检索；join annotations 分层呈现，转述不带引号，防假出处）
     patterns = plate_dict.get('patterns', [])
     if patterns:
@@ -525,7 +531,7 @@ _ZW_CHANGSHENG = ['长生', '沐浴', '冠带', '临官', '帝旺', '衰', '病'
 # 策略：只加安全多字别名，单字（日/月）不映射防误替换。
 _PALACE_ALIAS = {'仆役': '交友', '奴仆': '交友', '相貌': '父母', '出外': '迁移',
                '事业宫': '官禄', '男女宫': '子女', '福寿宫': '福德'}
-_STAR_ALIAS = {'紫微帝星': '紫微', '帝星': '紫微', '月亮': '太阴',
+_STAR_ALIAS = {'紫微帝星': '紫微', '帝星': '紫微', '帝座': '紫微', '耗星': '破军', '月亮': '太阴',
                '天机星': '天机', '太阳星': '太阳', '武曲星': '武曲', '天同星': '天同',
                '廉贞星': '廉贞', '天府星': '天府', '太阴星': '太阴', '贪狼星': '贪狼',
                '巨门星': '巨门', '天相星': '天相', '天梁星': '天梁', '七杀星': '七杀',

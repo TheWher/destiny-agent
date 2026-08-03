@@ -227,6 +227,9 @@ def _retrieve_kb_lexical_str(query_keywords: list[str], kb_name: str, top_k: int
     # ziwei_classics.json：古籍引用（generic 转发）
     if kb_name == "ziwei_classics.json":
         return _format_generic(_match_generic(kb, query_keywords, top_k))
+    # ziwei_qawenlun.json：诸星问答论（按 star 字段精确匹配）
+    if kb_name == "ziwei_qawenlun.json":
+        return _format_qawenlun(_match_qawenlun(kb, query_keywords, top_k))
     # ── 通用检索 ──
     return _format_generic(_match_generic(kb, query_keywords, top_k))
 
@@ -245,7 +248,41 @@ def _retrieve_kb_lexical_hits(query_keywords: list[str], kb_name: str, top_k: in
     if kb_name == "ziwei_classics.json":
         # 条目级：格局名（str 出口仍是 generic dump，hits 出口做条目级供注入层 join）
         return [name for _, name, _ in _match_classics(kb, query_keywords, top_k)]
+    if kb_name == "ziwei_qawenlun.json":
+        return [p.get('star', '') for _, p in _match_qawenlun(kb, query_keywords, top_k)]
     return [key for _, key, _ in _match_generic(kb, query_keywords, top_k)]
+
+
+# ── 诸星问答论匹配（按 star 字段，2026-08-04 加）──
+
+def _match_qawenlun(kb: dict, keywords: list[str], top_k: int) -> list:
+    """按 star 字段匹配问答段落：关键词命中星名权重最高，命中问答/正文次之。"""
+    S2T = {'机': '機', '阳': '陽', '贞': '貞', '阴': '陰', '贪': '貪', '门': '門', '杀': '殺',
+           '军': '軍', '辅': '輔', '钺': '鉞', '马': '馬', '权': '權', '罗': '羅', '铃': '鈴',
+           '虚': '虛', '禄': '祿'}
+    norm = lambda s: ''.join(S2T.get(c, c) for c in s)
+    norm_kw = [norm(k) for k in keywords]
+    hits = []
+    for p in kb.get('paragraphs', []) or []:
+        star = norm(p.get('star', ''))
+        q_text = p.get('question', '') + p.get('text', '')
+        score = 0
+        for kw in norm_kw:
+            if kw and (kw == star or kw in star or star in kw):
+                score += 3
+            elif kw and kw in q_text:
+                score += 1
+        if score:
+            hits.append((score, p))
+    hits.sort(key=lambda x: -x[0])
+    return hits[:top_k]
+
+
+def _format_qawenlun(hits: list) -> str:
+    parts = []
+    for _, p in hits:
+        parts.append(f"【{p.get('star', '')}】{p.get('question', '')}\n{p.get('text', '')}")
+    return "\n\n".join(parts)
 
 
 # ── 匹配核心（str 与 hits 共用，保证一个引擎）──
