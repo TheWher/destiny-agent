@@ -1360,26 +1360,39 @@ async function analyzeYearlyDeep(){
   if(!m){ alert('无法解析生辰'); btn.disabled=false; btn.textContent='🔮 大限流年解读'; return; }
   const targetYear = new Date().getFullYear();
   try{
-    const res = await fetch('/api/ziwei/analyze/yearly', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({year:+m[1], month:+m[2], day:+m[3], hour:+m[4], gender:info.gender||'男', target_year:targetYear, is_lunar:false})
-    });
-    const d = await res.json();
-    if(res.status===403 && d.pro_required){
-      if(_ziweiToken){ showUpgradeToast('大限流年深度解读是 Pro 专属功能，升级后解锁', 'free'); }
-      else { showRptAuth('login'); alert('请先登录，升级 Pro 解锁大限流年深度解读'); }
-      btn.disabled=false; btn.textContent='🔮 大限流年解读'; return;
-    }
-    if(d.success && d.analysis){
-      const el = document.getElementById('analysis-text');
-      if(el){
-        el.innerHTML += '<hr style="border:none;border-top:1px dashed var(--line-faint);margin:14px 0"><h2>🔮 大限流年深度解读</h2>' + formatText(d.analysis);
-        el.scrollIntoView({behavior:'smooth',block:'start'});
+    let yearlyPw = reportPw || '';
+    for(let att=0; att<2; att++){
+      const res = await fetch('/api/ziwei/analyze/yearly', {
+        method:'POST', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()),
+        body:JSON.stringify({year:+m[1], month:+m[2], day:+m[3], hour:+m[4], gender:info.gender||'男', target_year:targetYear, is_lunar:false, password: yearlyPw})
+      });
+      const d = await res.json();
+      if(res.status===403){
+        if(d.need_password){
+          yearlyPw = await promptLoginOrPassword(d.error);
+          if(!yearlyPw){ btn.disabled=false; btn.textContent='🔮 大限流年解读'; return; }
+          reportPw = yearlyPw; sessionStorage.setItem('ziwei_pw', yearlyPw);
+          continue;
+        }
+        if(d.pro_required){
+          if(_ziweiToken){ showUpgradeToast('大限流年深度解读是 Pro 专属功能，升级后解锁', 'free'); }
+          else { showRptAuth('login'); alert('请先登录，升级 Pro 解锁大限流年深度解读'); }
+          btn.disabled=false; btn.textContent='🔮 大限流年解读'; return;
+        }
+        btn.disabled=false; btn.textContent='🔮 大限流年解读'; return;
       }
-      track('yearly_deep_done',{target_year:targetYear});
-    } else {
-      if(d.rate_limited){ showUpgradeToast(d.error, d.tier); }
-      else { alert('解读失败: '+(d.error||'未知错误')); }
+      if(d.success && d.analysis){
+        const el = document.getElementById('analysis-text');
+        if(el){
+          el.innerHTML += '<hr style="border:none;border-top:1px dashed var(--line-faint);margin:14px 0"><h2>🔮 大限流年深度解读</h2>' + formatText(d.analysis);
+          el.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+        track('yearly_deep_done',{target_year:targetYear});
+      } else {
+        if(d.rate_limited){ showUpgradeToast(d.error, d.tier); }
+        else { alert('解读失败: '+(d.error||'未知错误')); }
+      }
+      break;
     }
   }catch(e){ alert('网络错误: '+e.message); }
   btn.disabled=false; btn.textContent='🔮 大限流年解读';

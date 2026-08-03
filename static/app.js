@@ -3,6 +3,11 @@
 
 // ========== DOM 引用 ==========
 const $ = id => document.getElementById(id);
+// 登录 token 安全读取（index.html 无页面级 authHeaders，统一自读 localStorage）
+const _authHdrsSafe = () => {
+  const t = localStorage.getItem('ziwei_token') || '';
+  return t ? {'Authorization': 'Bearer ' + t} : {};
+};
 const elYear=$('year'),elMonth=$('month'),elDay=$('day'),elHour=$('hour'),elMinute=$('minute');
 const elLocation=$('location'),elLongitude=$('longitude'),elUseTrueSolar=$('use-true-solar');
 const elLngLat=$('lnglat'),elGeocodeStatus=$('geocode-status'),elSuggestions=$('city-suggestions');
@@ -910,7 +915,7 @@ async function doAnalyze(isRetry = false) {
 
         const r = await fetch('/api/analyze', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: Object.assign({'Content-Type': 'application/json'}, _authHdrsSafe()),
             body: JSON.stringify({plate: plateData, password: pw, conversation_id: conversationId, known_events: getValidEvents()}),
             signal: _analysisAbortController.signal
         });
@@ -1223,7 +1228,7 @@ elBtnChatSend.addEventListener('click', async () => {
         const timeoutId = setTimeout(() => ctrl.abort(), 10*60*1000);
         try {
             const pw = getPassword();
-            const r = await fetch('/api/analyze/stream/continue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:conversationMessages,reply:reply, password:pw, conversation_id: conversationId}), signal: ctrl.signal});
+            const r = await fetch('/api/analyze/stream/continue',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},_authHdrsSafe()),body:JSON.stringify({messages:conversationMessages,reply:reply, password:pw, conversation_id: conversationId}), signal: ctrl.signal});
             clearTimeout(timeoutId);
             if (!r.ok) {
                 const d = await r.json().catch(()=>({}));
@@ -1613,7 +1618,7 @@ async function doZiweiAnalyze() {
 
     try {
         const r = await fetch('/api/ziwei/analyze', {
-            method:'POST', headers:Object.assign({'Content-Type':'application/json'}, typeof authHeaders === 'function' ? authHeaders() : {}),
+            method:'POST', headers:Object.assign({'Content-Type':'application/json'}, _authHdrsSafe()),
             body: JSON.stringify({plate:ziweiPlateData, password:pw})
         });
         const d = await r.json();
