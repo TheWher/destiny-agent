@@ -251,25 +251,24 @@ async function startAnalysisFull() {
     reader.cancel();
     if (rawText) {
       var html = formatText(rawText);
-      // 可视化标注（2026-08-04 加）：报告内错误引用标红（值来自引擎校验 issues）
+      // 短语级自动修正（2026-08-04 加）：错误引用替换为引擎 oracle 正确值（值不过 LLM 之手），绿色高亮
       var _iss2 = window._interpretationIssues;
       if (_iss2 && _iss2.length) {
         for (var k = 0; k < _iss2.length; k++) {
           var it = _iss2[k];
-          // 优先用校验器正则命中的原文片段（hanako: 防措辞变体重构失配）
-          var wrongPhrase = it.raw || '';
-          if (!wrongPhrase) {
-            if (it.type === 'star_palace') { wrongPhrase = it.star + '在' + it.found; }
-            else if (it.type === 'mutagen') { wrongPhrase = it.star + it.mutagen + (it.found_palace ? '在' + it.found_palace : ''); }
-            else if (it.type === 'decadal_dir') { wrongPhrase = '大限' + it.found; }
-            else if (it.type === 'decadal_start') { wrongPhrase = it.found + '岁起'; }
-            else if (it.type === 'geju') { wrongPhrase = it.found; }
-            else if (it.found) { wrongPhrase = it.found; }
-          }
-          if (wrongPhrase) {
+          var raw = it.raw || '';
+          var repl = '';
+          if (it.type === 'star_palace') { repl = it.star + '在' + it.expected; }
+          else if (it.type === 'mutagen') { repl = it.star + it.mutagen + (it.expected && it.expected !== '不在生年或大限四化表' ? '在' + it.expected : ''); }
+          else if (it.type === 'changsheng') { repl = (it.palace || '') + '坐' + it.expected; }
+          else if (it.type === 'decadal_dir') { repl = '大限' + it.expected; }
+          else if (it.type === 'decadal_start') { repl = it.expected + '岁起'; }
+          else if (it.type === 'geju') { repl = '盘面无' + (it.found || '') + '格局'; }
+          else if (it.found) { repl = it.expected; }
+          if (raw && repl) {
             try {
-              var re = new RegExp(wrongPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-              html = html.replace(re, '<span style="color:var(--vermillion);text-decoration:underline;font-weight:600">$&</span>');
+              var re = new RegExp(raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+              html = html.replace(re, '<span style="color:var(--jade);font-weight:600;text-decoration:underline">' + repl + '</span>');
             } catch (e) { }
           }
         }
@@ -299,8 +298,8 @@ async function startAnalysisFull() {
             + ' <button onclick="markIssueReview(' + k + ',\'user_ignored\')" style="font-size:10px;padding:1px 6px;border:1px solid rgba(193,67,47,.4);background:none;color:var(--vermillion);border-radius:2px;cursor:pointer;margin-left:6px">这条有误？</button></div>';
         }
         var warn = document.createElement('div');
-        warn.style.cssText = 'border:1px solid var(--vermillion);background:rgba(193,67,47,.08);color:var(--vermillion);padding:8px 12px;font-size:12px;margin-bottom:12px;border-radius:4px';
-        var warnHtml = '⚠️ 审查提示：报告中有 <b>' + _iss.length + '</b> 处盘面引用与引擎不一致（例：' + _desc + '）。已按引擎盘面修正：' + fixList;
+        warn.style.cssText = 'border:1px solid var(--jade);background:rgba(90,170,94,.08);color:var(--jade);padding:8px 12px;font-size:12px;margin-bottom:12px;border-radius:4px';
+        var warnHtml = '✅ 审查修正：报告中有 <b>' + _iss.length + '</b> 处盘面引用与引擎不一致，已自动按引擎盘面修正（绿色高亮处为修正后内容）：' + fixList;
         if (_corr) { warnHtml += '<div style="margin-top:8px;border-top:1px dashed rgba(193,67,47,.3);padding-top:6px">🔧 审查员说明：' + formatText(_corr) + '</div>'; }
         warn.innerHTML = warnHtml;
         area.insertBefore(warn, area.firstChild);
