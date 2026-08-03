@@ -225,6 +225,9 @@ def ziwei_paipan(year: int, month: int, day: int, hour: int, minute: int = 0,
         # 空宫检测（无主星）
         is_empty = len(major) == 0 and '祿存' not in major and '天馬' not in major
 
+        # 十二长生：取 iztro-py 原生 changsheng12（按五行局长生位起，紫微斗数标准排法，已是中文）
+        changsheng = getattr(p, 'changsheng12', '') or ''
+
         grid = BRANCH_GRID.get(branch, (1, 1))
 
         palaces.append({
@@ -233,6 +236,7 @@ def ziwei_paipan(year: int, month: int, day: int, hour: int, minute: int = 0,
             'heavenly_stem': stem,
             'earthly_branch': branch,
             'dizhi': stem + branch,
+            'changsheng': changsheng,
             'major_stars': major,
             'minor_stars': minor,
             'adjective_stars': adj,
@@ -288,19 +292,6 @@ def ziwei_paipan(year: int, month: int, day: int, hour: int, minute: int = 0,
         'year_mutagens': year_mutagens,
         'shichen': SHICHEN_NAMES[shichen_idx] + '时' if shichen_idx < 12 else '子时',
     }
-    # ═══ 十二长生 ═══
-    _CHANGSHENG = ['长生','沐浴','冠带','临官','帝旺','衰','病','死','墓','绝','胎','养']
-    _CS_START = {'甲':'亥','乙':'午','丙':'寅','丁':'酉','戊':'寅','己':'酉','庚':'巳','辛':'子','壬':'申','癸':'卯'}
-    _GAN = '甲乙丙丁戊己庚辛壬癸'
-    _ZHI = '子丑寅卯辰巳午未申酉戌亥'
-    day_gan = _GAN[(year + 9) % 10]  # 简化日柱推算（误差2日/百年，紫微日干用此法够用）
-    cs_start = _CS_START.get(day_gan, '子')
-    cs_start_idx = _ZHI.index(cs_start)
-    is_yang = day_gan in '甲丙戊庚壬'
-    for pal in result['palaces']:
-        br_idx = _ZHI.index(pal['earthly_branch'])
-        cs_idx = (br_idx - cs_start_idx + 12) % 12 if is_yang else (cs_start_idx - br_idx + 12) % 12
-        pal['changsheng'] = _CHANGSHENG[cs_idx]
     # 格局判读交由 Agent v6 严格规则执行，后端不做预判
     result['patterns'] = []
     return result
