@@ -617,7 +617,10 @@ def _build_plate_oracle(plate_dict: dict) -> dict:
 def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) -> dict:
     """加强审查：提取解读文本中的盘面引用，与引擎盘面比对。
 
-    覆盖：星曜落宫、生年四化、长生、大限顺逆/起岁。
+    覆盖：星曜落宫、生年四化、长生、大限顺逆/起岁、格局。
+    第八类候选（2026-08-04 记档，hanako/mose）：大限四化——oracle = 宫位 decadal 干支
+    + 钉死四化表（壬=梁紫左武），上下文限定"大限"防误报（跟大限顺逆同套路），
+    等真出几例再上（当前 King 样本的四化值均正确，仅格式问题）。
     返回: {'issues': [不一致项], 'unverified': [因缺少输入未校验的类别]}。
     delivery gate 原则（DataAIHub 防幻觉指南）：缺失输入时标记"未校验"而非静默通过，
     宁缺勿假——默认拒绝未验证声明。
