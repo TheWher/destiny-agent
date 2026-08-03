@@ -1,0 +1,137 @@
+{
+ "paragraphs": [
+  {
+   "name": "对面朝斗格",
+   "condition": "子午宫逢禄存是也",
+   "poem": "诗曰 禄有对面在迁移，子午逢之利禄宜，德合吉壤人敬重，双全富贵福稀奇。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "科权禄主格",
+   "condition": "",
+   "poem": "诗曰 禄权周勃命中逢，入相王朝赞圣功，迎合权星兼吉曜，巍巍富贵列三公。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "左右朝垣格",
+   "condition": "",
+   "poem": "诗曰 天星左右最高明，若在三方禄位兴，武职高登应显佐，文人名誉列公卿。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "兼文武格",
+   "condition": "文曲武曲在身命是也",
+   "poem": "诗曰 格名文武少人知，遇此须教百事通，更值命宫无杀破，滔滔荣显是英雄。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "文星朝命格",
+   "condition": "",
+   "poem": "诗曰 文昌文曲最荣华，值此须生富贵家，更得三方祥曜拱，却如锦上又添花。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "石中隐玉格",
+   "condition": "命在子午逢巨门是也",
+   "poem": "诗曰 巨门子午二宫逢，身命逢之必贵荣，更得三方科禄照，石中隐玉是丰隆。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "贪狼遇火名为火贵格",
+   "condition": "三合照身命是也",
+   "poem": "诗曰 火遇贪狼照命宫，封侯食禄是英雄，三方倘若无凶杀，到老应知福寿隆。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "人有无商贾之命",
+   "condition": "",
+   "poem": "如人命有巨日紫府守照，为人安分，有仁德耿直之心，作事无私，不行邪僻，不肯妄求，为士为官主有廉洁：如值月贪同杀忌，心多机关，贪财无厌，暮夜求利之辈。\n\n诗曰 贪月同杀会机梁，因财计利作经商，须知暮夜无眠睡，潮海营营自走忙。\n\n又曰 经商紫府遇擎羊，武曲迁移利市场，杀破廉贞同左右，羊铃火宿远传扬。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "人命有无艺术者",
+   "condition": "",
+   "poem": "寅申巳亥安命或丑未辰戌遇有贪狼武曲在命化忌、加杀，必作细巧艺术之人也。\n\n诗曰 闲宫贪狼何生业，不是屠人须打铁，诸般巧艺更能精，性好游畋并捕猎。\n\n又曰 破武未宫多巧艺，巳亥安命正相宜，破军廉贞居卯酉，细巧之人定艺奇。\n\n又曰 天机天相命身中，帝令财星入墓中，天府若居迁动位，平生定是作奇工。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "出家僧道之命",
+   "condition": "",
+   "poem": "紫微居卯酉遇劫空者，看命无正曜又兼羊火劫空化忌者，更看父母妻子三宫有杀者方可断。及寅年申月巳日亥时四正杀凑化忌，男僧道，女尼姑。\n\n诗曰 极居卯酉遇劫空，十人之命九人僧，道释岩泉皆有分，清闲幽静度平生。\n\n又曰 命坐空乡定出家，文星相会实堪夸，若还文曲临身命，受荫清闲福可嘉。\n\n又曰 天机七杀破梁同，羽客僧流命所逢，更若太阳兼帝座，伶仃孤克命方终。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "人命内犯孤克者",
+   "condition": "",
+   "poem": "如克妻克子克父母内犯一二不为僧道亦作贫贱之人，第一看父母在庙旺地有无吉凶星辰，如在陷地加杀化忌必主刑克，第二又看妻妾宫，三看子女宫庙陷之地，有无吉凶星辰，如在陷加杀化忌必鳏寡孤独",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "寿夭淫荡",
+   "condition": "",
+   "poem": "诗曰 贪狼入庙最高强，南极星同寿命长，北斗帝星无恶杀，绵绵老耋衍祯祥。\n\n诗曰 七杀临身终是夭，贪狼入庙定为娼，前示三合相临照，也学韩君去窃香。\n\n诗曰 身命两宫俱有杀，贪花恋酒祸犹深，平生二限来符会，得意之中却又沈。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "定人残疾",
+   "condition": "",
+   "poem": "先看命宫星落陷，加羊陀火铃劫空忌宿，又看疾厄宫星庙陷吉凶而断可也。\n\n诗曰 命中羊陀杀守身，火铃坐照祸非轻，平生若不常年卧，也作陀腰曲背人。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "定人破相",
+   "condition": "",
+   "poem": "诗曰 相貌之中逢杀曜，更加三合又逢刑，疾厄擎羊逢耗使，折伤肢体不和平。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "定人聪明",
+   "condition": "",
+   "poem": "诗曰 文曲天相破军星，计策偏多性更灵，更若三方昌曲会，一生巧艺有声名。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "定人富足",
+   "condition": "",
+   "poem": "诗曰 太阴入庙有光辉，财入财乡分外奇，破耗凶星皆不犯，堆金积玉富豪儿。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "定人贫贱",
+   "condition": "",
+   "poem": "诗曰 命中吉曜不来临，火忌羊陀四正侵，武曲廉贞巨破会，一生暴怒又身贫。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "定人作盗贼",
+   "condition": "",
+   "poem": "诗曰 命逢破耗与贪廉，七杀三方照及身，武曲更居迁动位，一生面背刺痕新。",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  },
+  {
+   "name": "定人一身驳杂",
+   "condition": "",
+   "poem": "诗曰 吉曜相扶凶曜临，百般巧艺不亨通，若逢身命遇恶曜，只做屠牛宰马人。\n\n===",
+   "source": "quanshu-geju",
+   "school": "quanshu"
+  }
+ ]
+}

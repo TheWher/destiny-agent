@@ -233,6 +233,9 @@ def _retrieve_kb_lexical_str(query_keywords: list[str], kb_name: str, top_k: int
     # ziwei_fu.json：卷一赋文（按正文关键词命中度）
     if kb_name == "ziwei_fu.json":
         return _format_fu(_match_fu(kb, query_keywords, top_k))
+    # ziwei_geju.json：格局诗（按格名/关键词命中度）
+    if kb_name == "ziwei_geju.json":
+        return _format_geju(_match_geju(kb, query_keywords, top_k))
     # ── 通用检索 ──
     return _format_generic(_match_generic(kb, query_keywords, top_k))
 
@@ -255,6 +258,8 @@ def _retrieve_kb_lexical_hits(query_keywords: list[str], kb_name: str, top_k: in
         return [p.get('star', '') for _, p in _match_qawenlun(kb, query_keywords, top_k)]
     if kb_name == "ziwei_fu.json":
         return [p.get('title', '') for _, p in _match_fu(kb, query_keywords, top_k)]
+    if kb_name == "ziwei_geju.json":
+        return [p.get('name', '') for _, p in _match_geju(kb, query_keywords, top_k)]
     return [key for _, key, _ in _match_generic(kb, query_keywords, top_k)]
 
 
@@ -317,6 +322,36 @@ def _format_fu(hits: list) -> str:
     for _, p in hits:
         school_tag = {'quanshu': '（全书系）', 'zhongzhou': '（中州系）', 'feixing': '（飞星系）'}.get(p.get('school', ''), '')
         parts.append(f"【{p.get('title', '')}】{school_tag}\n{p.get('text', '')}")
+    return "\n\n".join(parts)
+
+
+# ── 格局诗匹配（按格名/关键词，2026-08-04 加）──
+
+def _match_geju(kb: dict, keywords: list[str], top_k: int) -> list:
+    """格局诗匹配：格名命中权重最高，条件/诗句命中次之。"""
+    hits = []
+    for p in kb.get('paragraphs', []) or []:
+        name = p.get('name', '')
+        full = name + p.get('condition', '') + p.get('poem', '')
+        score = 0
+        for kw in keywords:
+            if not kw:
+                continue
+            if kw in name:
+                score += 3
+            elif kw in full:
+                score += 1
+        if score:
+            hits.append((score, p))
+    hits.sort(key=lambda x: -x[0])
+    return hits[:top_k]
+
+
+def _format_geju(hits: list) -> str:
+    parts = []
+    for _, p in hits:
+        cond = f"（成格条件：{p.get('condition', '')}）" if p.get('condition') else ''
+        parts.append(f"【{p.get('name', '')}】{cond}\n{p.get('poem', '')}")
     return "\n\n".join(parts)
 
 

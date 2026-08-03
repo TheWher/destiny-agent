@@ -11,7 +11,7 @@
   "hash_scope_note": "排除 basis/note/desc 等元数据；与 kb_whitelist_hash.py 的 HASH_FIELDS 一一对应，--check 自动校验一致性",
   "hash_rule": "改内容必重算 content_hash 并 bump；仅改元数据或日期不算内容变更，不 bump。pair 扩池不动名单则哈希天然不变",
   "basis": "kb_loader.retrieve_kb dispatch 分支实核 + orchestrator kb_retrieve schema 登记",
-  "note": "dry-run 白名单 v1。判据=分派结果语义正确，两档语义 + 兜底设计档。漂移检测只盯该走专用却落 generic 的档。 | 2026-08-04 新增 ziwei_qawenlun.json（诸星问答论，公版，按星检索） | 2026-08-04 新增 ziwei_fu.json（卷一赋文，公版，按关键词检索）",
+  "note": "dry-run 白名单 v1。判据=分派结果语义正确，两档语义 + 兜底设计档。漂移检测只盯该走专用却落 generic 的档。 | 2026-08-04 新增 ziwei_qawenlun.json（诸星问答论，公版，按星检索） | 2026-08-04 新增 ziwei_fu.json（卷一赋文，公版，按关键词检索） | 2026-08-04 新增 ziwei_geju.json（格局诗，公版，按格名检索）",
   "tiers": {
     "dedicated": {
       "desc": "有专属检索逻辑（星曜名精确匹配）。漂移检测盯这档",
@@ -72,6 +72,7 @@
     "ziwei_classics.json",
     "ziwei_fu.json",
     "ziwei_fuzuo.json",
+    "ziwei_geju.json",
     "ziwei_hua.json",
     "ziwei_qawenlun.json",
     "ziwei_sihua_interact.json",

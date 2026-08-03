@@ -240,6 +240,16 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
         parts.append("\n## 📜 卷一赋文总纲（全书卷一，公版古籍；论断意象参考，引用时以引擎盘面为准）")
         parts.append(fu_text)
 
+    # ═══ 格局诗按需检索（2026-08-04 加，按盘面格局/星曜关键词取对应格局诗）═══
+    geju_kw = list(keywords)
+    for pat in (plate_dict.get('patterns') or []):
+        if pat.get('name'):
+            geju_kw.append(pat['name'])
+    geju_text = retrieve_kb(geju_kw, "ziwei_geju.json", top_k=3)
+    if geju_text:
+        parts.append("\n## 🏛 格局诗（全书卷一，公版古籍；成格条件+断语，核验格局时引用）")
+        parts.append(geju_text)
+
     # 古籍引用（格局→原文按需检索；join annotations 分层呈现，转述不带引号，防假出处）
     patterns = plate_dict.get('patterns', [])
     if patterns:
@@ -685,6 +695,31 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                               'expected': exp_start})
     else:
         unverified.append('decadal_start')
+
+    # 5. 格局引用（肯定语境）：LLM 声称有某格局但盘面引擎判无 → 逮
+    try:
+        from ziwei_calculator import detect_patterns
+        engine_pats = {p.get('name', '') for p in detect_patterns(plate_dict)}
+    except Exception:
+        engine_pats = set()
+    if engine_pats:
+        _GEJU_ALIAS = {'机月同梁': '机月同梁格', '机月格': '机月同梁格', '杀破狼': '杀破狼格',
+                       '紫府朝垣': '紫府朝垣格', '府相朝垣': '府相朝垣格', '火贪': '火贪格',
+                       '铃贪': '铃贪格', '日月并明': '日月并明格', '石中隐玉': '石中隐玉格',
+                       '紫微天府': '紫府同宫', '君臣庆会': '君臣庆会', '月朗天门': '月朗天门',
+                       '日照雷门': '日照雷门'}
+        _known_names = sorted(set(engine_pats) | set(_GEJU_ALIAS.keys()) | set(_GEJU_ALIAS.values()), key=len, reverse=True)
+        for gname in _known_names:
+            canon = _GEJU_ALIAS.get(gname, gname)
+            for m in re.finditer(re.escape(gname), text):
+                pre = text[max(0, m.start() - 6):m.start()]
+                if any(neg in pre for neg in ('无', '未', '不', '非', '不成', '没有', '不具备')):
+                    continue
+                if canon not in engine_pats:
+                    issues.append({'type': 'geju', 'found': gname, 'expected': '盘面无此格局'})
+                    break
+    else:
+        unverified.append('geju')  # 引擎格局判读不可用时诚实标注
 
     return {'issues': issues, 'unverified': unverified}
 
