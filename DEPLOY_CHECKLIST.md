@@ -44,6 +44,13 @@
 - [ ] 第二段：带 admin 凭据 GET 读口，确认能读到：
   `curl -s https://<域名>/api/admin/events/stats -H "X-Admin-Token: <token>"`（只看 POST 不算验了读口）
 - [ ] 明细过滤验证：`/api/admin/events?event=share_view` 里 `device_id=curl-test` 那条即测试发，真机漏斗可与之区分
+- [ ] 匿名访问三层模型（验端点先分清是哪层，别被 404 唬住）：
+  - 真实 admin 路由（`/api/admin/events`、`/api/admin/events/stats`）→ 401 `{"error":"unauthorized"}`
+  - report 端点（`/api/ziwei/feedback/report`）→ 假 404 裸文本 `Not Found`（伪装，不暴露端点存在）
+  - 不存在路由 → 真 404，Flask 默认完整 HTML 页
+  - **body 鉴别法**：curl 拉 body 一秒分真假，裸 `Not Found` 是伪装，`<!doctype html>` 是真 404
+- [ ] events 清零（服务端无 DELETE 端点，直连 sqlite，只删行不删表）：
+  `python3 -c "import sqlite3; c=sqlite3.connect('data/users.db'); c.execute('DELETE FROM events'); c.commit(); print('cleared')"`
 
 ## 4b. 观测报告初始化（覆盖率/命中率上线即看，不跑则在线端点一直空）
 
@@ -51,6 +58,16 @@
   `python3 scripts/evaluate_ziwei_verify.py`
 - [ ] 部署机跑完 curl 验证在线端点有数：`curl -s https://<域名>/api/ziwei/feedback/report -H "X-Admin-Token: <token>"`
 - [ ] **首跑基线存档**：第一次跑没有 previous 可对比，这份数字就是准确率/覆盖率的历史锚点，单独复制存一份（如 `data/reports/report_cache.baseline.json`），之后每轮对比都拿它当基准
+
+## 4c. 子集互证（反馈侧 ⊆ 事件侧，真机闭环对账）
+
+- [ ] 参考事件选 **report_view**：ziwei-report.html:595 页面加载即发，验盘反馈必然发生在它之后；page_view 前端从不发（纯测试流量），chart_created 在直链/分享进报告页的路径缺失，都不能当参考
+- [ ] 事件侧拉集合参数钉死：`?event=report_view&since=<T0 锚点日>&limit=2000`（显式传参，防默认 200 截断；上限 2000，超量仍截断，非万全；since 固定锚点日不移动，窗口只宽不窄）
+- [ ] 拉完看 count 是否顶到 2000：顶到 = 截断告警，子集结果先打问号（limit 取最新 N 条，旧事件里的设备会漏，假阴性）
+- [ ] 取 events rows 的 `device_id` 去重非空
+- [ ] 快照时点：先重跑 evaluate → 拉 report 集合 → 拉事件集合 → 比较（report 侧是全量快照、events 侧实时查询，时点别搞反）
+- [ ] 方向：反馈侧 ⊆ 事件侧。测试流量（curl-test 等）天然不在参考集，别拿"两集合相等"当指标
+- [ ] 注意 stats 的 today 与 since 均按 UTC 日界（time.gmtime()），本地凌晨 0-8 点的事件归 UTC 前一天
 
 ## 5. 真机闭环验收（产品视角，等 King 有空走）
 
