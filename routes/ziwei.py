@@ -538,8 +538,27 @@ def api_ziwei_analyze_stream():
     def generate():
         sp = _load_ziwei_system_prompt()
         um = _build_ziwei_user_message(plate_dict, bazi_ref=bazi_ref)
+        full_parts = []
         for chunk in _call_api_stream(sp, [{"role": "user", "content": um}], 32768, 0.7, 600):
+            full_parts.append(chunk)
             yield chunk
+        # 流结束：机器校验（加强审查层）— 提取解读文本中的盘面引用 vs 引擎盘面
+        try:
+            text = ''
+            for c in full_parts:
+                if c.startswith('data: '):
+                    try:
+                        evt = json.loads(c[6:].strip())
+                        if evt.get('type') == 'content_block_delta' and evt.get('delta', {}).get('text'):
+                            text += evt['delta']['text']
+                    except Exception:
+                        pass
+            from services.ziwei_analysis import verify_interpretation_against_plate
+            issues = verify_interpretation_against_plate(text, plate_dict)
+            if issues:
+                yield 'data: ' + json.dumps({'type': 'interpretation_issues', 'issues': issues}, ensure_ascii=False) + '\n\n'
+        except Exception:
+            pass
 
     return Response(generate(), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

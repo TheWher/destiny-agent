@@ -508,6 +508,122 @@ def continue_ziwei_analysis(messages: list[dict], user_reply: str, timeout: int 
     return {"success": False, "error": "所有重试失败"}
 
 
+# ════════════════════════════════════════════════════════
+# 解读输出 vs 盘面机器校验（2026-08-04 加，加强审查层）
+# PythonAnywhere 基础版约束：纯正则规则，零新依赖，O(文本长度)。
+# 策略：高置信低误报——宁可漏检不可误报（误报会把正确解读标错）。
+# ════════════════════════════════════════════════════════
+
+_ZW_PALACE_NORM = {'命宮': '命宫', '財帛': '财帛', '官祿': '官禄', '遷移': '迁移'}
+_ZW_STARS = ['紫微', '天机', '太阳', '武曲', '天同', '廉贞', '天府', '太阴', '贪狼', '巨门',
+             '天相', '天梁', '七杀', '破军', '禄存', '左辅', '右弼', '文昌', '文曲', '天魁',
+             '天钺', '擎羊', '陀罗', '火星', '铃星', '地空', '地劫', '天马']
+_ZW_CHANGSHENG = ['长生', '沐浴', '冠带', '临官', '帝旺', '衰', '病', '死', '墓', '绝', '胎', '养']
+
+
+def _norm_palace(name: str) -> str:
+    """宫名归一化：繁体→简体，去'宫'后缀（'命宫'本身保留）"""
+    n = name or ''
+    for k, v in _ZW_PALACE_NORM.items():
+        n = n.replace(k, v)
+    n = n.replace('宮', '宫')
+    # '命宫'/'身宫' 特殊：去掉末尾'宫'后是'命'，需要还原
+    if n in ('命宫', '身宫'):
+        return n
+    return n[:-1] if n.endswith('宫') and len(n) > 1 else n
+
+
+def _build_plate_oracle(plate_dict: dict) -> dict:
+    """从引擎盘面构建真值 oracle"""
+    palaces = plate_dict.get('palaces', []) or []
+    oracle = {
+        'star_palace': {},   # 星名 -> 宫名(简)
+        'changsheng': {},    # 宫名(简) -> 长生名
+        'mutagens': [],      # [(星, 化, 宫名简)]
+        'palace_names': set(),
+    }
+    for p in palaces:
+        pn = _norm_palace(p.get('name', ''))
+        oracle['palace_names'].add(pn)
+        for s in p.get('major_stars', []) + p.get('minor_stars', []):
+            sn = s.get('name', '') if isinstance(s, dict) else str(s)
+            if sn:
+                oracle['star_palace'].setdefault(sn, pn)
+        cs = p.get('changsheng', '')
+        if cs:
+            oracle['changsheng'][pn] = cs
+    for m in plate_dict.get('year_mutagens', []) or []:
+        oracle['mutagens'].append((m.get('star', ''), m.get('mutagen', ''),
+                                   _norm_palace(m.get('palace', ''))))
+    return oracle
+
+
+def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) -> list:
+    """加强审查：提取解读文本中的盘面引用，与引擎盘面比对，返回不一致项列表。
+
+    覆盖：星曜落宫（X星在/坐/守/入Y宫）、生年四化（X化禄权科忌[在Y宫]）、
+          长生（X宫(坐)长生/帝旺...）。大限顺逆/起岁第二版接入（上下文判定易误报）。
+    返回: [{'type': 'star_palace'|'mutagen'|'changsheng', 'found': ..., 'expected': ...}]
+    """
+    if not analysis_text or not plate_dict:
+        return []
+    oracle = _build_plate_oracle(plate_dict)
+    issues = []
+    text = analysis_text
+    palaces = sorted(oracle['palace_names'], key=len, reverse=True)  # 长名优先
+
+    # 1. 星曜落宫：X星在/坐/守/入/落 Y宫（含'X星在命宫'、'太阳坐命'等）
+    for star in _ZW_STARS:
+        for m in re.finditer(
+            re.escape(star) + r'\s*星?\s*(?:在|坐|守|入|落于|落)\s*(' + '|'.join(p + r'宫?' for p in palaces) + ')',
+            text,
+        ):
+            found_palace = _norm_palace(m.group(1))
+            expected = oracle['star_palace'].get(star, '')
+            if expected and found_palace != expected:
+                issues.append({
+                    'type': 'star_palace', 'star': star,
+                    'found': found_palace, 'expected': expected,
+                })
+
+    # 2. 生年四化：X化禄/权/科/忌（可带'在/于/入 Y宫'）
+    for star in _ZW_STARS:
+        for m in re.finditer(re.escape(star) + r'化(禄|权|科|忌)'
+                             r'(?:\s*(?:在|于|入|落)\s*(' + '|'.join(p + r'宫?' for p in palaces) + r'))?',
+                             text):
+            mu = '化' + m.group(1)
+            found_palace = _norm_palace(m.group(2)) if m.group(2) else ''
+            matches = [(s, mu2, p) for (s, mu2, p) in oracle['mutagens'] if s == star and mu2 == mu]
+            if not matches:
+                issues.append({'type': 'mutagen', 'star': star, 'mutagen': mu,
+                              'found_palace': found_palace or '?', 'expected': '不在生年四化表'})
+            elif found_palace:
+                expected_palaces = {p for (_, _, p) in matches}
+                if found_palace not in expected_palaces:
+                    issues.append({'type': 'mutagen', 'star': star, 'mutagen': mu,
+                                  'found_palace': found_palace,
+                                  'expected': '或'.join(sorted(expected_palaces))})
+
+    # 3. 长生：X宫(坐/逢/临/守)长生... 或 长生(在/于)X宫
+    cs_alt = '|'.join(_ZW_CHANGSHENG)
+    for p in palaces:
+        for m in re.finditer(re.escape(p) + r'宫?\s*(?:坐|逢|临|守|在|于)?\s*(' + cs_alt + ')', text):
+            found_cs = m.group(1)
+            expected_cs = oracle['changsheng'].get(p, '')
+            if expected_cs and found_cs != expected_cs:
+                issues.append({'type': 'changsheng', 'palace': p,
+                              'found': found_cs, 'expected': expected_cs})
+    for cs in _ZW_CHANGSHENG:
+        for m in re.finditer(re.escape(cs) + r'\s*(?:在|于|落)\s*(' + '|'.join(p + r'宫?' for p in palaces) + ')', text):
+            found_palace = _norm_palace(m.group(1))
+            expected_cs = oracle['changsheng'].get(found_palace, '')
+            if expected_cs and expected_cs != cs:
+                issues.append({'type': 'changsheng', 'palace': found_palace,
+                              'found': cs, 'expected': expected_cs})
+
+    return issues
+
+
 # ============================================================
 # 测试
 # ============================================================
