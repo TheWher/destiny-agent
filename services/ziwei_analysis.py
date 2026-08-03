@@ -234,6 +234,12 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
         parts.append("\n## 📖 诸星问答论（全书卷一，公版古籍；星曜特质权威问答，引用时以引擎盘面为准）")
         parts.append(qawenlun_text)
 
+    # ═══ 卷一赋文总纲按需检索（2026-08-04 加，太微/形性/星垣等论断总纲）═══
+    fu_text = retrieve_kb(keywords, "ziwei_fu.json", top_k=2)
+    if fu_text:
+        parts.append("\n## 📜 卷一赋文总纲（全书卷一，公版古籍；论断意象参考，引用时以引擎盘面为准）")
+        parts.append(fu_text)
+
     # 古籍引用（格局→原文按需检索；join annotations 分层呈现，转述不带引号，防假出处）
     patterns = plate_dict.get('patterns', [])
     if patterns:

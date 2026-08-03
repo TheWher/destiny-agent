@@ -230,6 +230,9 @@ def _retrieve_kb_lexical_str(query_keywords: list[str], kb_name: str, top_k: int
     # ziwei_qawenlun.json：诸星问答论（按 star 字段精确匹配）
     if kb_name == "ziwei_qawenlun.json":
         return _format_qawenlun(_match_qawenlun(kb, query_keywords, top_k))
+    # ziwei_fu.json：卷一赋文（按正文关键词命中度）
+    if kb_name == "ziwei_fu.json":
+        return _format_fu(_match_fu(kb, query_keywords, top_k))
     # ── 通用检索 ──
     return _format_generic(_match_generic(kb, query_keywords, top_k))
 
@@ -250,6 +253,8 @@ def _retrieve_kb_lexical_hits(query_keywords: list[str], kb_name: str, top_k: in
         return [name for _, name, _ in _match_classics(kb, query_keywords, top_k)]
     if kb_name == "ziwei_qawenlun.json":
         return [p.get('star', '') for _, p in _match_qawenlun(kb, query_keywords, top_k)]
+    if kb_name == "ziwei_fu.json":
+        return [p.get('title', '') for _, p in _match_fu(kb, query_keywords, top_k)]
     return [key for _, key, _ in _match_generic(kb, query_keywords, top_k)]
 
 
@@ -285,6 +290,33 @@ def _format_qawenlun(hits: list) -> str:
     for _, p in hits:
         school_tag = {'quanshu': '（全书系）', 'zhongzhou': '（中州系）', 'feixing': '（飞星系）'}.get(p.get('school', ''), '')
         parts.append(f"【{p.get('star', '')}】{p.get('question', '')}{school_tag}\n{p.get('text', '')}")
+    return "\n\n".join(parts)
+
+
+# ── 卷一赋文匹配（按正文关键词命中度，2026-08-04 加）──
+
+def _match_fu(kb: dict, keywords: list[str], top_k: int) -> list:
+    """赋文匹配：关键词在正文命中数打分，取最相关的 1-2 篇（赋文是整体论断，非按星）。"""
+    S2T = {'机': '機', '阳': '陽', '贞': '貞', '阴': '陰', '贪': '貪', '门': '門', '杀': '殺',
+           '军': '軍', '辅': '輔', '钺': '鉞', '马': '馬', '权': '權', '罗': '羅', '铃': '鈴',
+           '虚': '虛', '禄': '祿', '准': '準', '绳': '繩', '发': '發', '补': '補', '率': '率'}
+    norm = lambda s: ''.join(S2T.get(c, c) for c in s)
+    norm_kw = [norm(k) for k in keywords if k]
+    hits = []
+    for p in kb.get('paragraphs', []) or []:
+        text = (p.get('title', '') + p.get('text', ''))
+        score = sum(1 for kw in norm_kw if kw in text)
+        if score:
+            hits.append((score, p))
+    hits.sort(key=lambda x: -x[0])
+    return hits[:top_k]
+
+
+def _format_fu(hits: list) -> str:
+    parts = []
+    for _, p in hits:
+        school_tag = {'quanshu': '（全书系）', 'zhongzhou': '（中州系）', 'feixing': '（飞星系）'}.get(p.get('school', ''), '')
+        parts.append(f"【{p.get('title', '')}】{school_tag}\n{p.get('text', '')}")
     return "\n\n".join(parts)
 
 
