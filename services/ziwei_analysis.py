@@ -728,7 +728,14 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
     jushu = {'水二局': 2, '木三局': 3, '金四局': 4, '土五局': 5, '火六局': 6}
     exp_start = jushu.get(five)
     if len(birth) >= 4 and birth[:4].isdigit() and gender in ('男', '女'):
-        yang = ((int(birth[:4]) - 4) % 10) in (0, 2, 4, 6, 8)  # 甲丙戊庚壬=阳
+        # 阴阳判定：优先引擎注入 year_gz（立春分界），禁止公历年自算（年初生人错一年）
+        _ygz = (plate_dict.get('year_gz') or '')
+        if _ygz:
+            _gan = _ygz[0]
+        else:
+            from bazi_calculator import calc_sizhu
+            _gan = calc_sizhu(int(birth[:4]), int(birth[5:7]), int(birth[8:10]), 0, 0)['year']['gz'][0]
+        yang = _gan in '甲丙戊庚壬'  # 阳干
         expected_forward = (yang and gender == '男') or (not yang and gender == '女')
         expected_dir = '顺行' if expected_forward else '逆行'
         for m in re.finditer(r'大限[^。；\n]{0,12}?(顺行|逆行)', text):
