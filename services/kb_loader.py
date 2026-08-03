@@ -256,7 +256,9 @@ def _retrieve_kb_lexical_hits(query_keywords: list[str], kb_name: str, top_k: in
 # ── 诸星问答论匹配（按 star 字段，2026-08-04 加）──
 
 def _match_qawenlun(kb: dict, keywords: list[str], top_k: int) -> list:
-    """按 star 字段匹配问答段落：关键词命中星名权重最高，命中问答/正文次之。"""
+    """按 star 字段匹配问答段落：关键词命中星名权重最高，命中问答/正文次之。
+    体系过滤：school 字段预留（全书系/中州系/飞星系），当前注入不指定体系；
+    将来多体系入库时按引擎体系过滤，防止意象断语混用。"""
     S2T = {'机': '機', '阳': '陽', '贞': '貞', '阴': '陰', '贪': '貪', '门': '門', '杀': '殺',
            '军': '軍', '辅': '輔', '钺': '鉞', '马': '馬', '权': '權', '罗': '羅', '铃': '鈴',
            '虚': '虛', '禄': '祿'}
@@ -281,7 +283,8 @@ def _match_qawenlun(kb: dict, keywords: list[str], top_k: int) -> list:
 def _format_qawenlun(hits: list) -> str:
     parts = []
     for _, p in hits:
-        parts.append(f"【{p.get('star', '')}】{p.get('question', '')}\n{p.get('text', '')}")
+        school_tag = {'quanshu': '（全书系）', 'zhongzhou': '（中州系）', 'feixing': '（飞星系）'}.get(p.get('school', ''), '')
+        parts.append(f"【{p.get('star', '')}】{p.get('question', '')}{school_tag}\n{p.get('text', '')}")
     return "\n\n".join(parts)
 
 

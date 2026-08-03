@@ -63,6 +63,7 @@ def main():
             'question': question,
             'text': answer,
             'source': 'quanshu-qawenlun',
+            'school': 'quanshu',  # 体系标签：全书系（将来入中州/飞星系时检索按体系过滤，意象断语不混用）
         })
 
     data = {'paragraphs': paragraphs}
