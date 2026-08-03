@@ -782,7 +782,8 @@ def api_ziwei_get_share(share_id):
 
 
 # ═══ 验盘反馈保存 ═══
-_FEEDBACK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'feedback', 'ziwei')
+# 与 scripts/evaluate_ziwei_verify.py 的 FEEDBACK_DIR 保持一致（项目根/feedback/ziwei），勿改回 routes/ 下
+_FEEDBACK_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'feedback', 'ziwei')
 
 @ziwei_bp.route("/verify", methods=["POST"])
 def api_ziwei_verify():
