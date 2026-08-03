@@ -710,6 +710,13 @@ async function load(){
       setTimeout(renderSanheLines, 200);
     }
     const msgs = s.messages || [];
+    // 验盘状态恢复：有 __VERIFICATION_PENDING__ 标记且最后一条 assistant 是验盘文本 → 恢复验盘交互
+    const _pending = msgs.some(m => m.role === 'system' && m.content === '__VERIFICATION_PENDING__');
+    const _lastAi = msgs.filter(m => m.role === 'assistant').pop();
+    if(_pending && _lastAi && _lastAi.content){
+      renderVerification(_lastAi.content);
+      return;
+    }
     const validAnalysis = msgs.find(m => m.role === 'assistant' && m.content && m.content.length > 50);
     if(validAnalysis) renderAnalysis(msgs);
     else startAnalysis(s.plate_data);
@@ -1427,9 +1434,10 @@ async function startAnalysis(plate, password){
         sessionStorage.setItem('ziwei_pw', pw || '');
         if(d.verification || d.analysis.includes('## 命盘验证') || d.analysis.includes('验盘环节')){
           renderVerification(d.analysis);
+          // 验盘状态持久化：system 标记让刷新后能恢复验盘交互（确认解读后会覆盖此标记）
           await fetch('/api/ziwei/sessions/'+sid, {
             method:'PATCH', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()),
-            body:JSON.stringify({messages:[{role:'assistant',content:d.analysis}]})
+            body:JSON.stringify({messages:[{role:'system',content:'__VERIFICATION_PENDING__'},{role:'assistant',content:d.analysis}]})
           });
           return;
         }
