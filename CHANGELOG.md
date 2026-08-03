@@ -2,6 +2,11 @@
 
 记录对用户或架构有影响的变化。不记录每个 commit。
 
+## 2026-08-03 — 观测报告基线
+- **重构** 验盘反馈报告读写分离：`report_cache.json` 从 `feedback/ziwei/` 迁至 `data/reports/`（evaluate 默认输出 + 端点读取两端对齐），根治"报告写进扫描目录"自污染
+- **新增** 聚合报告 `device_ids` 字段（去重非空设备列表），支持反馈侧与埋点侧设备集合子集互证
+- **修复** evaluate 不再依赖手动 `--output`（曾因路径写错导致在线端点读不到报告）
+
 ## 2026-07-31 — 账号系统
 - **新增** `models/user.py` — PBKDF2 密码哈希 + HMAC-SHA256 JWT（零外部依赖）
 - **新增** `routes/auth.py` — 注册/登录/me API

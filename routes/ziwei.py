@@ -784,6 +784,8 @@ def api_ziwei_get_share(share_id):
 # ═══ 验盘反馈保存 ═══
 # 与 scripts/evaluate_ziwei_verify.py 的 FEEDBACK_DIR 保持一致（项目根/feedback/ziwei），勿改回 routes/ 下
 _FEEDBACK_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'feedback', 'ziwei')
+# 报告目录：与 scripts/evaluate_ziwei_verify.py 的 REPORTS_DIR 保持一致（项目根/data/reports），与反馈记录目录分离
+_REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'reports')
 
 @ziwei_bp.route("/verify", methods=["POST"])
 def api_ziwei_verify():
@@ -862,9 +864,9 @@ def api_ziwei_feedback_report():
         _adm = request.headers.get("X-Admin-Token", "")
     if not ADMIN_TOKEN or _adm != ADMIN_TOKEN:
         return "Not Found", 404
-    cache_path = os.path.join(_FEEDBACK_DIR, "report_cache.json")
+    cache_path = os.path.join(_REPORTS_DIR, "report_cache.json")
     if not os.path.exists(cache_path):
-        return jsonify({"error": "报告尚未生成，请先运行 scripts/evaluate_ziwei_verify.py --output"}), 404
+        return jsonify({"error": "报告尚未生成，请先运行 scripts/evaluate_ziwei_verify.py（默认输出 data/reports/report_cache.json）"}), 404
     try:
         with open(cache_path, "r", encoding="utf-8") as f:
             report = json.load(f)

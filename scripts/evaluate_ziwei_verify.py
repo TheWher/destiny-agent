@@ -11,9 +11,10 @@
 6. 盘指纹聚类分析
 
 用法：
-    python evaluate_ziwei_verify.py               # 全量分析
+    python evaluate_ziwei_verify.py               # 全量分析（默认写报告到 data/reports/report_cache.json）
     python evaluate_ziwei_verify.py --verbose     # 含逐条详情
     python evaluate_ziwei_verify.py --limit 20    # 只分析最近20条
+    python evaluate_ziwei_verify.py --output PATH # 指定报告输出路径（默认 data/reports/report_cache.json）
 """
 
 import json
@@ -23,6 +24,8 @@ from collections import Counter, defaultdict
 from datetime import datetime
 
 FEEDBACK_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'feedback', 'ziwei')
+# 报告目录：与 routes/ziwei.py 的 _REPORTS_DIR 保持一致（data/reports）。报告读写与反馈记录目录分离，根治"报告写进扫描目录"自污染
+REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'reports')
 # 会话目录：与 routes/ziwei.py 的 _SESSIONS_DIR 保持一致（routes/sessions）
 SESSIONS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'routes', 'sessions')
 
@@ -40,7 +43,7 @@ def load_feedbacks(limit: int = None) -> list:
         if not fn.endswith('.json'):
             continue
         if fn.startswith('report_cache'):
-            continue  # 报告文件（report_cache.json / report_cache.baseline.json）不是反馈记录，防止自污染
+            continue  # 兜底：报告文件不是反馈记录（报告已挪至 data/reports/，此分支仅防历史残留）
         try:
             with open(os.path.join(FEEDBACK_DIR, fn), 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -88,6 +91,7 @@ def analyze(records: list, verbose: bool = False):
             "false_positive_rate": 0,
             "false_negative_rate": 0,
             "sample_sources": {},
+            "device_ids": [],
             "note": "无反馈数据，空基线",
         }
 
@@ -285,6 +289,9 @@ def analyze(records: list, verbose: bool = False):
     print("  → 覆盖率低 = 验盘环节没人走到（区别于解读准确率低），两层分开盯")
     print()
 
+    # ── 设备集合（子集互证：反馈侧 device_id ⊆ 埋点侧 device_id）──
+    device_ids = sorted({r.get('device_id') for r in records if r.get('device_id')})
+
     print("=" * 60)
     print("分析完成。反馈积累越多，统计越可靠。")
     print(f"当前样本量: {len(all_predictions)} 条预测")
@@ -299,6 +306,7 @@ def analyze(records: list, verbose: bool = False):
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "total_samples": total_predictions,
         "total_records": len(records),
+        "device_ids": device_ids,
         "coverage": {
             "verified_sessions": len(verified_sessions),
             "total_sessions": total_sessions,
@@ -342,7 +350,7 @@ def analyze(records: list, verbose: bool = False):
         })
 
     # 读取上次报告用于对比
-    cache_path = os.path.join(FEEDBACK_DIR, "report_cache.json")
+    cache_path = os.path.join(REPORTS_DIR, "report_cache.json")
     if os.path.exists(cache_path):
         try:
             with open(cache_path, "r", encoding="utf-8") as f:
@@ -370,12 +378,11 @@ if __name__ == '__main__':
     records = load_feedbacks(limit=args.limit)
     report = analyze(records, verbose=args.verbose)
 
-    if args.output:
-        output_path = args.output
-        if not os.path.isabs(output_path):
-            output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), output_path)
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(report, f, ensure_ascii=False, indent=2)
-        print(f"报告已保存: {output_path}")
-        print(f"  → 在线查看: /api/ziwei/feedback/report?format=html")
+    output_path = args.output or os.path.join(REPORTS_DIR, "report_cache.json")
+    if not os.path.isabs(output_path):
+        output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), output_path)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, ensure_ascii=False, indent=2)
+    print(f"报告已保存: {output_path}")
+    print(f"  → 在线查看: /api/ziwei/feedback/report?format=html")

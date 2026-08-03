@@ -47,10 +47,10 @@
 
 ## 4b. 观测报告初始化（覆盖率/命中率上线即看，不跑则在线端点一直空）
 
-- [ ] 跑 evaluate 生成 report_cache，**必须 --output 到 feedback/ziwei/ 下的绝对路径**（在线端点与 previous 对比都读这里；默认相对路径会写到 scripts/ 下导致扑空）：
-  `python3 scripts/evaluate_ziwei_verify.py --output /绝对路径/feedback/ziwei/report_cache.json`
+- [ ] 跑 evaluate 生成 report_cache（默认写到 `data/reports/report_cache.json`，与反馈记录目录分离，无需 --output；在线端点与 previous 对比都读这里）：
+  `python3 scripts/evaluate_ziwei_verify.py`
 - [ ] 部署机跑完 curl 验证在线端点有数：`curl -s https://<域名>/api/ziwei/feedback/report -H "X-Admin-Token: <token>"`
-- [ ] **首跑基线存档**：第一次跑没有 previous 可对比，这份数字就是准确率/覆盖率的历史锚点，单独复制存一份（如 `feedback/ziwei/report_cache.baseline.json`），之后每轮对比都拿它当基准
+- [ ] **首跑基线存档**：第一次跑没有 previous 可对比，这份数字就是准确率/覆盖率的历史锚点，单独复制存一份（如 `data/reports/report_cache.baseline.json`），之后每轮对比都拿它当基准
 
 ## 5. 真机闭环验收（产品视角，等 King 有空走）
 

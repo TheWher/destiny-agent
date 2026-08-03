@@ -84,7 +84,7 @@ ADMIN_TOKEN = "your-admin-token"  # 可选，保护反馈报告端点
 python test_paipan.py --smoke      # 八字冒烟测试
 python test_paipan.py              # 24 条全量
 python test_ziwei.py               # 紫微测试
-python scripts/evaluate_ziwei_verify.py --output feedback/ziwei/report_cache.json  # 验盘反馈聚合
+python scripts/evaluate_ziwei_verify.py  # 验盘反馈聚合（默认写 data/reports/report_cache.json）
 ```
 
 ---
