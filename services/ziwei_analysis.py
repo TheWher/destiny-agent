@@ -374,6 +374,8 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
             parts.append("")
             parts.append("...")
             parts.append("")
+            parts.append("**格式铁律**：每条预测独立成行；年份后用冒号接描述；描述内禁止括号注释、禁止行首标点（、，。；）；描述写完即止，不要用括号补充说明。")
+            parts.append("")
             parts.append("请务必在输出完最后一条预测后，单独一行输出：【验盘完毕】")
             parts.append("输出此标记后立即停止，不要继续输出分析。")
             parts.append("")

@@ -28,8 +28,11 @@ function renderVerification(analysisText) {
     if (m) {
       // 提取年份后的描述（跳过**标记和空格）
       var afterYear = line.substring(line.indexOf(m[0]) + m[0].length);
-      var desc = afterYear.replace(/^[^：:]*[：:]\s*/, '').replace(/\*\*/g, '').trim().substring(0, 100);
-      items.push({ year: m[1], desc: desc || '(无描述)', label: 'pending' });
+      var desc = afterYear.replace(/^[^：:]*[：:]\s*/, '').replace(/\*\*/g, '').trim();
+      // 清理 LLM 标点残留：行首标点、不成对括号（2026-08-04 加）
+      desc = desc.replace(/^[、，。；,.;\s]+/, '');
+      desc = desc.replace(/^[（(]/,'').replace(/[）)]$/, '');
+      items.push({ year: m[1], desc: desc.substring(0, 100) || '(无描述)', label: 'pending' });
     }
   }
   verificationData = { predictions: items, rawText: analysisText };
