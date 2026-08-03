@@ -875,7 +875,7 @@ function renderGrid(plate){
 
     const inp=plate.input||{};const birthYear=parseInt((inp.birth_datetime||'').split('-')[0])||0;
 
-    const laiyin=birthYear?LAIYIN[(birthYear-4)%10]:'—';
+    const laiyin=plate.year_gz?LAIYIN['甲乙丙丁戊己庚辛壬癸'.indexOf(plate.year_gz[0])]:(birthYear?LAIYIN[(birthYear-4)%10]:'—');
 
     const center=document.createElement('div');center.className='center-palace';
 
@@ -909,7 +909,7 @@ function renderConfirm(plate){
 
     const birthYear=parseInt(birthDt.split('-')[0])||0;
 
-    const laiyin=birthYear?LAIYIN[(birthYear-4)%10]:'—';
+    const laiyin=plate.year_gz?LAIYIN['甲乙丙丁戊己庚辛壬癸'.indexOf(plate.year_gz[0])]:(birthYear?LAIYIN[(birthYear-4)%10]:'—');
 
     const sihuaStr=ym.map(m=>m.star+m.mutagen.replace('化','')+'在'+m.palace).join(' · ')||'无';
 

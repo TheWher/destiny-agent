@@ -292,6 +292,13 @@ def ziwei_paipan(year: int, month: int, day: int, hour: int, minute: int = 0,
         'year_mutagens': year_mutagens,
         'shichen': SHICHEN_NAMES[shichen_idx] + '时' if shichen_idx < 12 else '子时',
     }
+    # 生年干支（引擎口径，立春分界）— 前端来因宫/年干显示直接用，禁止公历年自算（年初立春前会错一年）
+    try:
+        from bazi_calculator import calc_sizhu
+        _sz = calc_sizhu(year, month, day, hour, minute)
+        result['year_gz'] = _sz['year']['gz']
+    except Exception:
+        result['year_gz'] = ''
     # 格局判读交由 Agent v6 严格规则执行，后端不做预判
     result['patterns'] = []
     return result
@@ -307,6 +314,7 @@ def plate_to_dict(plate_data: dict, input_info: dict = None) -> dict:
         'body_palace': plate_data.get('body_palace', ''),
         'palaces': plate_data.get('palaces', []),
         'year_mutagens': plate_data.get('year_mutagens', []),
+        'year_gz': plate_data.get('year_gz', ''),
         'patterns': plate_data.get('patterns', []),
     }
 

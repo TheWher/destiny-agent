@@ -669,10 +669,15 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
     try:
         from ziwei_calculator import _GAN_SIHUA_TABLE
         _year_gan = ''
-        _birth = (plate_dict.get('input') or {}).get('birth_datetime', '')
-        if len(_birth) >= 4 and _birth[:4].isdigit():
-            from bazi_calculator import calc_sizhu
-            _year_gan = calc_sizhu(int(_birth[:4]), 1, 1, 0, 0)['year']['gz'][0]
+        # 引擎已注入 year_gz（立春分界，与紫微引擎同口径）；fallback 才解析出生日期
+        _ygz = (plate_dict.get('year_gz') or '')
+        if _ygz:
+            _year_gan = _ygz[0]
+        else:
+            _birth = (plate_dict.get('input') or {}).get('birth_datetime', '')
+            if len(_birth) >= 10 and _birth[:4].isdigit():
+                from bazi_calculator import calc_sizhu
+                _year_gan = calc_sizhu(int(_birth[:4]), int(_birth[5:7]), int(_birth[8:10]), 0, 0)['year']['gz'][0]
         _all_mutagens = set()
         if _year_gan:
             for mu_type, star_name in _GAN_SIHUA_TABLE.get(_year_gan, []):
