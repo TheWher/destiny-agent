@@ -558,17 +558,19 @@ def _build_plate_oracle(plate_dict: dict) -> dict:
     return oracle
 
 
-def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) -> list:
-    """加强审查：提取解读文本中的盘面引用，与引擎盘面比对，返回不一致项列表。
+def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) -> dict:
+    """加强审查：提取解读文本中的盘面引用，与引擎盘面比对。
 
-    覆盖：星曜落宫（X星在/坐/守/入Y宫）、生年四化（X化禄权科忌[在Y宫]）、
-          长生（X宫(坐)长生/帝旺...）。大限顺逆/起岁第二版接入（上下文判定易误报）。
-    返回: [{'type': 'star_palace'|'mutagen'|'changsheng', 'found': ..., 'expected': ...}]
+    覆盖：星曜落宫、生年四化、长生、大限顺逆/起岁。
+    返回: {'issues': [不一致项], 'unverified': [因缺少输入未校验的类别]}。
+    delivery gate 原则（DataAIHub 防幻觉指南）：缺失输入时标记"未校验"而非静默通过，
+    宁缺勿假——默认拒绝未验证声明。
     """
     if not analysis_text or not plate_dict:
-        return []
+        return {'issues': [], 'unverified': []}
     oracle = _build_plate_oracle(plate_dict)
     issues = []
+    unverified = []
     text = analysis_text
     palaces = sorted(oracle['palace_names'], key=len, reverse=True)  # 长名优先
 
@@ -635,13 +637,17 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
             if m.group(1) != expected_dir:
                 issues.append({'type': 'decadal_dir', 'found': m.group(1),
                               'expected': expected_dir})
+    else:
+        unverified.append('decadal_dir')  # 缺少出生信息，不静默通过
     if exp_start:
         for m in re.finditer(r'(\d{1,2})\s*岁起', text):
             if int(m.group(1)) != exp_start:
                 issues.append({'type': 'decadal_start', 'found': int(m.group(1)),
                               'expected': exp_start})
+    else:
+        unverified.append('decadal_start')
 
-    return issues
+    return {'issues': issues, 'unverified': unverified}
 
 
 # ============================================================

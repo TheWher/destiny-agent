@@ -554,9 +554,9 @@ def api_ziwei_analyze_stream():
                     except Exception:
                         pass
             from services.ziwei_analysis import verify_interpretation_against_plate
-            issues = verify_interpretation_against_plate(text, plate_dict)
-            if issues:
-                yield 'data: ' + json.dumps({'type': 'interpretation_issues', 'issues': issues}, ensure_ascii=False) + '\n\n'
+            verdict = verify_interpretation_against_plate(text, plate_dict)
+            if verdict.get('issues') or verdict.get('unverified'):
+                yield 'data: ' + json.dumps({'type': 'interpretation_issues', 'verdict': verdict}, ensure_ascii=False) + '\n\n'
         except Exception:
             pass
 
