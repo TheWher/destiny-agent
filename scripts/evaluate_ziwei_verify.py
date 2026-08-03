@@ -69,7 +69,20 @@ def classify_domain(desc: str) -> str:
 def analyze(records: list, verbose: bool = False):
     if not records:
         print("没有反馈数据可分析。")
-        return
+        return {
+            "generated_at": datetime.now().isoformat(timespec="seconds"),
+            "total_samples": 0,
+            "total_records": 0,
+            "coverage": {"verified_sessions": 0, "total_sessions": 0, "coverage": 0.0},
+            "overall_accuracy": 0,
+            "by_signal": {},
+            "by_domain": {},
+            "common_errors": [],
+            "false_positive_rate": 0,
+            "false_negative_rate": 0,
+            "sample_sources": {},
+            "note": "无反馈数据，空基线",
+        }
 
     total_predictions = 0
     all_predictions = []
