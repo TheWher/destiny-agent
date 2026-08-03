@@ -854,7 +854,13 @@ def api_ziwei_verify():
 @ziwei_bp.route("/feedback/report")
 def api_ziwei_feedback_report():
     """验盘反馈聚合报告（仅 ADMIN_TOKEN 可访问）"""
-    if not check_admin(request):
+    # 内联 admin 鉴权（check_admin 从未定义，原调用为 NameError 500）：Bearer 或 X-Admin-Token 比较 ADMIN_TOKEN，不匹配 404 伪装
+    _ah = request.headers.get("Authorization", "")
+    if _ah.startswith("Bearer "):
+        _adm = _ah[7:]
+    else:
+        _adm = request.headers.get("X-Admin-Token", "")
+    if not ADMIN_TOKEN or _adm != ADMIN_TOKEN:
         return "Not Found", 404
     cache_path = os.path.join(_FEEDBACK_DIR, "report_cache.json")
     if not os.path.exists(cache_path):
