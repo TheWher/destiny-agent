@@ -248,22 +248,28 @@ async function startAnalysisFull() {
     reader.cancel();
     if (rawText) {
       area.innerHTML = formatText(rawText);
-      // 加强审查提示：机器校验逮到的盘面引用不一致
+      // 加强审查提示：机器校验逮到的盘面引用不一致（值来自引擎 oracle，机器渲染）
       var _iss = window._interpretationIssues;
       var _unv = window._interpretationUnverified;
       var _corr = window._interpretationCorrection;
       if (_iss && _iss.length) {
-        var _first = _iss[0];
-        var _desc = _first.type === 'star_palace' ? (_first.star + '应在' + _first.expected + '（报告写' + _first.found + '）')
-          : _first.type === 'mutagen' ? (_first.star + _first.mutagen + '（报告写' + (_first.found_palace || '无宫位') + '）')
-          : _first.type === 'decadal_dir' ? ('大限方向应为' + _first.expected + '（报告写' + _first.found + '）')
-          : _first.type === 'decadal_start' ? ('大限应' + _first.expected + '岁起（报告写' + _first.found + '岁）')
-          : _first.type === 'geju' ? ('盘面无' + _first.found + '格局')
-          : (_first.palace + '宫应为' + _first.expected + '（报告写' + _first.found + '）');
+        var _desc = _iss[0].type === 'star_palace' ? (_iss[0].star + '应在' + _iss[0].expected + '（报告写' + _iss[0].found + '）')
+          : _iss[0].type === 'mutagen' ? (_iss[0].star + _iss[0].mutagen + '（报告写' + (_iss[0].found_palace || '无宫位') + '）')
+          : _iss[0].type === 'decadal_dir' ? ('大限方向应为' + _iss[0].expected + '（报告写' + _iss[0].found + '）')
+          : _iss[0].type === 'decadal_start' ? ('大限应' + _iss[0].expected + '岁起（报告写' + _iss[0].found + '岁）')
+          : _iss[0].type === 'geju' ? ('盘面无' + _iss[0].found + '格局')
+          : (_iss[0].palace + '宫应为' + _iss[0].expected + '（报告写' + _iss[0].found + '）');
+        // 修正清单主体 = 机器渲染全部 issues（值来自引擎 oracle，零 LLM 生成）
+        var fixList = '';
+        for (var k = 0; k < _iss.length; k++) {
+          var it = _iss[k];
+          var wrong = it.found || it.found_palace || it.star || '?';
+          fixList += '<div style="margin:3px 0">报告写 <b style="text-decoration:line-through">' + wrong + '</b> → 正确为 <b>' + it.expected + '</b></div>';
+        }
         var warn = document.createElement('div');
         warn.style.cssText = 'border:1px solid var(--vermillion);background:rgba(193,67,47,.08);color:var(--vermillion);padding:8px 12px;font-size:12px;margin-bottom:12px;border-radius:4px';
-        var warnHtml = '⚠️ 审查提示：报告中有 <b>' + _iss.length + '</b> 处盘面引用与引擎不一致（例：' + _desc + '）。已按引擎盘面为准，引用处请留意复核。';
-        if (_corr) { warnHtml += '<br><br><b>🔧 修正清单</b><br>' + formatText(_corr); }
+        var warnHtml = '⚠️ 审查提示：报告中有 <b>' + _iss.length + '</b> 处盘面引用与引擎不一致（例：' + _desc + '）。已按引擎盘面修正：' + fixList;
+        if (_corr) { warnHtml += '<div style="margin-top:8px;border-top:1px dashed rgba(193,67,47,.3);padding-top:6px">🔧 审查员说明：' + formatText(_corr) + '</div>'; }
         warn.innerHTML = warnHtml;
         area.insertBefore(warn, area.firstChild);
       } else if (_unv && _unv.length) {

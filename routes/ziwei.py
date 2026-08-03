@@ -558,17 +558,18 @@ def api_ziwei_analyze_stream():
             if verdict.get('issues') or verdict.get('unverified'):
                 yield 'data: ' + json.dumps({'type': 'interpretation_issues', 'verdict': verdict}, ensure_ascii=False) + '\n\n'
                 # 条件性 Reviewer（2026-08-04 加，MDPI 研究背书：多数幻觉前两轮迭代解决，只复核一次不循环）：
-                # 校验逮到不一致才触发一次 LLM 复核，输出修正清单；正常输出零额外开销
+                # 值来自引擎、话来自 LLM — 修正清单的正确值直接取 issues 的 expected(机器值), 前端渲染;
+                # LLM 只负责写原因措辞(正确值作为不可改写的硬事实注入), 防复核层二次幻觉(违背 delivery gate)。
                 if verdict.get('issues'):
                     try:
                         from services.llm_client import _call_api
-                        issue_str = '\n'.join(
-                            f"- {i.get('type')}: 报告写 {i.get('found') or i.get('found_palace') or i.get('star')}，引擎应为 {i.get('expected')}"
+                        fact_lines = '\n'.join(
+                            f"- {i.get('type')}: 报告写 {i.get('found') or i.get('found_palace') or i.get('star')}，引擎正确值为 {i.get('expected')}（此值为机器校验结果，不可修改）"
                             for i in verdict['issues'])
                         corr = _call_api(
-                            '你是紫微斗数盘面审查员。以下解读报告中的盘面引用与引擎排盘不一致，引擎盘面为唯一正确依据。请逐条给出修正说明，格式"原引用 → 正确值（原因）"。只输出修正清单，不重写报告。',
-                            [{'role': 'user', 'content': f'不一致清单：\n{issue_str}\n\n解读原文（节选）：\n{text[:2000]}'}],
-                            max_tokens=1024, temperature=0.3, timeout=60)
+                            '你是紫微斗数盘面审查员。以下每条的"引擎正确值"是机器校验的硬事实，不可修改、不可复述错。请为每条写一句简短修正理由（为什么报告容易写错/正确值的含义），不要重复正确值。',
+                            [{'role': 'user', 'content': f'不一致清单（引擎正确值不可修改）：\n{fact_lines}\n\n解读原文（节选）：\n{text[:1500]}'}],
+                            max_tokens=512, temperature=0.3, timeout=60)
                         if corr.get('success') and corr.get('text'):
                             yield 'data: ' + json.dumps({'type': 'interpretation_correction', 'correction': corr['text']}, ensure_ascii=False) + '\n\n'
                     except Exception:
