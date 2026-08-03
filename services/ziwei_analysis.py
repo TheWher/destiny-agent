@@ -250,6 +250,12 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
         parts.append("\n## 🏛 格局诗（全书卷一，公版古籍；成格条件+断语，核验格局时引用）")
         parts.append(geju_text)
 
+    # ═══ 卷三星曜分宫断语按需检索（2026-08-04 加，按盘面星曜取分宫断语）═══
+    juan3_text = retrieve_kb(keywords, "ziwei_juan3.json", top_k=4)
+    if juan3_text:
+        parts.append("\n## ✨ 星曜分宫断语（全书卷三，公版古籍；庙旺陷+分宫吉凶，断星曜时引用）")
+        parts.append(juan3_text)
+
     # 古籍引用（格局→原文按需检索；join annotations 分层呈现，转述不带引号，防假出处）
     patterns = plate_dict.get('patterns', [])
     if patterns:

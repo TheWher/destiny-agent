@@ -236,6 +236,9 @@ def _retrieve_kb_lexical_str(query_keywords: list[str], kb_name: str, top_k: int
     # ziwei_geju.json：格局诗（按格名/关键词命中度）
     if kb_name == "ziwei_geju.json":
         return _format_geju(_match_geju(kb, query_keywords, top_k))
+    # ziwei_juan3.json：卷三星曜分宫断语（按星匹配）
+    if kb_name == "ziwei_juan3.json":
+        return _format_juan3(_match_juan3(kb, query_keywords, top_k))
     # ── 通用检索 ──
     return _format_generic(_match_generic(kb, query_keywords, top_k))
 
@@ -260,6 +263,8 @@ def _retrieve_kb_lexical_hits(query_keywords: list[str], kb_name: str, top_k: in
         return [p.get('title', '') for _, p in _match_fu(kb, query_keywords, top_k)]
     if kb_name == "ziwei_geju.json":
         return [p.get('name', '') for _, p in _match_geju(kb, query_keywords, top_k)]
+    if kb_name == "ziwei_juan3.json":
+        return [p.get('star', '') for _, p in _match_juan3(kb, query_keywords, top_k)]
     return [key for _, key, _ in _match_generic(kb, query_keywords, top_k)]
 
 
@@ -352,6 +357,35 @@ def _format_geju(hits: list) -> str:
     for _, p in hits:
         cond = f"（成格条件：{p.get('condition', '')}）" if p.get('condition') else ''
         parts.append(f"【{p.get('name', '')}】{cond}\n{p.get('poem', '')}")
+    return "\n\n".join(parts)
+
+
+# ── 卷三星曜分宫断语匹配（按星，2026-08-04 加）──
+
+def _match_juan3(kb: dict, keywords: list[str], top_k: int) -> list:
+    """按 star 字段匹配：星名命中即取该星全部分宫断语。"""
+    hits = []
+    for p in kb.get('paragraphs', []) or []:
+        star = p.get('star', '')
+        score = 0
+        for kw in keywords:
+            if not kw:
+                continue
+            if kw == star or star in kw or kw in star:
+                score += 3
+            elif kw in p.get('text', ''):
+                score += 1
+        if score:
+            hits.append((score, p))
+    hits.sort(key=lambda x: -x[0])
+    return hits[:top_k]
+
+
+def _format_juan3(hits: list) -> str:
+    parts = []
+    for _, p in hits:
+        miao = f"（{p.get('miao', '')}）" if p.get('miao') else ''
+        parts.append(f"【{p.get('star', '')}】{miao}\n{p.get('text', '')}")
     return "\n\n".join(parts)
 
 
