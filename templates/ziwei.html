@@ -935,7 +935,9 @@ async function confirmAnalyze(){
         window.location.href='/ziwei/report/'+sd.id;
     }catch(e){btn.disabled=false;btn.textContent='重试';alert('创建会话失败: '+e.message);}
   };
-  $('btn-confirm-analyze').addEventListener('click',confirmAnalyze);
+  // ⚠️ btn-confirm-analyze 是排盘后才动态生成的按钮，页面初始不存在，
+  // 直接绑事件会 TypeError 中断整个脚本（后续 auth 初始化全跳过 → 刷新后登录态不恢复）。
+  var _cba=$('btn-confirm-analyze');if(_cba)_cba.addEventListener('click',confirmAnalyze);
 
   // ---------- Device Fingerprint ----------
   var _deviceId=localStorage.getItem('ziwei_device_id');
