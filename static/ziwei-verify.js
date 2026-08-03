@@ -237,6 +237,9 @@ async function startAnalysisFull() {
               // 加强审查：报告中的盘面引用与引擎盘面不一致（机器校验层）
               window._interpretationIssues = evt.verdict.issues || [];
               window._interpretationUnverified = evt.verdict.unverified || [];
+            } else if (evt.type === 'interpretation_correction' && evt.correction) {
+              // 条件性 Reviewer：LLM 给出的修正清单
+              window._interpretationCorrection = evt.correction;
             }
           } catch (e) { }
         }
@@ -248,16 +251,20 @@ async function startAnalysisFull() {
       // 加强审查提示：机器校验逮到的盘面引用不一致
       var _iss = window._interpretationIssues;
       var _unv = window._interpretationUnverified;
+      var _corr = window._interpretationCorrection;
       if (_iss && _iss.length) {
         var _first = _iss[0];
         var _desc = _first.type === 'star_palace' ? (_first.star + '应在' + _first.expected + '（报告写' + _first.found + '）')
           : _first.type === 'mutagen' ? (_first.star + _first.mutagen + '（报告写' + (_first.found_palace || '无宫位') + '）')
           : _first.type === 'decadal_dir' ? ('大限方向应为' + _first.expected + '（报告写' + _first.found + '）')
           : _first.type === 'decadal_start' ? ('大限应' + _first.expected + '岁起（报告写' + _first.found + '岁）')
+          : _first.type === 'geju' ? ('盘面无' + _first.found + '格局')
           : (_first.palace + '宫应为' + _first.expected + '（报告写' + _first.found + '）');
         var warn = document.createElement('div');
         warn.style.cssText = 'border:1px solid var(--vermillion);background:rgba(193,67,47,.08);color:var(--vermillion);padding:8px 12px;font-size:12px;margin-bottom:12px;border-radius:4px';
-        warn.innerHTML = '⚠️ 审查提示：报告中有 <b>' + _iss.length + '</b> 处盘面引用与引擎不一致（例：' + _desc + '）。已按引擎盘面为准，引用处请留意复核。';
+        var warnHtml = '⚠️ 审查提示：报告中有 <b>' + _iss.length + '</b> 处盘面引用与引擎不一致（例：' + _desc + '）。已按引擎盘面为准，引用处请留意复核。';
+        if (_corr) { warnHtml += '<br><br><b>🔧 修正清单</b><br>' + formatText(_corr); }
+        warn.innerHTML = warnHtml;
         area.insertBefore(warn, area.firstChild);
       } else if (_unv && _unv.length) {
         var uwarn = document.createElement('div');
