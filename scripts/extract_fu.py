@@ -12,8 +12,9 @@ import urllib.request
 URL = 'https://zh.wikisource.org/w/index.php?title=%E7%B4%AB%E5%BE%AE%E6%96%97%E6%95%B8%E5%85%A8%E6%9B%B8/%E5%8D%B7%E4%B8%80&action=raw'
 OUT = 'knowledge_base/ziwei_fu.json'
 
-# 要抽取的赋文标题（按卷一次序）
-TITLES = ['太微賦', '形性賦', '星垣論', '斗數準繩', '斗數發微論', '重補斗數彀率', '增補太微賦']
+# 要抽取的赋文标题（按卷一次序；繁简变体都列）
+TITLES = ['太微賦', '形性賦', '星垣論', '斗數準繩', '斗數發微論', '重補斗數彀率',
+          '增補太微賦', '斗數骨髓賦', '斗数骨髓赋', '女命骨髓賦', '女命骨髓赋']
 
 
 def clean_wikitext(s: str) -> str:

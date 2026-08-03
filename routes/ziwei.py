@@ -557,6 +557,24 @@ def api_ziwei_analyze_stream():
             verdict = verify_interpretation_against_plate(text, plate_dict)
             if verdict.get('issues') or verdict.get('unverified'):
                 yield 'data: ' + json.dumps({'type': 'interpretation_issues', 'verdict': verdict}, ensure_ascii=False) + '\n\n'
+                # 样本积累（2026-08-04 加）：issues 落库，供高频错误模式校准（数据驱动防错）
+                try:
+                    import os as _os, datetime as _dt
+                    _issue_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                                               'feedback', 'ziwei_issues')
+                    _os.makedirs(_issue_dir, exist_ok=True)
+                    _fn = _dt.datetime.now().strftime('%Y%m%d_%H%M%S_%f') + '.json'
+                    with open(_os.path.join(_issue_dir, _fn), 'w', encoding='utf-8') as _f:
+                        json.dump({
+                            'ts': _dt.datetime.now().isoformat(timespec='seconds'),
+                            'birth': (plate_dict.get('input') or {}).get('birth_datetime', ''),
+                            'gender': (plate_dict.get('input') or {}).get('gender', ''),
+                            'issues': verdict.get('issues', []),
+                            'unverified': verdict.get('unverified', []),
+                            'text_len': len(text),
+                        }, _f, ensure_ascii=False, indent=1)
+                except Exception:
+                    pass
         except Exception:
             pass
 
