@@ -1,14 +1,14 @@
 # DEPLOY_CHECKLIST — 2026-08-02 发布（隐私隔离 + 反馈鉴权 + 安全分享 + 缓存机制）
 
 > 发布轮次：939530e（链：1e224e2 → a498511 → b168075 → 939530e）
-> 当前最新：841d8cb（2026-08-03，验盘反馈关联字段：verify 落 device_id + 覆盖率进 evaluate 管线）
 > 用途：部署机逐项勾选，每轮发布可复用。全部勾完才发码。
+> HEAD 判定：不写死版本号（清单自身更新会让值漂移，写死必错），以 `git log --oneline -3` 最新一条为准，能对上即拉全。
 
 ---
 
 ## 0. 拉取
 
-- [ ] `git pull` 一次拉全，HEAD = 841d8cb（清单自带更新，若只到 e1ca0c1 说明拉少了）
+- [ ] `git pull` 一次拉全，对照 `git log --oneline -3` 最新一条（如 3e8a5b8 或更新的 commit），能对上即拉全
 - [ ] 确认 `scripts/ziwei_sessions_tool.py` 存在
 - [ ] 确认 `.gitignore` 含 `routes/share/` 与 `sessions_archive/`
 
@@ -19,7 +19,7 @@
   - 报告页：`curl -s https://<域名>/ziwei/report/abc | grep -o 'ziwei-verify.js?v=[^"]*'`
   - 排盘页：`curl -s https://<域名>/ziwei | grep -o 'tier.js?v=[^"]*'`
   - 首页：`curl -s https://<域名>/app | grep -o 'app.js?v=[^"]*'`
-- [ ] 判定标准：**版本号存在且每次部署会变**即可，值可能是 git hash、DEPLOY_VERSION 或启动时间戳，均正常。不等于 939530e 不代表失败。
+- [ ] 判定标准：**版本号存在且每次部署会变**即可，值可能是 git hash、DEPLOY_VERSION 或启动时间戳，均正常。不等于清单里的示例值不代表失败。
 
 ## 2. 数据卫生（三段，归档后必须重启）
 
