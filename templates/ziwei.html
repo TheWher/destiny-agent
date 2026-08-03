@@ -558,22 +558,29 @@ let horoscopeData=null;
 
 // ── 加载历史会话 ──
 function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+var _sessionsCache=[];
 async function loadSessions(){
   try{
     const r=await fetch('/api/ziwei/sessions',{headers:authHeaders()});
     const list=await r.json();
-    $('session-count').textContent=list.length;
-    const sl=$('session-list');
-    if(!list.length){ sl.innerHTML='<span style="color:var(--ink-soft)">暂无历史会话</span>'; return; }
-    sl.innerHTML=list.slice(0,20).map(s=>{
-      const date=(s.created_at||'').slice(0,10);
-      const summary=s.plate_summary||'';
-      const title=s.title||summary||'';
-      const mc=s.message_count||0;
-      const cb=(typeof _batchMode!=='undefined'&&_batchMode)?'<input type="checkbox" class="batch-cb" data-sid="'+s.id+'" onchange="updateBatchCount()" style="flex-shrink:0">':'';
-      return '<div style="padding:3px 0;border-bottom:1px solid var(--line-faint);display:flex;align-items:center;gap:4px" data-sid="'+s.id+'">'+cb+'<span style="flex:1;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="window.location.href=\'/ziwei/report/'+s.id+'\'">'+(date?date+' ':'')+'<span class="sess-title" data-sid="'+s.id+'">'+escHtml(title.slice(0,20))+'</span></span><span style="color:var(--ink-faint);font-size:.75em;flex-shrink:0">'+(mc?'💬'+mc:'新')+'</span><button onclick="event.stopPropagation();renameSession(\''+s.id+'\')" title="重命名" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✏</button><button onclick="event.stopPropagation();deleteSession(\''+s.id+'\')" title="删除" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✕</button></div>';
-    }).join('');
-  }catch(e){}
+    _sessionsCache = Array.isArray(list)?list:[];
+  }catch(e){ _sessionsCache=[]; }
+  renderSessionsList();
+}
+function renderSessionsList(){
+  const list=_sessionsCache;
+  const sl=$('session-list');
+  if(!sl) return;
+  $('session-count').textContent=list.length;
+  if(!list.length){ sl.innerHTML='<span style="color:var(--ink-soft)">暂无历史会话</span>'; return; }
+  sl.innerHTML=list.slice(0,20).map(s=>{
+    const date=(s.created_at||'').slice(0,10);
+    const summary=s.plate_summary||'';
+    const title=s.title||summary||'';
+    const mc=s.message_count||0;
+    const cb=(typeof _batchMode!=='undefined'&&_batchMode)?'<input type="checkbox" class="batch-cb" data-sid="'+s.id+'" onchange="updateBatchCount()" style="flex-shrink:0">':'';
+    return '<div style="padding:3px 0;border-bottom:1px solid var(--line-faint);display:flex;align-items:center;gap:4px" data-sid="'+s.id+'">'+cb+'<span style="flex:1;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="window.location.href=\'/ziwei/report/'+s.id+'\'">'+(date?date+' ':'')+'<span class="sess-title" data-sid="'+s.id+'">'+escHtml(title.slice(0,20))+'</span></span><span style="color:var(--ink-faint);font-size:.75em;flex-shrink:0">'+(mc?'💬'+mc:'新')+'</span><button onclick="event.stopPropagation();renameSession(\''+s.id+'\')" title="重命名" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✏</button><button onclick="event.stopPropagation();deleteSession(\''+s.id+'\')" title="删除" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;color:var(--ink-soft)">✕</button></div>';
+  }).join('');
 }
 loadSessions();
 
@@ -620,7 +627,7 @@ function toggleBatchMode(){
   if(bar) bar.style.display=_batchMode?'block':'none';
   var btn=$('btn-batch');
   if(btn) btn.textContent=_batchMode?'取消选择':'选择';
-  loadSessions();
+  renderSessionsList();  // 用缓存渲染, 不重新 fetch（选择模式切换不应依赖网络）
 }
 function updateBatchCount(){
   var n=document.querySelectorAll('#session-list .batch-cb:checked').length;
@@ -1034,7 +1041,7 @@ async function confirmAnalyze(){
       $id('auth-email').textContent='';
     }
   }
-  async function checkAuth(){try{var r=await fetch('/api/auth/me',{headers:{Authorization:'Bearer '+_authToken}});if(r.ok){var d=await r.json();updateAuthUI(d.user)}else{updateAuthUI(null)}}catch(e){}}
+  async function checkAuth(){try{var r=await fetch('/api/auth/me',{headers:{Authorization:'Bearer '+_authToken}});if(r.ok){var d=await r.json();updateAuthUI(d.user);loadSessions();}else{updateAuthUI(null)}}catch(e){}}
   if(_authToken){checkAuth().then(function(){if(_authToken)checkClaimable()})}
   document.getElementById('auth-overlay').addEventListener('click',function(ev){if(ev.target===this)closeAuthModal()});
   document.getElementById('auth-pw-inp').addEventListener('keydown',function(ev){if(ev.key==='Enter')doAuth()});
