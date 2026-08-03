@@ -39,11 +39,18 @@ def load_feedbacks(limit: int = None) -> list:
     for fn in files:
         if not fn.endswith('.json'):
             continue
+        if fn.startswith('report_cache'):
+            continue  # 报告文件（report_cache.json / report_cache.baseline.json）不是反馈记录，防止自污染
         try:
             with open(os.path.join(FEEDBACK_DIR, fn), 'r', encoding='utf-8') as f:
-                records.append(json.load(f))
+                data = json.load(f)
         except Exception as e:
             print(f"[跳过] {fn}: {e}")
+            continue
+        if not isinstance(data, dict):
+            print(f"[跳过] {fn}: 非对象内容")
+            continue
+        records.append(data)
     return records
 
 
