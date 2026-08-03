@@ -291,6 +291,10 @@ async function startAnalysisFull() {
         for (var k = 0; k < _iss.length; k++) {
           var it = _iss[k];
           var wrong = it.found || it.found_palace || it.star || '?';
+          // mutagen 类型: 显示 星+化 而非 found('?' 时)（2026-08-04 修：避免'报告写 ?'）
+          if (it.type === 'mutagen') {
+            wrong = it.star + it.mutagen + (it.found_palace && it.found_palace !== '?' ? ('在' + it.found_palace) : '');
+          }
           fixList += '<div style="margin:3px 0">报告写 <b style="text-decoration:line-through">' + wrong + '</b> → 正确为 <b>' + it.expected + '</b>'
             + ' <button onclick="markIssueReview(' + k + ',\'user_ignored\')" style="font-size:10px;padding:1px 6px;border:1px solid rgba(193,67,47,.4);background:none;color:var(--vermillion);border-radius:2px;cursor:pointer;margin-left:6px">这条有误？</button></div>';
         }

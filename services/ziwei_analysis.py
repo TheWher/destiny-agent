@@ -650,25 +650,40 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
                     'raw': m.group(0),  # 原文命中片段（标红直接用，防措辞变体重构失配）
                 })
 
-    # 2. 生年四化：X化禄/权/科/忌（可带'在/于/入 Y宫'；(?<!大限) 排除大限四化误捕）
+    # 2. 四化：X化禄/权/科/忌（可带'在/于/入 Y宫'）
+    # 联合表校验：生年四化 ∪ 大限四化并集——"不在生年表"可能是合法大限四化
+    # （如壬午大限紫微化权），单独按生年表判错会误报（King 04:34 反馈）。
+    # 先构建联合表：生年 + 各宫位大限
+    try:
+        from ziwei_calculator import _GAN_SIHUA_TABLE
+        _year_gan = ''
+        _birth = (plate_dict.get('input') or {}).get('birth_datetime', '')
+        if len(_birth) >= 4 and _birth[:4].isdigit():
+            from bazi_calculator import calc_sizhu
+            _year_gan = calc_sizhu(int(_birth[:4]), 1, 1, 0, 0)['year']['gz'][0]
+        _all_mutagens = set()
+        if _year_gan:
+            for mu_type, star_name in _GAN_SIHUA_TABLE.get(_year_gan, []):
+                _all_mutagens.add((star_name, '化' + mu_type))
+        for p in plate_dict.get('palaces', []) or []:
+            dz = p.get('decadal_dizhi', '') if isinstance(p, dict) else ''
+            if dz and dz[0]:
+                for mu_type, star_name in _GAN_SIHUA_TABLE.get(dz[0], []):
+                    _all_mutagens.add((star_name, '化' + mu_type))
+    except Exception:
+        _all_mutagens = set()
     for star in _ZW_STARS:
         for m in re.finditer(r'(?<!大限)' + re.escape(star) + r'化(禄|权|科|忌)'
                              r'(?:\s*(?:在|于|入|落)\s*(' + _pat_palaces + r'))?',
                              text):
             mu = '化' + m.group(1)
             found_palace = _norm_palace(m.group(2)) if m.group(2) else ''
-            matches = [(s, mu2, p) for (s, mu2, p) in oracle['mutagens'] if s == star and mu2 == mu]
-            if not matches:
+            if _all_mutagens and (star, mu) not in _all_mutagens:
                 issues.append({'type': 'mutagen', 'star': star, 'mutagen': mu,
-                              'found_palace': found_palace or '?', 'expected': '不在生年四化表',
+                              'found_palace': found_palace, 'expected': '不在生年或大限四化表',
                               'raw': m.group(0)})
-            elif found_palace:
-                expected_palaces = {p for (_, _, p) in matches}
-                if found_palace not in expected_palaces:
-                    issues.append({'type': 'mutagen', 'star': star, 'mutagen': mu,
-                                  'found_palace': found_palace,
-                                  'expected': '或'.join(sorted(expected_palaces)),
-                                  'raw': m.group(0)})
+            elif not _all_mutagens:
+                unverified.append('mutagen')
 
     # 3. 长生：X宫(坐/逢/临/守)长生... 或 长生(在/于)X宫
     cs_alt = '|'.join(_ZW_CHANGSHENG)
