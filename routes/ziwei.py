@@ -796,6 +796,9 @@ def api_ziwei_verify():
     plate = data.get("plate", {})
     predictions = data.get("predictions", [])
     source = data.get("source", "verification_triggered")
+    device_id = (data.get("device_id") or "").strip()
+    if len(device_id) > 64:
+        device_id = device_id[:64]
 
     if not predictions:
         return jsonify({"error": "缺少 predictions"}), 400
@@ -824,6 +827,7 @@ def api_ziwei_verify():
     record = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "session_id": sid,
+        "device_id": device_id or None,
         "source": source,
         "fingerprint": fp,
         "predictions": predictions,

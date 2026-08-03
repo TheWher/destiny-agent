@@ -23,6 +23,8 @@ from collections import Counter, defaultdict
 from datetime import datetime
 
 FEEDBACK_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'feedback', 'ziwei')
+# 会话目录：与 routes/ziwei.py 的 _SESSIONS_DIR 保持一致（routes/sessions）
+SESSIONS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'routes', 'sessions')
 
 
 def load_feedbacks(limit: int = None) -> list:
@@ -241,6 +243,28 @@ def analyze(records: list, verbose: bool = False):
             print(f"  {fp_key[:60]}... | {count}条, 命中率 {hit:.0%}")
 
     print()
+
+    # ── 7. 覆盖率 ──
+    print("── 7. 覆盖率 ──")
+    # 分子：有验盘反馈的去重 session_id 数（continue 共用同一 session_id，天然去重）
+    verified_sessions = set()
+    for r in records:
+        sid = r.get('session_id', '')
+        if sid:
+            verified_sessions.add(sid)
+    # 分母：会话总数（routes/sessions 下每个会话一个 JSON 文件）
+    total_sessions = 0
+    if os.path.isdir(SESSIONS_DIR):
+        total_sessions = len([fn for fn in os.listdir(SESSIONS_DIR) if fn.endswith('.json')])
+    coverage = round(len(verified_sessions) / total_sessions, 3) if total_sessions > 0 else 0.0
+    print(f"  有反馈盘数(去重session): {len(verified_sessions)}")
+    print(f"  会话总数: {total_sessions}")
+    print(f"  覆盖率: {coverage:.1%}")
+    if total_sessions == 0 and len(verified_sessions) > 0:
+        print("  ⚠ 会话目录为空但有反馈记录：反馈的 session 可能已删除，或会话未落盘，覆盖率需人工核对")
+    print("  → 覆盖率低 = 验盘环节没人走到（区别于解读准确率低），两层分开盯")
+    print()
+
     print("=" * 60)
     print("分析完成。反馈积累越多，统计越可靠。")
     print(f"当前样本量: {len(all_predictions)} 条预测")
@@ -254,7 +278,12 @@ def analyze(records: list, verbose: bool = False):
     report = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "total_samples": total_predictions,
-        "total_sessions": len(records),
+        "total_records": len(records),
+        "coverage": {
+            "verified_sessions": len(verified_sessions),
+            "total_sessions": total_sessions,
+            "coverage": coverage,
+        },
         "overall_accuracy": round(h_all, 3),
         "by_signal": {},
         "by_domain": {},

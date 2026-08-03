@@ -179,13 +179,17 @@ async function verifyConfirm() {
 
   // 异步保存反馈（不阻塞流程）
   var source = 'verification_triggered';
+  var _verifyDeviceId = null;
+  try { _verifyDeviceId = localStorage.getItem('ziwei_device_id'); } catch (e) {}
+  if (!_verifyDeviceId) { try { _verifyDeviceId = crypto.randomUUID(); localStorage.setItem('ziwei_device_id', _verifyDeviceId); } catch (e) {} }
   fetch('/api/ziwei/verify', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       session_id: (typeof sid !== 'undefined' ? sid : ''),
       plate: plateData,
       predictions: feedbackPredictions,
-      source: source
+      source: source,
+      device_id: _verifyDeviceId
     })
   }).catch(function(){});
 
