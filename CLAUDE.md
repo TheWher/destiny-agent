@@ -93,14 +93,15 @@ API_CONFIG = {
 }
 ```
 
-## 密码保护
+## 解读门槛（2026-08-03：登录优先，密码兜底）
 
-深度分析（`/api/analyze` 和 `/api/analyze/continue`）支持可选的密码保护。
+解读（深度分析：八字 `/api/analyze` 系 + 紫微 `/api/ziwei/analyze` 系）的访问规则：
 
-- 在 `config.local.py` 中设置 `WEB_PASSWORD = "你的密码"` 即可启用
-- 留空则不设防，所有人可用
-- 前端首次分析时弹出密码框，密码存入 `sessionStorage`（关浏览器即失效）
-- 密码错误返回 403 + `need_password: true`，前端自动清除缓存让用户重试
+- **已登录用户（free/pro）免密解读**：后端 `check_password()`（utils/auth.py）先解析 JWT，登录用户直接放行
+- **未登录用户**：持有访问密码（`WEB_PASSWORD`，config.local.py 配置）可解读；无密码返回 403 + `need_password: true`，前端弹"登录引导 + 密码入口"对话框（tier.js `promptLoginOrPassword`，注册入口仅在紫微系页面显示）
+- 密码错误返回 403 + `need_password: true`；密码存入 `sessionStorage`（关浏览器即失效）；密码错误 5 次锁 IP 3 分钟，锁仅作用于密码通道，登录用户不受影响
+- 页面差异：八字页（index.html）无登录体系，解读仅走密码通道；紫微系（ziwei-report.html / ziwei.html）登录与密码双通道，解读请求带 Bearer token 后后端免密
+- **注意（语义迁移 2026-08-03）**：WEB_PASSWORD 为空时，匿名请求从"全员放行"变为"请先登录或注册"（不再有匿名通道）。本地跑 smoke 脚本需在 config.local.py 设 WEB_PASSWORD 或模拟登录态
 
 ```python
 # config.local.py

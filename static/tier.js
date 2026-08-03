@@ -59,6 +59,47 @@
     if (authBtn) authBtn.click();
   };
 
+  // ---- 解读门槛弹窗：登录引导 + 密码入口 ----
+  // 产品规则（2026-08-03 King 定）：解读需登录（free/pro）或访问密码；未登录无密码只能排盘
+  // 契约：resolve(pw) 用密码重试；resolve(null) 用户选择去注册/取消
+  window.promptLoginOrPassword = function (msg) {
+    return new Promise(function (resolve) {
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:flex;align-items:center;justify-content:center;font-family:Noto Serif SC,serif';
+      // 仅存在登录弹窗的页面（紫微交互盘/报告页）显示注册入口；八字页无登录体系则退化为纯密码框
+      var canAuth = !!(document.getElementById('authModal') || document.getElementById('rpt-auth-overlay') || document.getElementById('btn-show-auth'));
+      ov.innerHTML =
+        '<div style="background:var(--paper-card,#fff);border:1px solid var(--line,#ddd);padding:22px 24px;width:320px;max-width:90vw;text-align:center;border-radius:4px">' +
+          '<h3 style="font-size:14px;color:var(--ink,#222);margin-bottom:8px">\ud83d\udd10 解读需要登录</h3>' +
+          '<p style="font-size:11px;color:var(--ink-soft,#888);line-height:1.6;margin-bottom:12px">' + escapeHtml(msg || '登录后即可免费解读，未登录仅能排盘') + '</p>' +
+          (canAuth
+            ? '<button id="plp-auth-btn" style="width:100%;padding:9px;font-size:13px;border:1px solid var(--vermillion,#c1432f);background:none;color:var(--vermillion,#c1432f);border-radius:2px;cursor:pointer;font-family:inherit;margin-bottom:8px">注册 / 登录</button><div style="font-size:11px;color:var(--ink-faint,#aaa);margin-bottom:6px">或输入访问密码</div>'
+            : '<div style="font-size:11px;color:var(--ink-faint,#aaa);margin-bottom:6px">输入访问密码</div>') +
+          '<input id="plp-pw-inp" type="password" placeholder="访问密码" style="width:100%;padding:8px;font-size:13px;border:1px solid var(--line-soft,#eee);border-radius:2px;margin-bottom:8px;background:var(--paper,#fff);color:var(--ink,#222);font-family:inherit;box-sizing:border-box">' +
+          '<div style="display:flex;gap:8px">' +
+            '<button id="plp-ok" style="flex:1;padding:8px;font-size:13px;background:var(--ink,#222);color:var(--paper,#fff);border:none;border-radius:2px;cursor:pointer;font-family:inherit">确定</button>' +
+            '<button id="plp-cancel" style="flex:1;padding:8px;font-size:13px;border:1px solid var(--line-soft,#eee);background:none;color:var(--ink-soft,#888);border-radius:2px;cursor:pointer;font-family:inherit">取消</button>' +
+          '</div>' +
+        '</div>';
+      function done(v) { if (ov.parentNode) ov.parentNode.removeChild(ov); resolve(v); }
+      ov.addEventListener('click', function (e) { if (e.target === ov) done(null); });
+      ov.querySelector('#plp-ok').onclick = function () {
+        var v = (ov.querySelector('#plp-pw-inp').value || '').trim();
+        if (!v) { ov.querySelector('#plp-pw-inp').focus(); return; }
+        done(v);
+      };
+      if (canAuth) ov.querySelector('#plp-auth-btn').onclick = function () {
+        done(null);
+        if (typeof showRptAuth === 'function') { showRptAuth('login'); }
+        else if (window._tierOpenAuth) { window._tierOpenAuth(); }
+      };
+      ov.querySelector('#plp-cancel').onclick = function () { done(null); };
+      document.body.appendChild(ov);
+      var inp = ov.querySelector('#plp-pw-inp');
+      if (inp) setTimeout(function () { inp.focus(); }, 50);
+    });
+  };
+
   // ---- HTTP 错误处理 ----
   // 在 fetch 响应的 catch 或 !r.ok 分支中调用
   window.handleApiError = async function (response) {

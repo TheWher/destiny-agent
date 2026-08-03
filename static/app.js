@@ -873,12 +873,16 @@ async function doAnalyze(isRetry = false) {
         await new Promise(r => setTimeout(r, delay));
     }
 
-    // 密码弹窗优先——在 loading/skeleton 之前，避免 UI 闪烁
-    const pw = await promptPassword(isRetry ? '重试需要重新输入密码' : '');
-    if (pw === null) {
+    // 解读门槛：无缓存密码时弹窗（登录引导 + 密码入口），已输过则直接复用
+    let pw = sessionStorage.getItem('bazi_pw') || '';
+    if (!pw) {
+      pw = await promptLoginOrPassword(isRetry ? '重试需要重新登录或输入访问密码' : '');
+      if (pw === null) {
         elBtnAnalyze.disabled = false;
         analysisInProgress = false; showDefaultStep();
         return;
+      }
+      if (pw) sessionStorage.setItem('bazi_pw', pw);
     }
 
     showLoading(isRetry ? '正在重新连接 Agent...' : (getValidEvents().length > 0 ? '正在验证时辰...' : '正在验盘——反推过往事件验证时辰（约需 30 秒）...'));
@@ -915,7 +919,13 @@ async function doAnalyze(isRetry = false) {
 
         const d = await r.json();
         if (!d.success) {
-            if (d.need_password) { clearPassword(); clearPendingAnalysis(); showError(d.error); return; }
+            if (d.need_password) {
+                clearPendingAnalysis();
+                const p = await promptLoginOrPassword(d.error);
+                if (!p) { elBtnAnalyze.disabled = false; analysisInProgress = false; showDefaultStep(); return; }
+                sessionStorage.setItem('bazi_pw', p);
+                return doAnalyze(true); // 带密码重试
+            }
             clearPendingAnalysis();
             if (d.rate_limited) { showUpgradeToast(d.error, d.tier); hideLoading(); elBtnAnalyze.disabled = false; analysisInProgress = false; showDefaultStep(); return; }
             showError(d.error || '分析失败');
@@ -1217,7 +1227,13 @@ elBtnChatSend.addEventListener('click', async () => {
             clearTimeout(timeoutId);
             if (!r.ok) {
                 const d = await r.json().catch(()=>({}));
-                if (d.need_password) { clearPassword(); clearPendingAnalysis(); showError(d.error); hideLoading(); elBtnChatSend.disabled=false; elChatInput.disabled=false; analysisInProgress=false; return; }
+                if (d.need_password) {
+                    clearPendingAnalysis();
+                    const p = await promptLoginOrPassword(d.error);
+                    if (!p) { hideLoading(); elBtnChatSend.disabled=false; elChatInput.disabled=false; analysisInProgress=false; return; }
+                    sessionStorage.setItem('bazi_pw', p);
+                    continue; // 带密码重试
+                }
                 if (d.rate_limited) { showUpgradeToast(d.error, d.tier); hideLoading(); elBtnChatSend.disabled=false; elChatInput.disabled=false; analysisInProgress=false; return; }
                 lastError = d.error||`HTTP ${r.status}`;
                 if (attempt===0) { await new Promise(r=>setTimeout(r,3000)); continue; }
@@ -1597,12 +1613,12 @@ async function doZiweiAnalyze() {
 
     try {
         const r = await fetch('/api/ziwei/analyze', {
-            method:'POST', headers:{'Content-Type':'application/json'},
+            method:'POST', headers:Object.assign({'Content-Type':'application/json'}, typeof authHeaders === 'function' ? authHeaders() : {}),
             body: JSON.stringify({plate:ziweiPlateData, password:pw})
         });
         const d = await r.json();
         if (d.need_password) {
-            const p = await promptPassword();
+            const p = await promptLoginOrPassword(d.error);
             if (!p) { elBtnZiweiAnalyze.disabled=false; elBtnZiweiAnalyze.textContent='🧠 开始解读'; ziweiAnalysisInProgress=false; return; }
             sessionStorage.setItem('bazi_pw', p);
             return doZiweiAnalyze(); // retry

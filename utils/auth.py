@@ -47,9 +47,27 @@ def check_rate_limit(key: str, max_requests: int = 3, window_minutes: int = 60,
 
 
 def check_password(ip: str, data: dict) -> str | None:
-    """检查深度分析密码，含防爆破锁。返回 None 表示通过，返回字符串表示错误信息。"""
+    """解读访问门槛：已登录（free/pro）直接放行；未登录走访问密码通道。
+
+    产品规则（2026-08-03 King 定）：
+    - 已登录用户（free/pro）解读免密，直接放行
+    - 未登录用户：持有访问密码可解读；无密码则拒绝并引导注册登录
+    - 防爆破锁仅作用于密码通道，登录用户不受影响
+
+    返回 None 表示通过，返回字符串表示错误信息。"""
+    # 已登录用户（free/pro）直接放行，不过密码门
+    try:
+        from flask import request
+        from utils.tier import resolve_user_from_request
+        user_id, _tier = resolve_user_from_request(request)
+        if user_id is not None:
+            return None
+    except Exception:
+        pass  # 登录态解析失败按未登录处理
+
+    # 未登录且未配置访问密码：无通道，引导登录注册
     if not WEB_PASSWORD:
-        return None  # 未设置密码，允许所有人使用
+        return "解读需要登录账号，请先登录或注册后使用"
 
     now = _time.time()
     window = PW_LOCKOUT_MINUTES * 60

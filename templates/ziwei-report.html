@@ -32,10 +32,27 @@
 
   /* ── 导航 ── */
   .nav-bar {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    gap: 8px 14px;
     padding: 10px 0 16px; border-bottom: 1px solid var(--line-soft); margin-bottom: 20px;
   }
   .nav-bar .title { font-size: 18px; letter-spacing: 2px; color: var(--ink); }
+  .nav-title-row { display: flex; align-items: center; gap: 10px; }
+  .nav-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .nav-auth { display: flex; align-items: center; gap: 6px; }
+  /* 导航工具按钮：统一尺寸，触控目标 ≥36px */
+  .nav-tools .btn-tool {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 36px; min-width: 36px; padding: 0 10px;
+    border: 1px solid var(--line-soft); border-radius: 4px;
+    background: var(--paper-card); color: var(--ink-soft);
+    font-size: 12px; cursor: pointer; font-family: inherit;
+    text-decoration: none; box-sizing: border-box;
+  }
+  .nav-tools .btn-tool.icon { width: 36px; padding: 0; font-size: 15px; }
+  .nav-tools .btn-tool.danger { color: var(--vermillion); border-color: rgba(193,67,47,.35); }
+  .nav-tools .btn-tool.primary { color: #fff; background: linear-gradient(135deg,#d4a843,#b8860b); border-color: transparent; font-weight: 600; }
+  .nav-tools .btn-tool.primary:hover { opacity: .9; }
   .nav-bar .btn-back {
     font-size: 12px; color: var(--ink-soft); text-decoration: none;
     border: 1px solid var(--line-soft); padding: 4px 12px; border-radius: 2px;
@@ -361,8 +378,10 @@
 
   @media (max-width: 480px) {
     .report { padding: 8px; }
-    .nav-bar { flex-direction: column; gap: 8px; align-items: flex-start; }
+    .nav-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .nav-title-row { justify-content: space-between; }
     .nav-bar .title { font-size: 15px; }
+    .nav-tools { gap: 6px; }
     .ziwei-grid { height: 320px; gap: 0; }
     .palace { font-size: 8px; padding: 2px 3px; }
     .palace .p-head { gap: 2px; padding-bottom: 2px; margin-bottom: 2px; }
@@ -407,19 +426,23 @@
 <div class="report">
   <!-- 导航 -->
   <div class="nav-bar no-print">
-    <span class="title">🔮 紫微斗数 · 命盘报告</span>
-    <a href="/ziwei" class="btn-back">← 重新排盘</a>
-    <select id="session-switcher" onchange="switchSession()" style="padding:4px 8px;font-size:12px;border:1px solid var(--line-soft);border-radius:2px;background:var(--paper);color:var(--ink);font-family:inherit;max-width:200px;cursor:pointer"><option value="">历史会话</option></select>
-    <button onclick="renameCurrentSession()" title="重命名当前会话" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px;color:var(--ink-soft)">✏</button>
-    <button onclick="deleteCurrentSession()" title="删除当前会话" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px;color:var(--ink-soft)">✕</button>
-    <button onclick="copyReportLink()" title="复制链接" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 4px;color:var(--ink-soft)">🔗</button>
-    <a href="/ziwei" id="link-interactive" class="btn-back" style="font-size:11px;text-decoration:none">🔮 交互盘</a>
-    <button class="btn-theme" id="btn-theme" onclick="toggleTheme()">🌙</button>
-    <span id="rp-auth-placeholder" style="margin-left:8px;display:flex;gap:4px">
+    <div class="nav-title-row">
+      <span class="title">🔮 紫微斗数 · 命盘报告</span>
+      <button class="btn-theme" id="btn-theme" onclick="toggleTheme()">🌙</button>
+    </div>
+    <div class="nav-tools">
+      <a href="/ziwei" class="btn-tool">← 重新排盘</a>
+      <select id="session-switcher" onchange="switchSession()" style="padding:0 8px;font-size:12px;border:1px solid var(--line-soft);border-radius:4px;background:var(--paper-card);color:var(--ink);font-family:inherit;max-width:160px;cursor:pointer;height:36px;box-sizing:border-box"><option value="">历史会话</option></select>
+      <button class="btn-tool icon" onclick="renameCurrentSession()" title="重命名当前会话">✏</button>
+      <button class="btn-tool icon danger" onclick="deleteCurrentSession()" title="删除当前会话">✕</button>
+      <button class="btn-tool icon primary" onclick="copyReportLink()" title="复制链接">🔗</button>
+      <a href="/ziwei" id="link-interactive" class="btn-tool" style="text-decoration:none">🔮 交互盘</a>
+    </div>
+    <span id="rp-auth-placeholder" class="nav-auth" style="display:flex;gap:4px">
       <button class="btn-back" onclick="showRptAuth('login')" style="font-size:11px;padding:3px 10px">登录</button>
       <button class="btn-back" onclick="showRptAuth('register')" style="font-size:11px;padding:3px 10px;border-color:var(--vermillion);color:var(--vermillion)">注册</button>
     </span>
-    <span id="rp-auth-user" class="hidden" style="margin-left:8px;display:none;align-items:center;gap:6px;font-size:11px">
+    <span id="rp-auth-user" class="hidden nav-auth" style="display:none;gap:6px;font-size:11px">
       <span id="rp-auth-email" style="color:var(--ink);font-weight:600"></span>
       <span id="rp-auth-tier" style="font-size:10px;padding:1px 5px;border-radius:2px;background:var(--ink-faint);color:#fff"></span>
       <a href="#" onclick="rptLogout();return false" style="color:var(--ink-soft);font-size:10px">退出</a>
@@ -1290,8 +1313,9 @@ async function analyzeScope(){
     const r = await fetch('/api/ziwei/sessions/'+sid,{headers:_authHdrs()});
     const s = await r.json();
     const msgs = s.messages || [];
+    const _contHdrs = function(){ return Object.assign({'Content-Type':'application/json'}, _authHdrs()); };
     let res = await fetch('/api/ziwei/analyze/continue', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:_contHdrs(),
       body:JSON.stringify({messages: msgs, reply: prompt, password: reportPw})
     });
     if(res.status === 403){
@@ -1301,20 +1325,11 @@ async function analyzeScope(){
         btn.disabled = false; btn.textContent = '\ud83d\udcdc 叠盘分析';
         return;
       }
-      reportPw = await new Promise(resolve => {
-        const ov = document.createElement('div');
-        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;font-family:Noto Serif SC,serif';
-        ov.innerHTML = '<div style="background:var(--paper-card);border:1px solid var(--line);padding:24px;width:320px;text-align:center;border-radius:4px"><h3 style="font-size:14px;color:var(--ink);margin-bottom:8px">\ud83d\udd10 需要密码</h3><input type="password" id="sc-pw-inp" placeholder="请输入密码" style="width:90%;padding:8px;font-size:.9em;border:1px solid var(--line-soft);border-radius:2px;margin-bottom:10px;background:var(--paper);color:var(--ink);font-family:inherit"><div style="display:flex;gap:8px"><button id="sc-pw-cancel" style="flex:1;padding:6px;border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:2px;font-family:inherit">取消</button><button id="sc-pw-ok" style="flex:1;padding:6px;background:var(--ink);color:var(--paper);border:none;cursor:pointer;border-radius:2px;font-family:inherit">确认</button></div></div>';
-        document.body.appendChild(ov);
-        const inp = ov.querySelector('#sc-pw-inp'); inp.focus();
-        ov.querySelector('#sc-pw-ok').onclick = () => { ov.remove(); resolve(inp.value); };
-        ov.querySelector('#sc-pw-cancel').onclick = () => { ov.remove(); resolve(null); };
-        inp.onkeydown = e => { if(e.key==='Enter') ov.querySelector('#sc-pw-ok').click(); };
-      });
+      reportPw = await promptLoginOrPassword(_e403.error);
       if(!reportPw){ btn.disabled = false; btn.textContent = '\ud83d\udcdc 叠盘分析'; return; }
       sessionStorage.setItem('ziwei_pw', reportPw);
       res = await fetch('/api/ziwei/analyze/continue', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers:_contHdrs(),
         body:JSON.stringify({messages: msgs, reply: prompt, password: reportPw})
       });
     }
@@ -1379,22 +1394,13 @@ async function startAnalysis(plate, password){
     let pw = reportPw || password || '';
     for(let attempt=0; attempt<2; attempt++){
       const r = await fetch('/api/ziwei/analyze', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()),
         body:JSON.stringify({plate, password: pw, verification_mode: true})
       });
       if(r.status === 403){
         const err = await r.json().catch(()=>({}));
         if(!err.need_password){ area.innerHTML='<span style="color:var(--vermillion)">权限不足</span>'; return; }
-        pw = await new Promise(resolve => {
-          const ov = document.createElement('div');
-          ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;font-family:Noto Serif SC,serif';
-          ov.innerHTML = '<div style="background:var(--paper-card);border:1px solid var(--line);padding:24px;width:320px;text-align:center;border-radius:4px"><h3 style="font-size:14px;margin-bottom:8px;color:var(--ink)">需要密码</h3><input type="password" id="ziwei-pw-input" placeholder="请输入密码" style="width:90%;padding:8px;font-size:.9em;border:1px solid var(--line-soft);border-radius:2px;margin-bottom:10px;background:var(--paper);color:var(--ink);font-family:inherit"><div style="display:flex;gap:8px"><button id="ziwei-pw-cancel" style="flex:1;padding:6px;border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:2px;font-family:inherit">取消</button><button id="ziwei-pw-ok" style="flex:1;padding:6px;background:var(--ink);color:var(--paper);border:none;cursor:pointer;border-radius:2px;font-family:inherit">确认</button></div></div>';
-          document.body.appendChild(ov);
-          const inp = ov.querySelector('#ziwei-pw-input'); inp.focus();
-          ov.querySelector('#ziwei-pw-ok').onclick = () => { ov.remove(); resolve(inp.value); };
-          ov.querySelector('#ziwei-pw-cancel').onclick = () => { ov.remove(); resolve(null); };
-          inp.onkeydown = e => { if(e.key==='Enter') ov.querySelector('#ziwei-pw-ok').click(); };
-        });
+        pw = await promptLoginOrPassword(err.error);
         if(!pw){ area.innerHTML='<span style="color:var(--vermillion)">已取消</span>'; return; }
         reportPw=pw; sessionStorage.setItem('ziwei_pw',pw);
         continue;
@@ -1498,16 +1504,7 @@ async function sendChat(){
     if(res.status === 403){
       const err = await res.json().catch(()=>({}));
       if(!reportPw && err.need_password){
-        reportPw = await new Promise(resolve => {
-          const ov = document.createElement('div');
-          ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;font-family:Noto Serif SC,serif';
-          ov.innerHTML = '<div style="background:var(--paper-card);border:1px solid var(--line);padding:24px;width:320px;text-align:center;border-radius:4px"><h3 style="font-size:14px;color:var(--ink);margin-bottom:8px">🔐 需要密码</h3><input type="password" id="sc-pw-inp" placeholder="请输入密码" style="width:90%;padding:8px;font-size:.9em;border:1px solid var(--line-soft);border-radius:2px;margin-bottom:10px;background:var(--paper);color:var(--ink);font-family:inherit"><div style="display:flex;gap:8px"><button id="sc-pw-cancel" style="flex:1;padding:6px;border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:2px;font-family:inherit">取消</button><button id="sc-pw-ok" style="flex:1;padding:6px;background:var(--ink);color:var(--paper);border:none;cursor:pointer;border-radius:2px;font-family:inherit">确认</button></div></div>';
-          document.body.appendChild(ov);
-          const inp = ov.querySelector('#sc-pw-inp'); inp.focus();
-          ov.querySelector('#sc-pw-ok').onclick = () => { ov.remove(); resolve(inp.value); };
-          ov.querySelector('#sc-pw-cancel').onclick = () => { ov.remove(); resolve(null); };
-          inp.onkeydown = e => { if(e.key==='Enter') ov.querySelector('#sc-pw-ok').click(); };
-        });
+        reportPw = await promptLoginOrPassword(err.error);
         if(!reportPw){ input.disabled = false; $('btn-chat').disabled = false; return; }
         sessionStorage.setItem('ziwei_pw', reportPw);
         res = await fetch('/api/ziwei/analyze/continue', {
