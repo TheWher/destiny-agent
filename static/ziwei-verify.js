@@ -288,7 +288,8 @@ async function startAnalysisFull() {
         for (var k = 0; k < _iss.length; k++) {
           var it = _iss[k];
           var wrong = it.found || it.found_palace || it.star || '?';
-          fixList += '<div style="margin:3px 0">报告写 <b style="text-decoration:line-through">' + wrong + '</b> → 正确为 <b>' + it.expected + '</b></div>';
+          fixList += '<div style="margin:3px 0">报告写 <b style="text-decoration:line-through">' + wrong + '</b> → 正确为 <b>' + it.expected + '</b>'
+            + ' <button onclick="markIssueReview(' + k + ',\'user_ignored\')" style="font-size:10px;padding:1px 6px;border:1px solid rgba(193,67,47,.4);background:none;color:var(--vermillion);border-radius:2px;cursor:pointer;margin-left:6px">这条有误？</button></div>';
         }
         var warn = document.createElement('div');
         warn.style.cssText = 'border:1px solid var(--vermillion);background:rgba(193,67,47,.08);color:var(--vermillion);padding:8px 12px;font-size:12px;margin-bottom:12px;border-radius:4px';
@@ -311,6 +312,16 @@ async function startAnalysisFull() {
   } catch (e) {
     area.innerHTML = '<span style="color:var(--vermillion)">连接中断: ' + e.message + '</span>';
   }
+}
+
+// 误报监控（2026-08-04 加）：用户反馈标记校验 issue
+function markIssueReview(index, mark) {
+  fetch('/api/ziwei/issue_review', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mark: mark, index: index })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) { toast('已记录反馈，感谢校准'); }
+  }).catch(function(){});
 }
 
 // 会话列表加载（供报告页使用）

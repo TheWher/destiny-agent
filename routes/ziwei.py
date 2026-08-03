@@ -844,8 +844,38 @@ def api_ziwei_get_share(share_id):
 # ═══ 验盘反馈保存 ═══
 # 与 scripts/evaluate_ziwei_verify.py 的 FEEDBACK_DIR 保持一致（项目根/feedback/ziwei），勿改回 routes/ 下
 _FEEDBACK_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'feedback', 'ziwei')
+# 校验样本目录（审查层 issues 落库）
+_ISSUES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'feedback', 'ziwei_issues')
 # 报告目录：与 scripts/evaluate_ziwei_verify.py 的 REPORTS_DIR 保持一致（项目根/data/reports），与反馈记录目录分离
 _REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'reports')
+
+
+@ziwei_bp.route("/issue_review", methods=["POST"])
+def api_ziwei_issue_review():
+    """误报监控：用户反馈标记校验 issue（user_ignored=误报 / confirmed_true=确认），
+    更新最近落库样本的 _review 字段，供分析期校准（数据驱动防错闭环）。"""
+    data = request.get_json(silent=True) or {}
+    mark = data.get("mark")
+    idx = data.get("index")
+    if mark not in ("user_ignored", "confirmed_true") or not isinstance(idx, int):
+        return jsonify({"ok": False, "error": "参数错误"}), 400
+    try:
+        import glob as _glob
+        files = sorted(_glob.glob(os.path.join(_ISSUES_DIR, '*.json')), key=os.path.getmtime, reverse=True)
+        if not files:
+            return jsonify({"ok": False, "error": "无样本"}), 404
+        fp = files[0]
+        with open(fp, encoding='utf-8') as f:
+            rec = json.load(f)
+        issues = rec.get('issues', [])
+        if not (0 <= idx < len(issues)):
+            return jsonify({"ok": False, "error": "索引越界"}), 400
+        issues[idx]['_review'] = mark
+        with open(fp, 'w', encoding='utf-8') as f:
+            json.dump(rec, f, ensure_ascii=False, indent=1)
+        return jsonify({"ok": True})
+    except Exception:
+        return jsonify({"ok": False, "error": "服务错误"}), 500
 
 @ziwei_bp.route("/verify", methods=["POST"])
 def api_ziwei_verify():
