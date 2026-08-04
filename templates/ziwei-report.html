@@ -326,6 +326,13 @@
   .chat-msg.user { background: rgba(193,67,47,0.04); border-left: 2px solid rgba(193,67,47,0.2); }
   .chat-msg.agent { background: var(--paper-card); border: 1px solid var(--line-faint); }
   .chat-msg .who { font-weight: 700; color: var(--ink-soft); font-size: 11px; margin-bottom: 2px; }
+  /* 追问回答内容：全局 reset 清零了 ul/ol 缩进，必须显式补回，否则列表 marker 溢出框外（2026-08-04 修） */
+  .chat-msg p { margin: 0 0 6px; }
+  .chat-msg ul, .chat-msg ol { margin: 4px 0 6px; padding-left: 18px; }
+  .chat-msg li { margin-bottom: 2px; line-height: 1.6; }
+  .chat-msg h2, .chat-msg h3, .chat-msg h4 { margin: 8px 0 4px; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+  .chat-msg blockquote { margin: 6px 0 8px; padding: 6px 10px; background: rgba(180,160,130,0.06); border-left: 2px solid var(--line-soft); font-size: .95em; color: var(--ink-soft); }
+  .chat-msg hr { border: none; border-top: 1px dashed var(--line-faint); margin: 10px 0; }
   .chat-input-row { display: flex; gap: 8px; margin-top: 10px; }
   .chat-input-row textarea {
     flex: 1; padding: 8px 10px; font-size: 12px;
