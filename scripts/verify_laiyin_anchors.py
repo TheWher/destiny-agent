@@ -85,6 +85,19 @@ def run():
     doubles = "".join(y for y in GANS if len(individual(y)) > 1)
     check("双候选干 == 辛壬", doubles == "辛壬", f"got={doubles}")
 
+    print("== 60甲子性质断言：任何盘任何宫干位必然干支同阴阳（翻面论证）==")
+    for y in GANS:
+        bad = [m for m in months(y) if (GANS.index(m[0]) % 2) != (ZHIS.index(m[1]) % 2)]
+        check(f"{y}年 12 宫干位全部同阴阳", not bad, f"异阴阳位: {bad}")
+
+    print("== 个体制锚全同阴阳 / 对首制己-癸锚全异阴阳断言 ==")
+    for y, pos in EXPECT_INDIVIDUAL.items():
+        bad = [z for z in pos if (GANS.index(y) % 2) != (ZHIS.index(z) % 2)]
+        check(f"{y}年个体制锚 {pos} 全同阴阳", not bad, f"异阴阳: {bad}")
+    for y, z in [("己", "戌"), ("庚", "酉"), ("辛", "申"), ("壬", "未"), ("癸", "午")]:
+        same = (GANS.index(y) % 2) == (ZHIS.index(z) % 2)
+        check(f"{y}年对首制锚 {z} 为异阴阳（排除出局）", not same, f"{y}{z} 竟然同阴阳")
+
     print("== 命宫落亥 → 父母宫地支位断言 ==")
     parent = ZHIS[(ZHIS.index("亥") + 11) % 12]
     check(f"命宫落亥父母宫位 == {EXPECT_PARENT_WITH_MING_HAI}",
