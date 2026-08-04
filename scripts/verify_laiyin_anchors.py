@@ -73,6 +73,18 @@ def run():
     check(f"重合干 == {EXPECT_SAME}", same == EXPECT_SAME, f"got={same}")
     check(f"岔开干 == {EXPECT_DIFF}", diff == EXPECT_DIFF, f"got={diff}")
 
+    print("== 数学层断言：子丑恒重复寅卯（五虎遁 12 位 10 干必两重复，纯数学必然）==")
+    for y in GANS:
+        ms = months(y)
+        check(f"{y}年 子位干==寅位干（{ms[10][0]}=={ms[0][0]}）",
+              ms[10][0] == ms[0][0], f"got {ms[10][0]} vs {ms[0][0]}")
+        check(f"{y}年 丑位干==卯位干（{ms[11][0]}=={ms[1][0]}）",
+              ms[11][0] == ms[1][0], f"got {ms[11][0]} vs {ms[1][0]}")
+
+    print("== 双候选位仅辛壬断言 ==")
+    doubles = "".join(y for y in GANS if len(individual(y)) > 1)
+    check("双候选干 == 辛壬", doubles == "辛壬", f"got={doubles}")
+
     print("== 命宫落亥 → 父母宫地支位断言 ==")
     parent = ZHIS[(ZHIS.index("亥") + 11) % 12]
     check(f"命宫落亥父母宫位 == {EXPECT_PARENT_WITH_MING_HAI}",
