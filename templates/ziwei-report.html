@@ -707,7 +707,7 @@ async function load(){
       // CTA：分享页变获客入口
       var _cta = document.createElement('div');
       _cta.style.cssText = 'text-align:center;font-size:13px;color:var(--ink-soft);padding:18px 10px;border-top:1px dashed var(--line-faint);margin-top:8px';
-      _cta.innerHTML = '这是 <b style="color:var(--ink)">'+_sharer+'</b> 的命盘。想看自己的完整解读？<a href="/ziwei" onclick="track(\'share_cta_click\')" style="color:var(--vermillion);font-weight:600;text-decoration:none">免费排一个 →</a>';
+      _cta.innerHTML = '这是 <b style="color:var(--ink)">'+escapeHtml(_sharer)+'</b> 的命盘。想看自己的完整解读？<a href="/ziwei" onclick="track(\'share_cta_click\')" style="color:var(--vermillion);font-weight:600;text-decoration:none">免费排一个 →</a>';
       var _analysisArea = document.getElementById('analysis');
       if(_analysisArea){ _analysisArea.appendChild(_cta); }
       if(plateData && plateData.palaces){
@@ -1489,6 +1489,9 @@ function renderAnalysis(messages){
   let html = aiMsg.map(m => formatText(m.content)).join('\n<hr style="border:none;border-top:1px dashed var(--line-faint);margin:12px 0">\n');
   $('analysis-text').innerHTML = html;
 }
+function escapeHtml(str){
+  return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function formatText(t){
   // 第一阶段：标记块级语法（先于 HTML 转义）
   t = t.replace(/^> /gm,'\u0001Q ');
@@ -1534,7 +1537,7 @@ async function sendChat(){
   if(!reply) return;
   input.disabled = true; $('btn-chat').disabled = true;
   const chatArea = $('chat-messages');
-  chatArea.innerHTML += `<div class="chat-msg user"><div class="who">你</div>${reply}</div>`;
+  chatArea.innerHTML += `<div class="chat-msg user"><div class="who">你</div>${escapeHtml(reply)}</div>`;
   input.value = '';
   // 获取当前 messages
   const r = await fetch(`/api/ziwei/sessions/${sid}`,{headers:_authHdrs()});
