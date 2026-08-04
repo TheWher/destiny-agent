@@ -29,7 +29,9 @@ EXPECT_PAIR = {  # 对首制（五组对锚），恒唯一
 }
 EXPECT_SAME = "甲乙丙丁戊"          # 两制重合干（例盘对这两制无效）
 EXPECT_DIFF = "己庚辛壬癸"          # 两制岔开干（判别样本）
-EXPECT_PARENT_WITH_MING_HAI = "戌"  # 命宫落亥 → 戌位 = 父母宫（两维重合条件）
+EXPECT_PARENT_WITH_MING_HAI = "子"  # 命宫落亥 → 子位 = 父母宫（引擎逆布口径：父母=命+1）
+# 2026-08-04 修正：旧版用顺布公式（父母=命+11）得戌，引擎实测 iztro 为逆布（父母=命+1），命亥父母实为子。
+# 错误史：此断言 18:44 过目与首轮复核共享同一顺布方向假设，两层全绿仍错，直到 King 真盘数据照出。验证链各层须独立检查基础假设。
 
 
 def months(y):
@@ -98,10 +100,17 @@ def run():
         same = (GANS.index(y) % 2) == (ZHIS.index(z) % 2)
         check(f"{y}年对首制锚 {z} 为异阴阳（排除出局）", not same, f"{y}{z} 竟然同阴阳")
 
-    print("== 命宫落亥 → 父母宫地支位断言 ==")
-    parent = ZHIS[(ZHIS.index("亥") + 11) % 12]
+    print("== 命宫落亥 → 父母宫地支位断言（逆布，引擎口径）==")
+    parent = ZHIS[(ZHIS.index("亥") + 1) % 12]
     check(f"命宫落亥父母宫位 == {EXPECT_PARENT_WITH_MING_HAI}",
           parent == EXPECT_PARENT_WITH_MING_HAI, f"got={parent}")
+
+    print("== King 真盘回归断言（引擎实测 2005-08-19 01:35 男 东莞 113.75）==")
+    ming = ZHIS.index("未")
+    check("命未 → 福德酉（命+2，逆布）", ZHIS[(ming + 2) % 12] == "酉",
+          f"got={ZHIS[(ming + 2) % 12]}")
+    check("命未 → 父母申（命+1，逆布）", ZHIS[(ming + 1) % 12] == "申",
+          f"got={ZHIS[(ming + 1) % 12]}")
 
     print()
     if failures:
