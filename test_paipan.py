@@ -329,6 +329,72 @@ TEST_CASES = [
             "qiyun_direction": "顺行",  # 阴年女顺排，与男命相反
         },
     },
+
+    # ========== 真太阳时 × 跨日/跨时辰 参数化临界表 ==========
+    # 2026-08-04 加。锚点: 2005-08-19 日柱乙亥, 08-20 日柱丙子。
+    # 口径: 先校正后定时辰/日柱 (datetime 加法定自然跨日); 晚子时 (23:00-24:00)
+    # 日柱进次日, 时干按次日日干起五鼠遁 (丙辛从戊起 → 戊子)。
+    # 经度正负两侧 + 钟表 00:00 两侧 + 23:00 两侧, 方向和日柱值都钉死。
+    {
+        "id": "solar-crossday-fwd-positive",
+        "category": "真太阳时边界",
+        "desc": "正校正跨日向前: 23:50@经度126 (+24min→次日00:14早子时), 日柱应进8/20",
+        "year": 2005, "month": 8, "day": 19, "hour": 23, "minute": 50,
+        "gender": "男", "longitude": 126.0, "location": "山东",
+        "expected": {
+            "sizhu_contains": "丙子 戊子",  # 日柱8/20, 早子时戊子
+            "ri_zhu": "丙",
+            "shichen_zhi": "子",
+        },
+    },
+    {
+        "id": "solar-crossday-back-negative",
+        "category": "真太阳时边界",
+        "desc": "负校正跨日向后: 00:20@经度110 (-40min→前日23:40晚子时), 晚子时日柱进次日=8/20, 不回退",
+        "year": 2005, "month": 8, "day": 20, "hour": 0, "minute": 20,
+        "gender": "男", "longitude": 110.0, "location": "西安",
+        "expected": {
+            "sizhu_contains": "丙子 戊子",  # 校正回退但晚子时规则日柱仍为8/20
+            "ri_zhu": "丙",
+            "shichen_zhi": "子",
+        },
+    },
+    {
+        "id": "solar-cross-shichen-negative",
+        "category": "真太阳时边界",
+        "desc": "负校正跨时辰: 23:05@经度110 (-40min→22:25亥时), 日柱退回8/19",
+        "year": 2005, "month": 8, "day": 19, "hour": 23, "minute": 5,
+        "gender": "男", "longitude": 110.0, "location": "西安",
+        "expected": {
+            "sizhu_contains": "乙亥 丁亥",  # 亥时丁亥, 日柱8/19
+            "ri_zhu": "乙",
+            "shichen_zhi": "亥",
+        },
+    },
+    {
+        "id": "solar-late-zi-positive",
+        "category": "真太阳时边界",
+        "desc": "正校正仍在晚子时: 23:30@经度126 (+24min→23:54晚子时), 日柱进8/20",
+        "year": 2005, "month": 8, "day": 19, "hour": 23, "minute": 30,
+        "gender": "男", "longitude": 126.0, "location": "山东",
+        "expected": {
+            "sizhu_contains": "丙子 戊子",
+            "ri_zhu": "丙",
+            "shichen_zhi": "子",
+        },
+    },
+    {
+        "id": "solar-early-zi-positive",
+        "category": "真太阳时边界",
+        "desc": "正校正早子时: 00:05@经度126 (+24min→00:29早子时), 日柱8/20",
+        "year": 2005, "month": 8, "day": 20, "hour": 0, "minute": 5,
+        "gender": "男", "longitude": 126.0, "location": "山东",
+        "expected": {
+            "sizhu_contains": "丙子 戊子",
+            "ri_zhu": "丙",
+            "shichen_zhi": "子",
+        },
+    },
 ]
 
 # ============================================================
