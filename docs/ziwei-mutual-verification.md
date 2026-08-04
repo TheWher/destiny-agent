@@ -64,7 +64,7 @@
 - **别名归一化**：宫位（仆役=交友等 7 个）+ 星曜（帝座=紫微等）+ 格局变体，防 LLM 用别名写盘面引用静默漏检
 - **原文 span 携带**：issue 带 raw（正则命中原文片段），标红/分析直接用，防措辞变体重构失配
 - **条件性 Reviewer**（MDPI 研究背书：多数幻觉前两轮迭代解决）：校验失败才触发一次 LLM 复核，值来自引擎 oracle、LLM 只写原因措辞（防二次幻觉）
-- **误报闭环**：样本落库（feedback/ziwei_issues/，每条带 _review 字段）→ 用户反馈按钮（/api/ziwei/issue_review 标记误报/确认）→ 分析期交叉统计校准（类型×星曜/宫位，normalized 键聚合）
+- **误报闭环**：样本落库（feedback/ziwei_issues/，每条带 _review 字段）→ 用户反馈按钮（/api/ziwei/issue_review 标记误报/确认）→ 分析期交叉统计校准（类型×星曜/宫位，normalized 键聚合）。**基线样本快照惯例（2026-08-04 口径分歧第一案定）**：基线类样本同步存快照 docs/ziwei_issues_snapshot/{ts}_manual_{名}.json（feedback/ 不入 git，快照是版本化锚点；运行时目录可丢、基线不可丢）。首案：20260804_215500_000000_manual_riyuebingming.json
 - **前端三层呈现**：顶部修正清单（机器渲染）+ 报告正文错误引用标红 + 未校验金色提示
 
 **古籍知识库四层**（全部公版 + 四道关：公版核验/口径过滤/安星诀排除/别名同步 + 体系标签 school）：
