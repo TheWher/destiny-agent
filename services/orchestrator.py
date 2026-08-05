@@ -64,6 +64,7 @@ class CapabilityResult:
     error: Optional[str] = None
     elapsed_ms: float = 0.0
     usage: dict = field(default_factory=dict) # token usage
+    traceback: Optional[str] = None           # 内部调试用异常堆栈，勿透出给用户
 
 
 
@@ -228,8 +229,12 @@ class CapabilityRegistry:
             return CapabilityResult(success=True, result=result, elapsed_ms=elapsed)
         except Exception as e:
             elapsed = (time.perf_counter() - t0) * 1000
-            traceback.print_exc()
-            return CapabilityResult(success=False, error=f"{e}", elapsed_ms=elapsed)
+            return CapabilityResult(
+                success=False,
+                error=f"{e}",
+                elapsed_ms=elapsed,
+                traceback=traceback.format_exc(),
+            )
 
 
 # ── 技能标准化 ──────────────────────────────────────────
