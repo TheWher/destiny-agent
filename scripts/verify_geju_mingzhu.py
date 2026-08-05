@@ -33,10 +33,15 @@ sys.path.insert(0, __file__.rsplit('scripts', 1)[0] or '.')
 import ziwei_calculator as z
 
 # ============ 期望值（写死，改动需三思 + 双人复核）============
+# 2026-08-05 教训：判"某年生"必须跑引擎/check_ganzhi，不许按公历口头定年（立春界）。
+# 原巳酉变体 2005-01-23 在立春(2/4)前 = 甲申年，"辛乙生人合格"不满足，已换真乙酉年盘。
+# 每盘年干写死为引擎 year_gz 期望值，造盘强制干支校验（源头拦，比事后核便宜）。
+
 # King 盘：2005-08-19 01:35 男，命未，太阳卯庙+太阴亥庙。
 # 庙旺会照版日月并明=命中（卯亥均在命未三方四正）；明珠出海=命中（古诀专名）。
 KING_BIRTH = (2005, 8, 19, 1, 35, '男')
 EXPECT_KING = {
+    'year_gz': '乙酉',
     '日月并明': True,   # 庙旺会照版：太阳卯庙+太阴亥庙会照命三方
     '明珠出海': True,    # 古诀：日卯月亥安命未
 }
@@ -44,13 +49,17 @@ EXPECT_KING = {
 # 王亭之《太微赋》精解：丑宫太阴入庙而太阳失地，根本谈不上日月并明 → 双判无。
 DEMO_BIRTH = (2005, 1, 15, 0, 30, '男')
 EXPECT_DEMO = {
+    'year_gz': '甲申',
     '日月并明': False,   # 同宫丑被拆台（太阳失地）
     '明珠出海': False,   # 命非未
 }
-# 巳酉变体：2005-01-23 00:30 男，命丑天梁+太阳巳+太阴酉（刘韫龄正例二结构）。
-# 庙旺会照版命中；明珠出海命非未判无。
-SIYOU_BIRTH = (2005, 1, 23, 0, 30, '男')
+# 巳酉变体：2005-02-06 00:30 男（立春后，真乙酉年），命丑天梁+太阳巳+太阴酉。
+# 《骨髓赋》注文『安命丑宫，日在巳、月在酉来朝照，为并明，辛乙生人合格』——
+# 真乙酉年生满足"乙"合格条件，古籍标准例与断言盘逐字对应。
+# 旧盘 2005-01-23 是甲申年（立春前），不满足，2026-08-05 换盘。
+SIYOU_BIRTH = (2005, 2, 6, 0, 30, '男')
 EXPECT_SIYOU = {
+    'year_gz': '乙酉',
     '日月并明': True,    # 太阳巳庙+太阴酉庙会照命三方
     '明珠出海': False,
 }
@@ -58,6 +67,7 @@ EXPECT_SIYOU = {
 # 四方四正分支矩阵第 4 支：对宫（idx+6）。手工实测命中，补进断言防回归漏判。
 DUIGONG_BIRTH = (2005, 1, 19, 18, 30, '男')
 EXPECT_DUIGONG = {
+    'year_gz': '甲申',
     '日月并明': True,    # 太阳辰庙+太阴戌庙，命辰自身+对宫
     '明珠出海': False,
 }
@@ -65,6 +75,7 @@ EXPECT_DUIGONG = {
 # 四方四正分支矩阵第 1 支：命宫自身（idx+0）。手工实测命中，补进断言防回归漏判。
 ZISHEN_BIRTH = (2005, 1, 1, 14, 30, '男')
 EXPECT_ZISHEN = {
+    'year_gz': '甲申',
     '日月并明': True,    # 太阳巳庙坐命+太阴酉庙会照
     '明珠出海': False,
 }
@@ -74,6 +85,7 @@ EXPECT_ZISHEN = {
 # 盘型=古籍例盘（有权威出处但无活人确认，2026-08-05 网络查证补入）。
 DAOGUANG_BIRTH = (1782, 9, 16, 4, 30, '男')
 EXPECT_DAOGUANG = {
+    'year_gz': '壬寅',
     '日月并明': True,
     '明珠出海': True,
 }
@@ -81,7 +93,7 @@ EXPECT_DAOGUANG = {
 
 def _patterns(birth):
     d = z.ziwei_paipan(*birth)
-    return {p['name'] for p in z.detect_patterns(d)}
+    return {p['name'] for p in z.detect_patterns(d)}, d.get('year_gz', '')
 
 
 def run():
@@ -102,11 +114,16 @@ def run():
             ('自身分支(命巳,日坐命月酉)', ZISHEN_BIRTH, EXPECT_ZISHEN, '构造盘'),
             ('古籍例盘(道光帝,命未日卯月亥)', DAOGUANG_BIRTH, EXPECT_DAOGUANG, '古籍例盘')):
         print(f"== [{kind}] {label} 口径并存断言 ==")
-        got = _patterns(birth)
+        got, got_gz = _patterns(birth)
+        want_gz = expect.pop('year_gz')
+        check(f"[{kind}] {label} 年干 == {want_gz}",
+              got_gz == want_gz,
+              f"got={got_gz}, want={want_gz}（引擎 year_gz，立春界，禁公历口头定年）")
         for geju, want in expect.items():
             check(f"[{kind}] {label} {geju} == {'命中' if want else '判无'}",
                   (geju in got) == want,
                   f"got={'命中' if geju in got else '判无'}, want={'命中' if want else '判无'}")
+        expect['year_gz'] = want_gz
 
     print()
     real = [f for f in failures if '真盘' in f]
