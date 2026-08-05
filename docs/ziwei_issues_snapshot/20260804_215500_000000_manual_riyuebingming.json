@@ -8,7 +8,7 @@
   "origin": "King 频道通报：审查层自动修正 4 处盘面引用（2026-08-04 21:46）",
   "verified_by": "韩湘生 引擎实测 ziwei_paipan(2005,8,19,1,35,'男') + 网检二手源",
   "note": "口径分歧闭环第一案。修正类型字段（type）与状态字段（state）为 2026-08-04 频道共识新增，_resolved 保持运行时词表（fixed/unfixed）不破坏现有读取。",
-  "definition_pending": "日月并明定义口径待 King 拍板（同宫版/庙旺会照版/两版并存），未拍板前该条 state=待确认，不并入已修正统计。"
+  "definition_resolved": "2026-08-05 King 拍板：并存（同宫版日月并明 + 取象派明珠出海各自独立判定、各自带出处，不二选一）。引擎已补明珠出海（ziwei_calculator.py），断言脚本 scripts/verify_geju_mingzhu.py 落地（King盘=明珠出海命中/日月并明判无，正向样本=日月并明命中/明珠出海判无，4 断言全过）。修订痕迹：King 拍板不用，产品层不显示。"
  },
  "issues": [
   {
@@ -34,29 +34,24 @@
   {
    "field": "格局",
    "raw": "日月并明",
-   "corrected": "依口径分三态：同宫版=无；庙旺会照版=命中；取象派命名=明珠出海（引擎缺表）",
+   "corrected": "并存口径定案：同宫版=判无；取象派明珠出海=命中（引擎已补表）",
    "type": "口径分歧",
-   "state": "待确认",
-   "source": "引擎实测 + 网检二手源（维基百科/紫微台/取象派/大雅国学/金易学）",
+   "state": "已定案",
+   "source": "引擎实测 + 网检二手源（维基百科/紫微台/取象派/大雅国学/金易学）；2026-08-05 King 拍板并存",
    "definitions": {
     "同宫版": {
      "verdict": "无",
      "desc": "太阳太阴同守命宫",
      "source": "引擎格局表 ziwei_calculator.py（标签《紫微斗数全书》）；King 盘命宫空宫未，不成立"
     },
-    "庙旺会照版": {
-     "verdict": "命中",
-     "desc": "太阳太阴各居庙旺并会照命三方",
-     "source": "大雅国学列举（命未+太阳卯+太阴亥为候选之一）；取象派经典例（太阳巳太阴酉、命坐丑天梁）与本盘结构同构"
-    },
-    "取象派命名": {
-     "verdict": "明珠出海（引擎格局表无此条，缺表）",
-     "desc": "太阳卯+太阴亥+命坐未",
-     "source": "取象派（ziweishuyuan.com）：『太阳在卯天梁同躔…太阴在亥…命坐未宫，则叫明珠出海格』"
+    "取象派明珠出海": {
+     "verdict": "命中（2026-08-05 补表后）",
+     "desc": "太阳卯庙+太阴亥庙+命坐未",
+     "source": "取象派（ziweishuyuan.com）：『太阳在卯天梁同躔…太阴在亥…命坐未宫，则叫明珠出海格』；引擎 ziwei_calculator.py 日月系区块 2026-08-05 补表"
     }
    },
-   "alias_note": "金易学称命未+太阳卯+太阴亥为『日月会明』。别名映射先记本处，攒够实例再固化字典（字段长在实例里）。",
-   "todo": "引擎补明珠出海格局定义，见 docs/ziwei-mutual-verification.md TODO-GEJU-MINGZHU",
+   "alias_note": "金易学称命未+太阳卯+太阴亥为『日月会明』；大雅国学称日月各居庙旺即并明（庙旺会照版，本盘与取象派同构）。别名映射先记本处，攒够实例再固化字典（字段长在实例里）。",
+   "todo": "done：引擎补表 + 断言脚本 scripts/verify_geju_mingzhu.py（King盘/正向样本双断言 4 项全过），详见 docs/ziwei-mutual-verification.md TODO-GEJU-MINGZHU",
    "_review": null,
    "_resolved": "fixed"
   },
