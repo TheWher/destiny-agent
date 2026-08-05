@@ -1,0 +1,22 @@
+{
+  "kind": "shared probe first-run snapshot (shadow tests)",
+  "note": "共享探针首跑快照，参数化落地后的检出记录对照参照；探针已入 CLAUDE.md 机检清单",
+  "probe_version": "1.0.0",
+  "created": "2026-08-06T04:23:01",
+  "scanned": 32,
+  "crit_count": 0,
+  "findings": [
+    {
+      "file": "test_e2e_fc.py",
+      "severity": "WARN",
+      "kind": "zero-collect",
+      "detail": "无任何 test_* 函数（pytest 零收集，静默零轨）"
+    },
+    {
+      "file": "test_verify_scripts.py",
+      "severity": "INFO",
+      "kind": "no-guard",
+      "detail": "无 __main__ 守卫（纯 pytest 文件可接受）"
+    }
+  ]
+}

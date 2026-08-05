@@ -20,18 +20,24 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 手动轨脚本（八本账 + check_ganzhi）：(相对路径, 描述, timeout秒)
-# timeout 单独标状态（timeout ≠ pass ≠ fail，不混进 exit 码）；e2e_fc 已知直跑挂起（环境依赖），给短超时避免卡基线
+# 手动轨脚本（工具轨八本 + check_ganzhi）：(相对路径, 描述, timeout秒)
+# timeout 单独标状态（timeout ≠ pass ≠ fail，不混进 exit 码）
+# 2026-08-06 判类落地：verify_palace_fix 退役归档（一次性验收，唯一机器断言金表已并入 test_ziwei）；
+# e2e_fc 从工具轨单列 requires-llm（真实 LLM E2E，基线 timeout 天生不稳，见 REQUIRES_LLM）
 SCRIPTS = [
     ("test_paipan.py", "排盘 TEST_CASES 29 条（main 直跑）", 60),
-    ("test_ziwei.py", "紫微全量 58 用例（main 直跑，含日月并明组）", 60),
+    ("test_ziwei.py", "紫微全量 59 用例（main 直跑，含日月并明组+十二宫功能名金表组）", 60),
     ("scripts/verify_laiyin_anchors.py", "来因宫双锚校验尺（旗舰，main 直跑）", 60),
     ("scripts/verify_geju_mingzhu.py", "日月系格局断言 19 条（main 直跑）", 60),
     ("scripts/check_ganzhi.py", "干支机检（CLAUDE.md 机检清单）", 60),
-    ("scripts/verify_palace_fix.py", "六雷修复验收（模块级直接执行）", 60),
-    ("test_orchestrator.py", "orchestrator 测试（模块级 sys.exit）", 60),
-    ("test_e2e_fc.py", "e2e 测试（__main__ 守卫包 sys.exit(main())，直跑挂起已知）", 30),
+    ("test_orchestrator.py", "orchestrator 测试（手动轨 _run_all，pytest 轨 4 error-path）", 60),
     ("scripts/smoke_password.py", "密码冒烟脚本（原 test_pw.py 改名，不再顶 test_ 前缀；直跑 ModuleNotFoundError 已知，判类补真测试待定）", 30),
+]
+
+# requires-llm 轨（2026-08-06 判类：真实 LLM 端到端冒烟，需 API key，
+# run_with_fc 120s×8轮×4用例最坏 64 分钟，基线 timeout 天生不稳，不参与工具轨判定）
+REQUIRES_LLM = [
+    ("test_e2e_fc.py", "端到端 Function Calling（真实 LLM；结构评估纯函数待拆 pytest+mock 测）", 30),
 ]
 
 
@@ -105,8 +111,14 @@ def main():
     payload = {
         "kind": "manual-track regression baseline",
         "created": datetime.now().isoformat(timespec="seconds"),
-        "note": "TODO-PAIPAN-PYTEST 参数化前的行为保持参照；pytest 轨可见性另走逐本 --collect-only",
+        "note": "参数化后的行为保持参照；pytest 轨全量 108 另见 pytest 直跑；e2e_fc 从工具轨单列 requires-llm（真实 LLM E2E，基线 timeout 天生不稳）",
         "scripts": results,
+        "requires_llm": [
+            {"script": rel, "desc": desc,
+             "status": "requires-llm",
+             "note": "2026-08-06 判类：真实 LLM 端到端冒烟，需 API key；结构评估纯函数 evaluate_tool_sequence/evaluate_text_quality 待拆 pytest+mock"}
+            for rel, desc, _t in REQUIRES_LLM
+        ],
     }
     out_dir = os.path.join(ROOT, "docs", "regression_baseline")
     os.makedirs(out_dir, exist_ok=True)
