@@ -32,7 +32,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **② 验证声明层标注**：说"过目/验证/复核"时，必须标注：验了什么层、用什么信息源验的、哪层没验。禁止裸声明"复核完了"（2026-08-04 顺布事故即栽于此）。
 
-**③ 机检优先**：可机检量第一反应跑工具，禁止人脑推理接力。可机检清单（新增结论类型先问"能不能机检"）：干支计算、日期换算、宫位方向、阴阳属性、格局判定。对应检查命令：`python scripts/verify_laiyin_anchors.py`、`python scripts/check_ganzhi.py`、`python test_paipan.py`、`python scripts/verify_geju_mingzhu.py`（格局口径类断言；已挂入 test_ziwei.py 常驻回归，定义一改全真盘自动回归）、`python scripts/regression_baseline.py`（2026-08-05 补：九本账手动轨唯一官方回归入口，落 docs/regression_baseline/ 基线 json 可 diff，绿色口径=exit 0 + stderr 干净，与 pytest 轨全绿同标准）。
+**③ 机检优先**：可机检量第一反应跑工具，禁止人脑推理接力。可机检清单（新增结论类型先问"能不能机检"）：干支计算、日期换算、宫位方向、阴阳属性、格局判定。对应检查命令：`python scripts/verify_laiyin_anchors.py`、`python scripts/check_ganzhi.py`、`python test_paipan.py`、`python scripts/verify_geju_mingzhu.py`（格局口径类断言；已挂入 test_ziwei.py 常驻回归，定义一改全真盘自动回归）、`python scripts/regression_baseline.py`（2026-08-05 补：九本账手动轨唯一官方回归入口，落 docs/regression_baseline/ 基线 json 可 diff，绿色口径=exit 0 + stderr 干净，与 pytest 轨全绿同标准）、`python scripts/check_shadow_tests.py`（2026-08-06 补：共享探针，捉 test_ 前缀伪装/模块级执行/收集崩点，守卫单双引号变体全覆盖；探针自身须过自身扫描）。
 
 **④ 数据来源标签**：数据点一律带来源（本人确认/引擎实测/二手来源/推导待验证）四选一；推导性结论验证前不得进期望值区，只作假设标注（配套锚定铁律）。
 

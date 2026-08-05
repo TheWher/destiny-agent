@@ -53,6 +53,24 @@ def _geju_patterns(y, m, d, h, mi, g):
     return {p['name'] for p in detect_patterns(plate)}
 
 
+# ── 十二宫功能名 js 金表（原 verify_palace_fix.py 验收1 单源，2026-08-06 韩湘生并入）──
+# 外部参照：mose js 实现的金表（传统字）。宫序随命宫位置旋转，金表锚定 1998-06-15 样本（命宫@丑），
+# 不能套任意盘。用引擎自带 PALACE_NAMES_CN 会自证循环，必须留外部锚。
+PALACE_JS_GOLD = ['父母', '福德', '田宅', '官禄', '交友', '迁移', '疾厄', '财帛', '子女', '夫妻', '兄弟', '命宫']
+_PALACE_TR = {'祿': '禄', '遷': '迁', '財': '财', '宮': '宫'}
+
+
+def _norm_palace_name(s):
+    for k, v in _PALACE_TR.items():
+        s = s.replace(k, v)
+    return s
+
+
+def _palace_names_match_gold(y, m, d, h, mi, g):
+    pl = ziwei_paipan(y, m, d, h, mi, g)['palaces']
+    return all(_norm_palace_name(p['name']) == PALACE_JS_GOLD[p['index']] for p in pl)
+
+
 # ══════════════════════════════════════════════
 def _build_specs():
     """构建 (组名, [(用例名, fn)]) 扁平规格 —— 单一数据源，pytest 参数化与手动轨 run() 共用。
@@ -112,6 +130,12 @@ def _build_specs():
         ('命宫标记正确', lambda n: check(n, any('命宫' in p.get('tags',[]) for p in palaces))),
         ('身宫标记正确', lambda n: check(n, any('身宫' in p.get('tags',[]) for p in palaces))),
         ('grid_row/col 有效', lambda n: check(n, all(1<=p['grid_row']<=4 and 1<=p['grid_col']<=4 for p in palaces))),
+    ]))
+
+    # ── 十二宫功能名 vs js 金表（2026-08-06 韩湘生补）──
+    # verify_palace_fix.py 验收1 的唯一机器断言，退役前并入本组防检查丢失（palace 坑不复踩）。
+    specs.append(('十二宫功能名金表', [
+        ('1998样本 12宫名=金表', lambda n: check(n, _palace_names_match_gold(1998, 6, 15, 10, 30, '男'))),
     ]))
 
     # ── 格局 ═══
