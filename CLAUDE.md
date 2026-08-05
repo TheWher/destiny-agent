@@ -32,7 +32,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **② 验证声明层标注**：说"过目/验证/复核"时，必须标注：验了什么层、用什么信息源验的、哪层没验。禁止裸声明"复核完了"（2026-08-04 顺布事故即栽于此）。
 
-**③ 机检优先**：可机检量第一反应跑工具，禁止人脑推理接力。可机检清单（新增结论类型先问"能不能机检"）：干支计算、日期换算、宫位方向、阴阳属性。对应检查命令：`python scripts/verify_laiyin_anchors.py`、`python scripts/check_ganzhi.py`、`python test_paipan.py`。
+**③ 机检优先**：可机检量第一反应跑工具，禁止人脑推理接力。可机检清单（新增结论类型先问"能不能机检"）：干支计算、日期换算、宫位方向、阴阳属性、格局判定。对应检查命令：`python scripts/verify_laiyin_anchors.py`、`python scripts/check_ganzhi.py`、`python test_paipan.py`、`python scripts/verify_geju_mingzhu.py`（格局口径类断言；已挂入 test_ziwei.py 常驻回归，定义一改全真盘自动回归）。
 
 **④ 数据来源标签**：数据点一律带来源（本人确认/引擎实测/二手来源/推导待验证）四选一；推导性结论验证前不得进期望值区，只作假设标注（配套锚定铁律）。
 

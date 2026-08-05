@@ -100,6 +100,16 @@ def run():
         ('格局含 name+level+desc', lambda n: _t_pattern_fields(n, plate)),
     ])
 
+    # ── 日月并明/明珠出海 并存口径常驻回归（2026-08-05 定案，King 盘真盘锚）──
+    # 定义一改全部真盘自动回归、反例当场报警，可推翻性从文档口号落成运行时机制。
+    # 真盘=King盘(2005-8-19 01:35 男, 命未): 日月并明(庙旺会照)+明珠出海 双命中
+    # 拆台样本=命丑日月同宫(2005-1-15 00:30 男): 双判无（王亭之拆台丑未同宫）
+    test_group('日月并明并存口径', [
+        ('[真盘] King盘 日月并明命中', lambda n: check(n, '日月并明' in {p['name'] for p in detect_patterns(ziwei_paipan(2005,8,19,1,35,'男'))})),
+        ('[真盘] King盘 明珠出海命中', lambda n: check(n, '明珠出海' in {p['name'] for p in detect_patterns(ziwei_paipan(2005,8,19,1,35,'男'))})),
+        ('[构造盘] 命丑日月同宫 双判无', lambda n: check(n, not ({'日月并明','明珠出海'} & {p['name'] for p in detect_patterns(ziwei_paipan(2005,1,15,0,30,'男'))}))),
+    ])
+
     # ── 四化 ──
     ym = plate['year_mutagens']
     test_group('生年四化', [
