@@ -47,11 +47,25 @@ EXPECT_DEMO = {
     '日月并明': False,   # 同宫丑被拆台（太阳失地）
     '明珠出海': False,   # 命非未
 }
-# 巳酉变体：2005-01-23 00:30 男，命丑天梁+太阳巳+太阴酉（刘韫龄正例结构）。
+# 巳酉变体：2005-01-23 00:30 男，命丑天梁+太阳巳+太阴酉（刘韫龄正例二结构）。
 # 庙旺会照版命中；明珠出海命非未判无。
 SIYOU_BIRTH = (2005, 1, 23, 0, 30, '男')
 EXPECT_SIYOU = {
     '日月并明': True,    # 太阳巳庙+太阴酉庙会照命三方
+    '明珠出海': False,
+}
+# 对宫分支（王亭之辰戌）：2005-01-19 18:30 男，命辰，太阳辰（命宫自身）+太阴戌（对宫）。
+# 四方四正分支矩阵第 4 支：对宫（idx+6）。手工实测命中，补进断言防回归漏判。
+DUIGONG_BIRTH = (2005, 1, 19, 18, 30, '男')
+EXPECT_DUIGONG = {
+    '日月并明': True,    # 太阳辰庙+太阴戌庙，命辰自身+对宫
+    '明珠出海': False,
+}
+# 自身分支（刘韫龄正例一）：2005-01-01 14:30 男，命巳，太阳巳（命宫自身）+太阴酉（三合）。
+# 四方四正分支矩阵第 1 支：命宫自身（idx+0）。手工实测命中，补进断言防回归漏判。
+ZISHEN_BIRTH = (2005, 1, 1, 14, 30, '男')
+EXPECT_ZISHEN = {
+    '日月并明': True,    # 太阳巳庙坐命+太阴酉庙会照
     '明珠出海': False,
 }
 
@@ -74,7 +88,9 @@ def run():
     for label, birth, expect, kind in (
             ('King盘(命未,日卯月亥)', KING_BIRTH, EXPECT_KING, '真盘'),
             ('拆台样本(命丑,日月同宫)', DEMO_BIRTH, EXPECT_DEMO, '构造盘'),
-            ('巳酉变体(命丑,日巳月酉)', SIYOU_BIRTH, EXPECT_SIYOU, '构造盘')):
+            ('巳酉变体(命丑,日巳月酉)', SIYOU_BIRTH, EXPECT_SIYOU, '构造盘'),
+            ('对宫分支(命辰,日辰月戌)', DUIGONG_BIRTH, EXPECT_DUIGONG, '构造盘'),
+            ('自身分支(命巳,日坐命月酉)', ZISHEN_BIRTH, EXPECT_ZISHEN, '构造盘')):
         print(f"== [{kind}] {label} 口径并存断言 ==")
         got = _patterns(birth)
         for geju, want in expect.items():
@@ -87,7 +103,7 @@ def run():
     if failures:
         print(f"FAIL {len(failures)} 项（真盘 {len(real)} / 构造盘 {len(failures)-len(real)}），exit 1")
         sys.exit(1)
-    print("全部通过（3 盘 × 2 格局 = 6 断言：真盘 2 / 构造盘 4），exit 0")
+    print("全部通过（5 盘 × 2 格局 = 10 断言：真盘 2 / 构造盘 8，四方四正四分支全钉），exit 0")
 
 
 if __name__ == '__main__':
