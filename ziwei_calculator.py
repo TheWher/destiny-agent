@@ -52,6 +52,20 @@ PALACE_NAMES_CN = [
     '疾厄', '財帛', '子女', '夫妻', '兄弟', '命宮',
     '父母', '福德', '田宅', '官祿', '交友', '遷移',
 ]
+
+# 宫名繁简统一（iztro 翻译表繁简混合，来因宫等展示层输出走简体）
+PALACE_NAME_SIMP = {
+    '命宮': '命宫', '財帛': '财帛', '官祿': '官禄', '遷移': '迁移',
+}
+
+# 来因宫锚位表（钦天派定式，2026-08-05 收编定案）：
+# 甲戌 乙酉 丙申 丁未 戊午 己巳 庚辰 辛卯 壬寅 癸亥——个体制（宫干=生年干）+ 子丑不取。
+# 子=天丑=地（邵雍《皇极经世》『天开于子，地辟于丑，人生于寅』），子丑不参与后天因果造化，
+# 故辛取卯弃丑、壬取寅弃子。出处：6da.net 钦天派技法介绍之来因宫【九】【十】 + 常先·易（2026-08-05 网络查证，多源一致）。
+LAIYIN_ANCHOR = {
+    '甲': '戌', '乙': '酉', '丙': '申', '丁': '未', '戊': '午',
+    '己': '巳', '庚': '辰', '辛': '卯', '壬': '寅', '癸': '亥',
+}
 # ⚠️ PALACE_NAMES_CN 是按地支序(index 0=寅)排列的固定表，恰好等于"命宫在未"时的
 # 功能分布，不能直接当功能名用（命宫不在未时全部错位）。
 # 功能名必须按命宫相对旋转，唯一正确来源是 iztro-py 原生 palace.name（英文功能码）。
@@ -299,6 +313,17 @@ def ziwei_paipan(year: int, month: int, day: int, hour: int, minute: int = 0,
         result['year_gz'] = _sz['year']['gz']
     except Exception:
         result['year_gz'] = ''
+    # 来因宫（钦天派收编，2026-08-05 定案）：锚位地支（口径层，子丑排除）+ 盘面映射（锚位→宫名）。
+    # year_gz 缺失时显式空串（前端显 '—'，缺失即暴露，不兑底自算，干支铁律）。
+    result['laiyin'] = ''
+    result['laiyin_anchor'] = ''
+    if result.get('year_gz'):
+        _anchor = LAIYIN_ANCHOR.get(result['year_gz'][0], '')
+        result['laiyin_anchor'] = _anchor
+        for _p in palaces:
+            if _p.get('earthly_branch', '') == _anchor:
+                result['laiyin'] = PALACE_NAME_SIMP.get(_p.get('name', ''), _p.get('name', ''))
+                break
     # 格局判读交由 Agent v6 严格规则执行，后端不做预判
     result['patterns'] = []
     return result
@@ -315,6 +340,8 @@ def plate_to_dict(plate_data: dict, input_info: dict = None) -> dict:
         'palaces': plate_data.get('palaces', []),
         'year_mutagens': plate_data.get('year_mutagens', []),
         'year_gz': plate_data.get('year_gz', ''),
+        'laiyin': plate_data.get('laiyin', ''),
+        'laiyin_anchor': plate_data.get('laiyin_anchor', ''),
         'patterns': plate_data.get('patterns', []),
     }
 
@@ -644,6 +671,16 @@ def detect_patterns(plate_data: dict) -> list[dict]:
             and _brightness(_sun_p, '太阳') and _brightness(_moon_p, '太阴')):
         add_pat('明珠出海', '太阳卯庙+太阴亥庙+命坐未，日月辉映如明珠出海', '上吉', None,
                 '《斗数全书》『日卯月亥，安命未，多折桂』；《骨髓赋》『三合明珠生旺地，稳步蟾宫』（未宫安命日卯月亥来朝）')
+    # 日月同臨（《骨髓赋》『日月同临官居侯伯』）：日月同宫于丑或未 + 命坐丑或未。
+    # 注文『命安丑宫日月在未、命安未宫日月在丑谓之同临』；机检实证（2026-08-05）日月同宫
+    # 只出现在丑未两宫。不要求庙旺——丑宫太阳本陷（王亭之拆台的正是这一点），同臨钉的是
+    # 同宫结构，与日月并明（庙旺会照+不同宫）正交：同宫/不同宫天然互斥，不重叠。
+    # 拆台样本（命丑日月守丑，原双判无）2026-08-05 King 指示待办现在做 → 翻正命中日月同臨。
+    if (_sun_p and _moon_p and _sun_p is _moon_p
+            and _sun_p.get('earthly_branch', '') in ('丑', '未')
+            and ming_branch in ('丑', '未')):
+        add_pat('日月同臨', '日月同宫于丑未、命坐丑未，日月临照（同宫古籍本名）', '吉', None,
+                '《骨髓赋》『日月同临官居侯伯』注文『命安丑宫日月在未、命安未宫日月在丑谓之同临』')
     if _has_star(ming, '太阳') and _has_star(ming, '巨门'):
         add_pat('巨日同宫', '太阳巨门在命，口才出众，适合法律/教育/传媒', '中')
     for p in palaces:

@@ -762,13 +762,13 @@ function renderInfo(session){
   // 来因宫 + 八字日主
   const GAN = '甲乙丙丁戊己庚辛壬癸';
   const ZHI = '子丑寅卯辰巳午未申酉戌亥';
-  const LAIYIN = ['父母','福德','命宫','兄弟','夫妻','子女','财帛','疾厄','迁移','交友'];
+  // 来因宫改走引擎输出（p.laiyin，2026-08-05 钦天派收编定案），静态表已删
   const WX = {'甲':'木','乙':'木','丙':'火','丁':'火','戊':'土','己':'土','庚':'金','辛':'金','壬':'水','癸':'水'};
   const birthDt = inp.birth_datetime || '';
   const birthYear = parseInt(birthDt.split('-')[0]) || 0;
   const birthMonth = parseInt(birthDt.split('-')[1]) || 1;
   const birthDay = parseInt(birthDt.split('-')[2]?.split(' ')[0]) || 1;
-  const laiyin = p.year_gz ? LAIYIN[GAN.indexOf(p.year_gz[0])] : '—';  // 2026-08-04: 删公历年自算 fallback, 引擎注入失败必须显式缺失(干支铁律)
+  const laiyin = p.laiyin || '—';  // 引擎 laiyin 输出（钦天派收编，2026-08-05），缺失显式可见
   // 近似日柱（查表法精度不够，改为略过精确日柱，只显示年干/月干信息）
   const nianGan = p.year_gz ? p.year_gz[0] : '?';
   const riGanWx = nianGan ? WX[nianGan] || '?' : '?';
@@ -900,8 +900,8 @@ function renderGrid(plate){
   }
   const inp = plate.input || {};
   const birthYear = parseInt((inp.birth_datetime||'').split('-')[0]) || 0;
-  const LAIYIN = ['父母','福德','命宫','兄弟','夫妻','子女','财帛','疾厄','迁移','交友'];
-  const laiyin = plate.year_gz ? LAIYIN[GAN.indexOf(plate.year_gz[0])] : '—';  // 删公历年自算 fallback, 缺失显式可见
+  // 来因宫改走引擎输出（plate.laiyin，2026-08-05 钦天派收编定案），静态表已删
+  const laiyin = plate.laiyin || '—';  // 引擎 laiyin 输出，缺失显式可见
   const center = document.createElement('div');
   center.className = 'center-palace';
   center.innerHTML = `

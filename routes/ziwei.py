@@ -913,19 +913,18 @@ def api_ziwei_verify():
     if not predictions:
         return jsonify({"error": "缺少 predictions"}), 400
 
-    # 盘指纹
+    # 盘指纹（2026-08-05 来因宫收编）：fp["laiyin"] 走引擎 laiyin 输出激活（原 tag 查找是死代码，
+    # iztro 不产生"来因宫" tag，注释"待引擎 laiyin 输出激活"已兑现）；fp["nian_gan"] 改引擎 year_gz
+    # （原 bs[:4] 公历年口径，年初立春前错一年，违反干支铁律）
     fp = {"sihua": [], "ming_stars": [], "laiyin": "", "nian_gan": ""}
     if plate:
         palaces = plate.get("palaces", [])
-        info = plate.get("input", {})
-        bs = info.get("birth_datetime", "")
-        fp["nian_gan"] = bs[:4] if bs and bs[0].isdigit() else ""
+        fp["nian_gan"] = plate.get("year_gz", "")
         for pal in palaces:
             tags = pal.get("tags", [])
             if "命宫" in tags:
                 fp["ming_stars"] = [s.get("name", "") if isinstance(s, dict) else s for s in pal.get("major_stars", [])]
-            if "来因宫" in tags:
-                fp["laiyin"] = pal.get("name", "")
+        fp["laiyin"] = plate.get("laiyin", "")
         for m in plate.get("year_mutagens", []):
             fp["sihua"].append(m["star"] + "/" + m["mutagen"] + "/" + m["palace"])
 
