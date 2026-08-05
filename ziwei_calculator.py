@@ -623,18 +623,27 @@ def detect_patterns(plate_data: dict) -> list[dict]:
                     '《紫微斗数全书·君臣庆会格》')
 
     # ═══ 日月系 ═══
-    if _has_star(ming, '太阳') and _has_star(ming, '太阴'):
-        add_pat('日月并明', '太阳太阴同守命宫，阴阳调和', '上吉', None, '《紫微斗数全书》')
-    # 明珠出海（取象派）：太阳卯庙+太阴亥庙+命坐未。2026-08-05 King 拍板并存口径补表，
-    # 与日月并明（同宫版）各自独立判定、各自带出处；规范例盘见
-    # docs/ziwei_issues_snapshot/20260804_215500_000000_manual_riyuebingming.json
+    # 日月并明（庙旺会照版，古书本义）：太阳太阴各居庙旺并会照命三方。
+    # 《斗数全书》『日月并明佐九重于尧殿』主流解=日月同处庙旺；王亭之《太微赋》精解
+    # 『守不如照』，且丑未同宫版被拆台（丑宫太阴入庙而太阳失地，总有一颗欠缺明朗）。
+    # 2026-08-05 King 拍板并存口径，本义优先；同宫为变体备注不单列。
     _sun_p = _find_star_palace('太阳')
     _moon_p = _find_star_palace('太阴')
+    if (_sun_p and _moon_p and _sun_p is not _moon_p
+            and _brightness(_sun_p, '太阳') and _brightness(_moon_p, '太阴')
+            and _sun_p.get('earthly_branch', '') in _sansifang_branches(ming_branch)
+            and _moon_p.get('earthly_branch', '') in _sansifang_branches(ming_branch)):
+        add_pat('日月并明', '太阳太阴各居庙旺会照命三方，日月辉映', '上吉', None,
+                '《斗数全书》『日月并明佐九重于尧殿』（庙旺会照主流解）+ 王亭之《太微赋》精解『守不如照』')
+    # 明珠出海（古诀专名）：日卯月亥、安命未。
+    # 《斗数全书》『日卯月亥，安命未，多折桂』；《骨髓赋》『三合明珠生旺地，稳步蟾宫』，
+    # 注文『未宫安命，日卯月亥来朝，为明珠出海，定主财官双美』。
+    # 2026-08-05 King 拍板并存口径补表，与日月并明（庙旺会照版）各自独立判定、各自带出处。
     if (ming_branch == '未' and _sun_p and _sun_p.get('earthly_branch') == '卯'
             and _moon_p and _moon_p.get('earthly_branch') == '亥'
             and _brightness(_sun_p, '太阳') and _brightness(_moon_p, '太阴')):
-        add_pat('明珠出海', '太阳卯庙+太阴亥庙+命坐未，日月辉映如明珠出海', '上吉',
-                None, '取象派（ziweishuyuan.com）')
+        add_pat('明珠出海', '太阳卯庙+太阴亥庙+命坐未，日月辉映如明珠出海', '上吉', None,
+                '《斗数全书》『日卯月亥，安命未，多折桂』；《骨髓赋》『三合明珠生旺地，稳步蟾宫』（未宫安命日卯月亥来朝）')
     if _has_star(ming, '太阳') and _has_star(ming, '巨门'):
         add_pat('巨日同宫', '太阳巨门在命，口才出众，适合法律/教育/传媒', '中')
     for p in palaces:
