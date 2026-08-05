@@ -40,6 +40,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **⑥ 对话=暂存区，artifact=真相区**：结论落 artifact 后对话可丢弃；artifact（清单/CLAUDE.md/commit）才是权威。续线读 artifact 与关键 commit，不翻聊天记录。**自指约束**：本协议本身已落此文件，"对话可丢弃"才成立。
 
+**⑦ 球消息模板（面向 King 的待办/拍板消息）**：自带四要素——是什么（一句说清）、几个选项、各自影响、出处（翻书/古籍依据）。禁止裸抛内部黑话（口径/修订痕迹/来因宫等术语须展开到一屏可决策）。背景：2026-08-05 King 问"什么东西口径三选一"暴露待办没传到位，按模板列三件事后 King 一轮拍板，23 分钟跑完整生命周期；模板配得上拍板速度。
+
 ## 启动与测试
 
 ```bash
