@@ -139,9 +139,10 @@ def run():
     print()
     if failures:
         print(f"FAILED: {len(failures)} 项断言未过 -> {failures}")
-        sys.exit(1)
-    print("ALL PASS：十干落位 + 双锚集合 + 两维重合条件全部与写死期望一致")
+    else:
+        print("ALL PASS：十干落位 + 双锚集合 + 两维重合条件全部与写死期望一致")
+    return failures
 
 
 if __name__ == "__main__":
-    run()
+    sys.exit(1 if run() else 0)

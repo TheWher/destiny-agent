@@ -15,6 +15,9 @@ import json
 import os
 import sys
 from datetime import datetime
+
+import pytest
+
 from bazi_calculator import paipan, TIAN_GAN, DI_ZHI
 
 # ============================================================
@@ -527,6 +530,22 @@ def run_test(case, verbose=False):
         "id": case["id"], "status": status, "desc": case["desc"],
         "category": case["category"], "failures": failures,
     }
+
+
+# ============================================================
+# pytest 统一入口（TODO-PAIPAN-PYTEST 参数化，2026-08-06 mose 落）
+# 29 条 TEST_CASES 全量参数化，basic-2005-dongguan-male（King 盘回归保护）显形
+# 与 main() 同一数据源（TEST_CASES），手动轨计数不变
+# ============================================================
+
+@pytest.mark.parametrize("case", TEST_CASES, ids=[c["id"] for c in TEST_CASES])
+def test_paipan_case(case):
+    """单条排盘用例（参数化自 TEST_CASES）"""
+    result = run_test(case)
+    assert result["status"] == "PASS", (
+        f"{result['id']}: {result.get('desc', '')} "
+        f"{result.get('failures', result.get('error', ''))}"
+    )
 
 
 def main():

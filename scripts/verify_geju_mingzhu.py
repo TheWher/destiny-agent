@@ -133,9 +133,10 @@ def run():
     real = [f for f in failures if '真盘' in f]
     if failures:
         print(f"FAIL {len(failures)} 项（真盘 {len(real)} / 构造盘 {len(failures)-len(real)}），exit 1")
-        sys.exit(1)
-    print("全部通过（6 盘 × 19 断言 = 年干 6 + 格局 13：日月并明/明珠出海各 6 + 拆台样本日月同臨翻正 1；真盘 3 / 构造盘 13 / 古籍例盘 3，四方四正四分支+古籍例盘+年干校验全钉），exit 0")
+    else:
+        print("全部通过（6 盘 × 19 断言 = 年干 6 + 格局 13：日月并明/明珠出海各 6 + 拆台样本日月同臨翻正 1；真盘 3 / 构造盘 13 / 古籍例盘 3，四方四正四分支+古籍例盘+年干校验全钉），exit 0")
+    return failures
 
 
 if __name__ == '__main__':
-    run()
+    sys.exit(1 if run() else 0)

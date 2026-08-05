@@ -6,6 +6,8 @@ import json
 import sys
 import os
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import app
@@ -14,11 +16,18 @@ from ziwei_calculator import (
     calculate_liuyao, detect_patterns,
     hour_to_shichen_index, PALACE_NAMES_CN, BRANCH_GRID,
 )
+# 日月系口径合并单源（2026-08-06 mose 落）：盘与期望只定义在 scripts/verify_geju_mingzhu.py，
+# 本文件的日月并明/明珠出海断言只引用，不再复制，杜绝 geju 双维护坑。
+from scripts.verify_geju_mingzhu import KING_BIRTH as GEJU_KING_BIRTH, DEMO_BIRTH as GEJU_DEMO_BIRTH
 
 # ── 颜色 ──
 G = '\033[92m'; R = '\033[91m'; Y = '\033[93m'; N = '\033[0m'; B = '\033[1m'
 
 pass_count = 0; fail_count = 0; error_count = 0; total = 0
+
+# pytest 模式开关（2026-08-06 mose 落）：True 时 check 失败直接抛 AssertionError，
+# 让参数化的单条用例独立红绿；False 时走原计数逻辑（手动轨行为不变）。
+_PYTEST_MODE = False
 
 def check(name, condition, detail=''):
     global pass_count, fail_count, error_count, total
@@ -27,8 +36,10 @@ def check(name, condition, detail=''):
         pass_count += 1; print(f'{G}✅{N} [{name}] {detail}')
     else:
         fail_count += 1; print(f'{R}❌{N} [{name}] {detail}')
+        if _PYTEST_MODE:
+            raise AssertionError(f'[{name}] {detail}')
 
-def test_group(name, tests):
+def _group(name, tests):
     global error_count
     print(f'\n{B}{name}{N}')
     for t_name, fn in tests:
@@ -36,52 +47,63 @@ def test_group(name, tests):
         except Exception as e:
             error_count += 1; print(f'{R}💥{N} [{t_name}] {e}')
 
+def _geju_patterns(y, m, d, h, mi, g):
+    """格局名集合（verify_geju_mingzhu 单源合并后，只取盘跑引擎）"""
+    plate = ziwei_paipan(y, m, d, h, mi, g)
+    return {p['name'] for p in detect_patterns(plate)}
+
+
 # ══════════════════════════════════════════════
-def run():
-    global pass_count, fail_count, error_count, total
+def _build_specs():
+    """构建 (组名, [(用例名, fn)]) 扁平规格 —— 单一数据源，pytest 参数化与手动轨 run() 共用。
+
+    TODO-PAIPAN-PYTEST（2026-08-06 mose 落）：58 用例原散在 run() 的 test_group 调用里，
+    拆出后 run() 只负责顺序执行与汇总，pytest 用同一份 specs 参数化，两条轨不再各跑一半。
+    """
+    specs = []
 
     # ── 基础排盘 ──
-    test_group('基础排盘', [
+    specs.append(('基础排盘', [
         ('1991-08-15 丑时 男', lambda n: _t_paipan(n, 1991,8,15,1,0,'男', '金四局', 12, 4)),
         ('2005-08-19 丑时 男', lambda n: _t_paipan(n, 2005,8,19,1,35,'男', None, 12, 4)),
         ('2000-01-01 卯时 男', lambda n: _t_paipan(n, 2000,1,1,6,0,'男', None, 12, 4)),
         ('1984-02-02 午时 男', lambda n: _t_paipan(n, 1984,2,2,12,0,'男', None, 12, 4)),
         ('性别 女', lambda n: _t_paipan(n, 1991,8,15,1,0,'女', None, 12, 4)),
-    ])
+    ]))
 
     # ── 时辰映射 ──
-    test_group('时辰映射', [
+    specs.append(('时辰映射', [
         ('hour  1→丑时', lambda n: check(n, hour_to_shichen_index(1)==1)),
         ('hour 12→午时', lambda n: check(n, hour_to_shichen_index(12)==6)),
         ('hour 23→晚子', lambda n: check(n, hour_to_shichen_index(23)==12)),
         ('hour  0→早子', lambda n: check(n, hour_to_shichen_index(0)==0)),
-    ])
+    ]))
 
     # ── 晚子时映射层回归（第八雷常驻监控：2005-08-19 23:10 / 经度113.75 / 男）──
     # 任何改动若让 hour_to_shichen_index 或晚子时安星回归，这里立刻现形。
-    test_group('晚子时映射层', [
+    specs.append(('晚子时映射层', [
         ('hour23→晚子12', lambda n: check(n, hour_to_shichen_index(23)==12)),
         ('紫微@父母(酉)', lambda n: check(n, _zw_palace(2005,8,19,23,10,'男')=='父母')),
         ('命宫甲申', lambda n: check(n, _ming_gz(2005,8,19,23,10,'男')=='甲申')),
         ('五行局水二', lambda n: check(n, ziwei_paipan(2005,8,19,23,10,'男')['five_elements_class']=='水二局')),
         ('太阴忌@命宮', lambda n: check(n, _has_mutagen(2005,8,19,23,10,'男','太阴','化忌','命宮'))),
-    ])
+    ]))
 
     # ── 星曜结构 ──
     data = ziwei_paipan(1991,8,15,1,0,'男')
     plate = plate_to_dict(data, {'birth_datetime':'1991-8-15 01:00','gender':'男'})
     palaces = plate['palaces']
 
-    test_group('星曜结构', [
+    specs.append(('星曜结构', [
         ('major_stars 是 dict 列表', lambda n: check(n, all(isinstance(s,dict) and 'name' in s for p in palaces for s in p['major_stars']))),
         ('brightness 字段存在', lambda n: check(n, any(s.get('brightness') for p in palaces for s in p['major_stars']))),
         ('mutagen 字段存在', lambda n: check(n, any(s.get('mutagen') for p in palaces for s in p['major_stars']) or any(s.get('mutagen') for p in palaces for s in p['minor_stars']))),
         ('type 字段存在', lambda n: check(n, all('type' in s for p in palaces for s in p['major_stars']+p['minor_stars']))),
         ('css 字段存在', lambda n: check(n, all('css' in s for p in palaces for s in p['major_stars']+p['minor_stars']))),
-    ])
+    ]))
 
     # ── 宫位 ═══
-    test_group('十二宫', [
+    specs.append(('十二宫', [
         ('宫数=12', lambda n: check(n, len(palaces)==12)),
         ('命宫/身宫 非空', lambda n: check(n, plate['soul_palace'] and plate['body_palace'])),
         ('五行局 非空', lambda n: check(n, plate['five_elements_class'])),
@@ -90,81 +112,88 @@ def run():
         ('命宫标记正确', lambda n: check(n, any('命宫' in p.get('tags',[]) for p in palaces))),
         ('身宫标记正确', lambda n: check(n, any('身宫' in p.get('tags',[]) for p in palaces))),
         ('grid_row/col 有效', lambda n: check(n, all(1<=p['grid_row']<=4 and 1<=p['grid_col']<=4 for p in palaces))),
-    ])
+    ]))
 
     # ── 格局 ═══
-    test_group('格局判读', [
+    specs.append(('格局判读', [
         ('1991-8-15 有≥1格局', lambda n: check(n, len(detect_patterns(plate))>=1)),
         ('2005-8-19 有≥1格局', lambda n: _t_patterns(n, 2005,8,19,1,35,'男')),
         ('1984-2-2 有≥1格局', lambda n: _t_patterns(n, 1984,2,2,12,0,'男')),
         ('格局含 name+level+desc', lambda n: _t_pattern_fields(n, plate)),
-    ])
+    ]))
 
     # ── 日月并明/明珠出海 并存口径常驻回归（2026-08-05 定案，King 盘真盘锚）──
     # 定义一改全部真盘自动回归、反例当场报警，可推翻性从文档口号落成运行时机制。
-    # 真盘=King盘(2005-8-19 01:35 男, 命未): 日月并明(庙旺会照)+明珠出海 双命中
-    # 拆台样本=命丑日月同宫(2005-1-15 00:30 男): 日月并明/明珠出海双判无（王亭之拆台丑未同宫）；
-    # 2026-08-05 翻正：该盘命中古籍『日月同臨』（《骨髓赋》官居侯伯），见 verify_geju_mingzhu.py 拆台样本断言
-    test_group('日月并明并存口径', [
-        ('[真盘] King盘 日月并明命中', lambda n: check(n, '日月并明' in {p['name'] for p in detect_patterns(ziwei_paipan(2005,8,19,1,35,'男'))})),
-        ('[真盘] King盘 明珠出海命中', lambda n: check(n, '明珠出海' in {p['name'] for p in detect_patterns(ziwei_paipan(2005,8,19,1,35,'男'))})),
-        ('[构造盘] 命丑日月同宫 双判无', lambda n: check(n, not ({'日月并明','明珠出海'} & {p['name'] for p in detect_patterns(ziwei_paipan(2005,1,15,0,30,'男'))}))),
-    ])
+    # 2026-08-06 合并统一入口（mose）：盘与期望只定义在 scripts/verify_geju_mingzhu.py，
+    # 本组断言只引用 GEJU_* 常量，杜绝双维护（geju 坑不复踩）。
+    specs.append(('日月并明并存口径', [
+        ('[真盘] King盘 日月并明命中', lambda n: check(n, '日月并明' in _geju_patterns(*GEJU_KING_BIRTH))),
+        ('[真盘] King盘 明珠出海命中', lambda n: check(n, '明珠出海' in _geju_patterns(*GEJU_KING_BIRTH))),
+        ('[构造盘] 命丑日月同宫 双判无', lambda n: check(n, not ({'日月并明','明珠出海'} & _geju_patterns(*GEJU_DEMO_BIRTH)))),
+    ]))
 
     # ── 四化 ──
     ym = plate['year_mutagens']
-    test_group('生年四化', [
+    specs.append(('生年四化', [
         ('四化数=4', lambda n: check(n, len(ym)==4)),
         ('含 star+mutagen+palace+branch', lambda n: check(n, all(all(k in m for k in ['star','mutagen','palace','branch']) for m in ym))),
         ('化禄/权/科/忌 齐全', lambda n: check(n, len(set(m['mutagen'] for m in ym))==4)),
-    ])
+    ]))
 
     # ── 流年 ═══
     horo = get_horoscope(1991,8,15,1,'男',2025)
-    test_group('流年盘', [
+    specs.append(('流年盘', [
         ('yearly_gz 正确', lambda n: check(n, horo['yearly_gz'])),
         ('yearly_palace 有效', lambda n: check(n, horo['yearly_palace'])),
         ('decadal_gz 有效', lambda n: check(n, horo['decadal_gz'])),
         ('liuyao 有数据', lambda n: check(n, len(horo['liuyao'])>=8)),
-    ])
+    ]))
 
     # ── 流曜 ═══
     liuyao = calculate_liuyao('甲','辰',palaces)
-    test_group('流曜计算', [
+    specs.append(('流曜计算', [
         ('10种流曜', lambda n: check(n, len(liuyao)==10)),
         ('流禄 有值', lambda n: check(n, '流禄' in liuyao and liuyao['流禄'])),
         ('流羊 有值', lambda n: check(n, '流羊' in liuyao and liuyao['流羊'])),
         ('流昌 有值', lambda n: check(n, '流昌' in liuyao and liuyao['流昌'])),
         ('流马 有值', lambda n: check(n, '流马' in liuyao and liuyao['流马'])),
-    ])
+    ]))
 
-    # ── API 端点 ──
-    with app.test_client() as c:
+    # ── API 端点（client 每条用例自建，pytest 延迟执行不失效）──
+    specs.append(('API: /api/ziwei/paipan', [
+        ('正常排盘', lambda n: _t_api_paipan(n, app.test_client(), {'year':1991,'month':8,'day':15,'hour':1,'gender':'男'})),
+        ('缺少字段→400', lambda n: check(n, app.test_client().post('/api/ziwei/paipan',json={'year':1991}).status_code==400)),
+        ('性别错误→400', lambda n: check(n, app.test_client().post('/api/ziwei/paipan',json={'year':1991,'month':8,'day':15,'hour':1,'gender':'x'}).status_code==400)),
+        ('含 patterns', lambda n: check(n, 'patterns' in app.test_client().post('/api/ziwei/paipan',json={'year':1991,'month':8,'day':15,'hour':1,'gender':'男'}).get_json())),
+    ]))
 
-        test_group('API: /api/ziwei/paipan', [
-            ('正常排盘', lambda n: _t_api_paipan(n, c, {'year':1991,'month':8,'day':15,'hour':1,'gender':'男'})),
-            ('缺少字段→400', lambda n: check(n, c.post('/api/ziwei/paipan',json={'year':1991}).status_code==400)),
-            ('性别错误→400', lambda n: check(n, c.post('/api/ziwei/paipan',json={'year':1991,'month':8,'day':15,'hour':1,'gender':'x'}).status_code==400)),
-            ('含 patterns', lambda n: check(n, 'patterns' in c.post('/api/ziwei/paipan',json={'year':1991,'month':8,'day':15,'hour':1,'gender':'男'}).get_json())),
-        ])
+    specs.append(('API: /api/ziwei/horoscope', [
+        ('正常流年', lambda n: _t_api_horo(n, app.test_client(), {'year':1991,'month':8,'day':15,'hour':1,'gender':'男','target_year':2025})),
+        ('含 liuyao', lambda n: check(n, len(app.test_client().post('/api/ziwei/horoscope',json={'year':1991,'month':8,'day':15,'hour':1,'gender':'男','target_year':2025}).get_json().get('liuyao',{}))>=8)),
+    ]))
 
-        test_group('API: /api/ziwei/horoscope', [
-            ('正常流年', lambda n: _t_api_horo(n, c, {'year':1991,'month':8,'day':15,'hour':1,'gender':'男','target_year':2025})),
-            ('含 liuyao', lambda n: check(n, len(c.post('/api/ziwei/horoscope',json={'year':1991,'month':8,'day':15,'hour':1,'gender':'男','target_year':2025}).get_json().get('liuyao',{}))>=8)),
-        ])
-
-        test_group('API: /api/ziwei/analyze', [
-            ('密码校验→403', lambda n: check(n, c.post('/api/ziwei/analyze',json={'plate':{}}).status_code==403)),
-            ('缺plate→403(密码检查在前)', lambda n: check(n, c.post('/api/ziwei/analyze',json={}).status_code==403)),
-        ])
+    specs.append(('API: /api/ziwei/analyze', [
+        ('密码校验→403', lambda n: check(n, app.test_client().post('/api/ziwei/analyze',json={'plate':{}}).status_code==403)),
+        ('缺plate→403(密码检查在前)', lambda n: check(n, app.test_client().post('/api/ziwei/analyze',json={}).status_code==403)),
+    ]))
 
     # ── 边界 ──
-    test_group('边界用例', [
+    specs.append(('边界用例', [
         ('1900年 不崩溃', lambda n: _t_edge(n, 1900,6,15,12,0,'男')),
         ('2100年 不崩溃', lambda n: _t_edge(n, 2100,1,1,0,0,'女')),
         ('农历排盘', lambda n: _t_lunar(n)),
         ('cache_key 不崩溃', lambda n: _t_cache_key(n)),
-    ])
+    ]))
+
+    return specs
+
+
+def run():
+    global pass_count, fail_count, error_count, total
+    pass_count = fail_count = error_count = total = 0
+
+    for name, tests in _build_specs():
+        _group(name, tests)
 
     # ── 结果 ──
     print(f'\n{"="*60}')
@@ -256,6 +285,28 @@ def _t_cache_key(name):
         ok = key and len(key)==16
     except: ok = False
     check(name, ok)
+
+# ── pytest 统一入口（TODO-PAIPAN-PYTEST 参数化，2026-08-06 mose 落）──
+# 58 用例全量参数化：import 时构建 specs（与手动轨 run() 同一数据源），每条用例独立红绿。
+# check 失败时 _PYTEST_MODE 下直接抛 AssertionError，无需改动任何用例函数。
+_SPECS = _build_specs()
+_PYTEST_CASE_IDS = [f"{g}::{n}" for g, ts in _SPECS for n, _f in ts]
+
+
+@pytest.mark.parametrize(
+    "group_name,case_name,fn",
+    [(g, n, f) for g, ts in _SPECS for n, f in ts],
+    ids=_PYTEST_CASE_IDS,
+)
+def test_ziwei_case(group_name, case_name, fn):
+    """单条紫微用例（参数化自 _build_specs，58 条）"""
+    global _PYTEST_MODE
+    _PYTEST_MODE = True
+    try:
+        fn(case_name)
+    finally:
+        _PYTEST_MODE = False
+
 
 # ── 自检 ──
 if __name__ == '__main__':

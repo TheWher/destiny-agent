@@ -31,7 +31,7 @@ SCRIPTS = [
     ("scripts/verify_palace_fix.py", "六雷修复验收（模块级直接执行）", 60),
     ("test_orchestrator.py", "orchestrator 测试（模块级 sys.exit）", 60),
     ("test_e2e_fc.py", "e2e 测试（__main__ 守卫包 sys.exit(main())，直跑挂起已知）", 30),
-    ("scripts/test_pw.py", "密码调试脚本（顶 test_ 前缀，import app 副作用，直跑 ModuleNotFoundError 已知）", 30),
+    ("scripts/smoke_password.py", "密码冒烟脚本（原 test_pw.py 改名，不再顶 test_ 前缀；直跑 ModuleNotFoundError 已知，判类补真测试待定）", 30),
 ]
 
 
