@@ -68,6 +68,15 @@ EXPECT_ZISHEN = {
     '日月并明': True,    # 太阳巳庙坐命+太阴酉庙会照
     '明珠出海': False,
 }
+# 古籍例盘（《星源集庆》道光帝）：乾隆四十七年壬寅八月初十甲戌日丙寅时，明珠出海格。
+# 公历 1782-09-16 寅时，引擎实测：命未+日卯月亥+壬寅年干，日月并明+明珠出海双命中。
+# 出处：白洋工作室引《星源集庆》（道光帝命例）+《全书》『日卯月亥安命未宫多折桂』+《骨髓赋》『三合明珠生旺地稳步蟾宫』。
+# 盘型=古籍例盘（有权威出处但无活人确认，2026-08-05 网络查证补入）。
+DAOGUANG_BIRTH = (1782, 9, 16, 4, 30, '男')
+EXPECT_DAOGUANG = {
+    '日月并明': True,
+    '明珠出海': True,
+}
 
 
 def _patterns(birth):
@@ -90,7 +99,8 @@ def run():
             ('拆台样本(命丑,日月同宫)', DEMO_BIRTH, EXPECT_DEMO, '构造盘'),
             ('巳酉变体(命丑,日巳月酉)', SIYOU_BIRTH, EXPECT_SIYOU, '构造盘'),
             ('对宫分支(命辰,日辰月戌)', DUIGONG_BIRTH, EXPECT_DUIGONG, '构造盘'),
-            ('自身分支(命巳,日坐命月酉)', ZISHEN_BIRTH, EXPECT_ZISHEN, '构造盘')):
+            ('自身分支(命巳,日坐命月酉)', ZISHEN_BIRTH, EXPECT_ZISHEN, '构造盘'),
+            ('古籍例盘(道光帝,命未日卯月亥)', DAOGUANG_BIRTH, EXPECT_DAOGUANG, '古籍例盘')):
         print(f"== [{kind}] {label} 口径并存断言 ==")
         got = _patterns(birth)
         for geju, want in expect.items():
@@ -103,7 +113,7 @@ def run():
     if failures:
         print(f"FAIL {len(failures)} 项（真盘 {len(real)} / 构造盘 {len(failures)-len(real)}），exit 1")
         sys.exit(1)
-    print("全部通过（5 盘 × 2 格局 = 10 断言：真盘 2 / 构造盘 8，四方四正四分支全钉），exit 0")
+    print("全部通过（6 盘 × 2 格局 = 12 断言：真盘 2 / 构造盘 8 / 古籍例盘 2，四方四正四分支+古籍例盘全钉），exit 0")
 
 
 if __name__ == '__main__':
