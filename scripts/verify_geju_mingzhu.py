@@ -64,21 +64,23 @@ def run():
             print(f"  [FAIL] {name}: {detail}")
             failures.append(name)
 
-    for label, birth, expect in (('King盘(命未,日卯月亥)', KING_BIRTH, EXPECT_KING),
-                                 ('拆台样本(命丑,日月同宫)', DEMO_BIRTH, EXPECT_DEMO),
-                                 ('巳酉变体(命丑,日巳月酉)', SIYOU_BIRTH, EXPECT_SIYOU)):
-        print(f"== {label} 口径并存断言 ==")
+    for label, birth, expect, kind in (
+            ('King盘(命未,日卯月亥)', KING_BIRTH, EXPECT_KING, '真盘'),
+            ('拆台样本(命丑,日月同宫)', DEMO_BIRTH, EXPECT_DEMO, '构造盘'),
+            ('巳酉变体(命丑,日巳月酉)', SIYOU_BIRTH, EXPECT_SIYOU, '构造盘')):
+        print(f"== [{kind}] {label} 口径并存断言 ==")
         got = _patterns(birth)
         for geju, want in expect.items():
-            check(f"{label} {geju} == {'命中' if want else '判无'}",
+            check(f"[{kind}] {label} {geju} == {'命中' if want else '判无'}",
                   (geju in got) == want,
                   f"got={'命中' if geju in got else '判无'}, want={'命中' if want else '判无'}")
 
     print()
+    real = [f for f in failures if '真盘' in f]
     if failures:
-        print(f"FAIL {len(failures)} 项，exit 1")
+        print(f"FAIL {len(failures)} 项（真盘 {len(real)} / 构造盘 {len(failures)-len(real)}），exit 1")
         sys.exit(1)
-    print("全部通过（3 盘 × 2 格局 = 6 断言），exit 0")
+    print("全部通过（3 盘 × 2 格局 = 6 断言：真盘 2 / 构造盘 4），exit 0")
 
 
 if __name__ == '__main__':
