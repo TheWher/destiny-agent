@@ -6,7 +6,7 @@ regression_baseline.py — 手动工具轨直跑基线（2026-08-05 晚立）
 首次直跑落文件才是数字第一次上机器账。退出码 + 计数 + 时间戳进 json，参数化后 diff。
 
 用法：python scripts/regression_baseline.py
-输出：evaluation_reports/regression_baseline_{YYYYMMDD_HHMMSS}.json
+输出：docs/regression_baseline/regression_baseline_{YYYYMMDD_HHMMSS}.json（版本化锚点，入库；evaluation_reports/ 被 gitignore 不入库）
 """
 import json
 import os
@@ -87,7 +87,7 @@ def main():
         "note": "TODO-PAIPAN-PYTEST 参数化前的行为保持参照；pytest 轨可见性另走逐本 --collect-only",
         "scripts": results,
     }
-    out_dir = os.path.join(ROOT, "evaluation_reports")
+    out_dir = os.path.join(ROOT, "docs", "regression_baseline")
     os.makedirs(out_dir, exist_ok=True)
     fname = "regression_baseline_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
     out_path = os.path.join(out_dir, fname)
