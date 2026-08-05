@@ -648,9 +648,13 @@ def test_build_year_lookup_table():
     """验证对照表生成格式"""
     from analysis_service import _build_year_lookup_table
     from bazi_calculator import paipan
+    from utils.plate import plate_to_dict
 
+    # 2026-08-05 修：函数契约是 dict（签名 plate_dict / docstring "plate_to_dict() 的输出"），
+    # 原代码把 paipan() 返回的 BaziPlate 对象直接塞入，BaziPlate 无 .get() → pytest 收集时炸。
+    # 修法：utils/plate.py 现成的 plate_to_dict 转 dict（TODO-BAZI-LOOKUP 判修，King 盘回归保护弃了可惜）。
     plate = paipan(2005, 8, 19, 1, 35, '男', 113.75, '东莞')
-    table = _build_year_lookup_table(plate, 2010)
+    table = _build_year_lookup_table(plate_to_dict(plate), 2010)
 
     # 格式检查
     assert '## 流年干支-西历对照表' in table, '缺少标题'
