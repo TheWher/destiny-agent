@@ -81,7 +81,7 @@
       "script": "test_e2e_fc.py",
       "desc": "端到端 Function Calling（真实 LLM；结构评估纯函数待拆 pytest+mock 测）",
       "status": "requires-llm",
-      "note": "2026-08-06 判类：真实 LLM 端到端冒烟，需 API key；结构评估纯函数 evaluate_tool_sequence/evaluate_text_quality 待拆 pytest+mock"
+      "note": "2026-08-06 判类：真实 LLM 端到端冒烟，需 API key；结构评估纯函数 evaluate_tool_sequence/evaluate_text_quality 已拆出（80421ee，test_e2e_fc_pure.py 19 条 pytest，无 mock），本段仅剩真 E2E 编排层 run_with_fc"
     }
   ]
 }
