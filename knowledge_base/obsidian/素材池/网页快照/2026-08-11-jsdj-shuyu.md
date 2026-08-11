@@ -3,7 +3,7 @@ title: 紫微斗数基本术语
 url: http://jsdjxh.com/show.asp?id=282
 source: 江苏省道教协会
 fetched_at: 2026-08-11T17:22:24+08:00
-status: raw
+status: digested
 authority: 官方
 system: 
 tags:

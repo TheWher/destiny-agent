@@ -3,7 +3,7 @@ title: 没有经历过化忌的作品和人生是不值得品味的（化忌总�
 url: https://www.ziweishuyuan.com/four-change/851.html
 source: 紫微取象派 ziweishuyuan.com
 fetched_at: 2026-08-11T17:36:07
-status: raw
+status: digested
 authority: 个人站
 system: 飞星
 tags:
