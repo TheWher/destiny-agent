@@ -2,7 +2,7 @@
 title: 太阳化禄——于情于理的花钱
 url: https://www.ziweishuyuan.com/four-change/g-change/859.html
 source: 紫微取象派 ziweishuyuan.com
-fetched_at: 2026-08-11T17:37:55
+fetched_at: 2026-08-11T17:36:08
 status: raw
 authority: 个人站
 system: 飞星
@@ -14,6 +14,7 @@ tags:
   - 太阳星
 type: 网页快照
 content_mode: fit_markdown
+cleaned_at: 2026-08-11T17:38:00+08:00
 ---
 
 ### 热门搜索

@@ -14,6 +14,12 @@ tags:
 type: 网页快照
 content_mode: fit_markdown
 ---
+cleaned_at: 2026-08-11T17:41:43
+---
+cleaned_at: 2026-08-11T17:39:48
+---
+cleaned_at: 2026-08-11T17:39:23
+---
 
 最新公告
 * 欢迎您光临紫微斗数学堂，一个优质的紫微斗数研究学习基地。
@@ -29,8 +35,7 @@ content_mode: fit_markdown
 男人太阴在命宫，谓之“夺妻权”，凡女子所能做的事，除生小孩外，都难不倒他。太阴坐命的男人，说话的声音缺乏那股浑厚的阳刚气，化禄、科更是。太阴坐命的男人，如化忌，反能刚柔并济，因太阴柔而化忌刚之故，化权次之。
 
 
-【法布施得法！财布施得财！】听说越打赏，越有福！越好运！ 
-紫微斗数-紫微斗数研究-紫微斗数学堂，一个专业的紫微斗数学习分享平台！ [紫微斗数-紫微斗数研究-紫微斗数学堂](https://www.ziweicn.com/) » [紫微斗数太阴星之概论](http://www.ziweicn.com/xingyaoxingqing/shisizhuxing/3113.html)
+
   * [ 紫微入门](https://www.ziweicn.com/ziweirumen/) ►
     * [紫微基础 100 ](https://www.ziweicn.com/ziweirumen/ziweijichu/)
     * [名词解释 10 ](https://www.ziweicn.com/ziweirumen/mingcijieshi/)

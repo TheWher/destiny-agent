@@ -2,7 +2,7 @@
 title: 甲的取象以及甲干廉贞化禄、破军化权
 url: https://www.ziweishuyuan.com/four-change/a-change/662.html
 source: 紫微取象派 ziweishuyuan.com
-fetched_at: 2026-08-11T17:37:55
+fetched_at: 2026-08-11T17:36:09
 status: raw
 authority: 个人站
 system: 飞星
@@ -14,6 +14,7 @@ tags:
   - 甲干
 type: 网页快照
 content_mode: fit_markdown
+cleaned_at: 2026-08-11T17:38:00+08:00
 ---
 
 ### 热门搜索

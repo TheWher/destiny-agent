@@ -13,6 +13,12 @@ tags:
 type: 网页快照
 content_mode: fit_markdown
 ---
+cleaned_at: 2026-08-11T17:41:43
+---
+cleaned_at: 2026-08-11T17:39:48
+---
+cleaned_at: 2026-08-11T17:39:23
+---
 
 欢迎访问紫微斗数-中国紫微网！ [保存到桌面](http://www.ziweicn.com/zm.php)
 ### 当前位置

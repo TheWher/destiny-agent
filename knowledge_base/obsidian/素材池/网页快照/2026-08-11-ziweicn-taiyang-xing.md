@@ -14,6 +14,12 @@ tags:
 type: 网页快照
 content_mode: fit_markdown
 ---
+cleaned_at: 2026-08-11T17:41:43
+---
+cleaned_at: 2026-08-11T17:39:48
+---
+cleaned_at: 2026-08-11T17:39:23
+---
 
 最新公告
 * 欢迎您光临紫微斗数学堂，一个优质的紫微斗数研究学习基地。
@@ -38,8 +44,7 @@ content_mode: fit_markdown
 太阳、太阴化权是“日非工厂”，落陷更激烈。也要注意哪宫让太阳、太阴化忌。
 太阳主男人，为父星、夫星。女命逢太阳失辉，是谓“夫星不明”，对婚姻影响至巨。然男命除表其男性气概外，尚需要注意太阳落宫，也会影响婚姻。
 太阳主眼睛、主个性。在失辉宫位或逢煞要注意眼疾，个性问题。太阳主哥哥家，化忌时主该表现的不表现，不该表现的偏表现。
-【法布施得法！财布施得财！】听说越打赏，越有福！越好运！ 
-紫微斗数-紫微斗数研究-紫微斗数学堂，一个专业的紫微斗数学习分享平台！ [紫微斗数-紫微斗数研究-紫微斗数学堂](https://www.ziweicn.com/) » [太阳星之概论](http://www.ziweicn.com/xingyaoxingqing/shisizhuxing/3067.html)
+
   * [ 紫微入门](https://www.ziweicn.com/ziweirumen/) ►
     * [紫微基础 100 ](https://www.ziweicn.com/ziweirumen/ziweijichu/)
     * [名词解释 10 ](https://www.ziweicn.com/ziweirumen/mingcijieshi/)

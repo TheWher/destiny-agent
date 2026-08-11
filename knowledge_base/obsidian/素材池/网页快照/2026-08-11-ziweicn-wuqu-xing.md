@@ -14,6 +14,12 @@ tags:
 type: 网页快照
 content_mode: fit_markdown
 ---
+cleaned_at: 2026-08-11T17:41:43
+---
+cleaned_at: 2026-08-11T17:39:48
+---
+cleaned_at: 2026-08-11T17:39:23
+---
 
 最新公告
 * 欢迎您光临紫微斗数学堂，一个优质的紫微斗数研究学习基地。
@@ -36,8 +42,7 @@ content_mode: fit_markdown
 武曲落在财帛因然好，能逢化禄禄存更是妙，但运限化忌来冲照，想要聚财不料全跑了。武曲生年忌坐财，无生年禄、权、科、禄存同宫，是为财帛宫的“入库忌”，若逢大命、财、官化忌入本财，是忌冲破库，大发。
 壬干在大限何宫，重叠本命何宫，是该大限财帛大耗的地方。如壬干在本子、大迁，为小孩子、桃花、股东；在本命、大官，事业投资方面；本友、大福，和朋友一起离乐，看太开了。
 武曲遇擎羊，因财持刀；大限流年擎羊都要计入。武曲忌在田宅，在家用菜刀或刀子要小心。武曲化忌冲疾厄，有刀厄，或因病开刀或因意外受伤，或因其它原因招杀身之祸。
-【法布施得法！财布施得财！】听说越打赏，越有福！越好运！ 
-紫微斗数-紫微斗数研究-紫微斗数学堂，一个专业的紫微斗数学习分享平台！ [紫微斗数-紫微斗数研究-紫微斗数学堂](https://www.ziweicn.com/) » [紫微斗数武曲星之概论](http://www.ziweicn.com/xingyaoxingqing/shisizhuxing/3076.html)
+
   * [ 紫微入门](https://www.ziweicn.com/ziweirumen/) ►
     * [紫微基础 100 ](https://www.ziweicn.com/ziweirumen/ziweijichu/)
     * [名词解释 10 ](https://www.ziweicn.com/ziweirumen/mingcijieshi/)

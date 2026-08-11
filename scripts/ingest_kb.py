@@ -143,7 +143,46 @@ def ingest(cfg: dict, dry_run: bool = False):
     return True
 
 
+def clean_files(paths: list):
+    """重洗/清洗：只对正文应用噪音过滤，frontmatter 原样保留（fetched_at 永不覆盖），
+    加 cleaned_at 记录清洗时间。与重新抓取（ingest）分清：抓取时间稳定，操作记录可查。"""
+    ok = True
+    for p in paths:
+        if not os.path.exists(p):
+            print(f"SKIP {p}: 不存在")
+            ok = False
+            continue
+        text = open(p, encoding='utf-8').read()
+        m = re.match(r'^(---\n.*?\n---\n)(.*)$', text, re.DOTALL)
+        if not m:
+            print(f"SKIP {p}: 无 frontmatter")
+            ok = False
+            continue
+        fm_block, body = m.group(1), m.group(2)
+        fm = {}
+        for line in fm_block.splitlines():
+            if ':' in line and not line.startswith('-'):
+                k, v = line.split(':', 1)
+                fm[k.strip()] = v.strip().strip('"')
+        url = fm.get('url', '')
+        new_body = apply_noise_filters(url, body)
+        cleaned_at = datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
+        # frontmatter 更新 cleaned_at（保留原 fetched_at）
+        if 'cleaned_at' in fm_block:
+            fm_block = re.sub(r'(?m)^cleaned_at:.*$', f'cleaned_at: {cleaned_at}', fm_block)
+        else:
+            fm_block = fm_block.rstrip('\n') + f'\ncleaned_at: {cleaned_at}\n---\n'
+        with open(p, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(fm_block + new_body)
+        print(f"CLEAN {os.path.basename(p)} (fetched_at 保留: {fm.get('fetched_at', '?')})")
+    return ok
+
+
 def main():
+    if '--clean' in sys.argv:
+        idx = sys.argv.index('--clean')
+        paths = sys.argv[idx + 1:]
+        sys.exit(0 if clean_files(paths) else 1)
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
