@@ -3,7 +3,7 @@ title: 天机星之概论
 url: http://www.ziweicn.com/xingyaoxingqing/shisizhuxing/3066.html
 source: 紫微斗数学堂 ziweicn.com
 fetched_at: 2026-08-11T17:26:36
-status: raw
+status: digested
 authority: 个人站
 system: 飞星
 tags:
@@ -13,12 +13,7 @@ tags:
   - 天机星
 type: 网页快照
 content_mode: fit_markdown
----
-cleaned_at: 2026-08-11T17:41:43
----
-cleaned_at: 2026-08-11T17:39:48
----
-cleaned_at: 2026-08-11T17:39:23
+cleaned_at: 2026-08-11T17:51:10
 ---
 
 最新公告

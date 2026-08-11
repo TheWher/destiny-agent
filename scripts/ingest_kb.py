@@ -167,11 +167,11 @@ def clean_files(paths: list):
         url = fm.get('url', '')
         new_body = apply_noise_filters(url, body)
         cleaned_at = datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
-        # frontmatter 更新 cleaned_at（保留原 fetched_at）
-        if 'cleaned_at' in fm_block:
+        # cleaned_at 必须插在 frontmatter 内部（末尾 --- 之前），已存在则更新
+        if re.search(r'(?m)^cleaned_at:', fm_block):
             fm_block = re.sub(r'(?m)^cleaned_at:.*$', f'cleaned_at: {cleaned_at}', fm_block)
         else:
-            fm_block = fm_block.rstrip('\n') + f'\ncleaned_at: {cleaned_at}\n---\n'
+            fm_block = re.sub(r'\n---\n$', f'\ncleaned_at: {cleaned_at}\n---\n', fm_block, count=1)
         with open(p, 'w', encoding='utf-8', newline='\n') as f:
             f.write(fm_block + new_body)
         print(f"CLEAN {os.path.basename(p)} (fetched_at 保留: {fm.get('fetched_at', '?')})")

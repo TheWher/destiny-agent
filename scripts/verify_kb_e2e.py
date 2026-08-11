@@ -63,6 +63,10 @@ def health_check():
         raw_fm = re.match(r'^---\n(.*?)\n---', text, re.DOTALL)
         if raw_fm and CODE_LEAK.search(raw_fm.group(1)):
             errs.append('代码残留')
+        # cleaned_at 必须留在 frontmatter 内，泄漏到正文说明 frontmatter 被破坏（2026-08-11 clean bug）
+        rest = text[raw_fm.end():] if raw_fm else text
+        if re.search(r'(?m)^cleaned_at:', rest):
+            errs.append('cleaned_at 泄漏到 frontmatter 外')
         tags = re.findall(r'^\s*-\s*(.+)$', raw_fm.group(1) if raw_fm else '', re.M)
         seen = set()
         for t in tags:
