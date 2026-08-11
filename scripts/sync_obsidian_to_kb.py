@@ -24,8 +24,7 @@ TARGET = os.path.join(
 
 # 排除：相对 vault 根的路径（正斜杠）。含私密内容的文件、King 手写区未来加这里。
 EXCLUDE = {
-    '笔记/来因宫.md',  # 含 King 生辰（2005-08-19），进公开仓前需去标识或 King 拍板
-    '.gitignore',      # 私有仓专用，不入项目仓
+    '.gitignore',  # 私有仓专用，不入项目仓
 }
 
 SKIP_DIRS = {'.obsidian', '.obsidian-kb', '.git'}
