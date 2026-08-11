@@ -7,7 +7,12 @@
 2. 模型会不会引用出处链（authority/来源）
 3. 检索命中是否准确
 
-用法：python scripts/verify_kb_e2e.py [查询词]
+触发约定（2026-08-11 定）：凡改 frontmatter、检索模块或加术语消歧页，必跑本脚本
+（--all 快速回归；单词模式做 LLM 深度验证）。术语面扩展时往 REGRESSION_TERMS 加词。
+
+用法：
+    python scripts/verify_kb_e2e.py [查询词]   # 单词 + LLM 深度验证
+    python scripts/verify_kb_e2e.py --all      # 回归词表快速检查（不调 LLM）
 """
 import sys
 import os
@@ -18,8 +23,34 @@ sys.path.insert(0, _ROOT)
 from knowledge_base.obsidian_retriever import retrieve, evidence_pack
 from services.llm_client import _call_api
 
+# 回归词表：术语面扩展时在此追加（含预期分流词）
+REGRESSION_TERMS = ['化忌', '庙旺', '四化', '来因宫']
+
+
+def quick_regression():
+    """不调 LLM：检查每个词有命中，且命中首条类型合理（消歧页词首条必须是 disambiguation）"""
+    fail = 0
+    for term in REGRESSION_TERMS:
+        hits = retrieve(term, top_k=5)
+        if not hits:
+            print(f'FAIL {term}: 零命中')
+            fail += 1
+            continue
+        top_type = hits[0][1]['type']
+        # 消歧页词（标题含消歧）应提权到首条
+        disambig = [h for h in hits if h[1]['type'] == 'disambiguation']
+        if disambig and disambig[0][1]['title'] != hits[0][1]['title']:
+            print(f'FAIL {term}: 消歧页未提权（{hits[0][1]["title"]} 排在了前面）')
+            fail += 1
+            continue
+        print(f'PASS {term}: top=[{top_type}] {hits[0][1]["title"]}（{len(hits)} 条）')
+    print(f'== regression: {len(REGRESSION_TERMS) - fail}/{len(REGRESSION_TERMS)} pass ==')
+    return fail
+
 
 def main():
+    if '--all' in sys.argv:
+        sys.exit(1 if quick_regression() else 0)
     q = sys.argv[1] if len(sys.argv) > 1 else '化忌'
     print(f'== 检索: {q} ==')
     hits = retrieve(q, top_k=5)
