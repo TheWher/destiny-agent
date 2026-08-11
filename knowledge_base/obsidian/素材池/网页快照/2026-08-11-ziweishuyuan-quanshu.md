@@ -8,11 +8,9 @@ authority: 个人站
 system: 飞星
 tags:
   - 素材
-  - 素材
   - 紫微斗数
   - 古籍
   - 飞星
-.TrimEnd()
 type: 网页快照
 content_mode: markdown
 ---

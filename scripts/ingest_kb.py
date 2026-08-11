@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""知识库入库脚本：抓取网页 → frontmatter 卫生校验 → 写入 vault 素材池
+
+用法：
+    python scripts/ingest_kb.py <json配置或内联参数>
+
+校验前置（2026-08-11 mose 定）：入库前跑 frontmatter 卫生检查（tags 无重复无代码残留、
+必填字段齐全），不合格拦下，校验放源头不放出口。
+
+配置 JSON 示例：
+[
+  {
+    "url": "https://example.com/page",
+    "file": "2026-08-11-slug.md",
+    "title": "页面标题",
+    "source": "站点名",
+    "authority": "官方",          # 古籍原文/百科/官方/个人站/本人确认
+    "system": "",                 # 三合/飞星，跨体系术语必填
+    "tags": ["素材", "紫微斗数"],
+    "content_mode": "fit_markdown"  # fit_markdown 默认 / markdown 全文
+  }
+]
+"""
+import json
+import re
+import sys
+import os
+from datetime import datetime
+from urllib import request
+
+CRAWL_URL = 'http://127.0.0.1:11235/crawl'
+VAULT_RAW_DIR = r'D:\OBsidian\Ku\Learn\素材池\网页快照'
+
+REQUIRED_FIELDS = ['title', 'url', 'source', 'fetched_at', 'status', 'type', 'content_mode']
+CODE_LEAK_PATTERN = re.compile(r'\.TrimEnd\(\)|\.strip\(\)|Out-String|ForEach-Object|\$it\.|to_json|replace\(', re.I)
+
+
+def validate_frontmatter(fm: dict, tags: list) -> list:
+    """frontmatter 卫生检查，返回错误列表（空=合格）"""
+    errors = []
+    for f in REQUIRED_FIELDS:
+        if not fm.get(f):
+            errors.append(f'缺必填字段: {f}')
+    if not tags:
+        errors.append('tags 为空')
+    seen = set()
+    for t in tags:
+        t = t.strip()
+        if not t:
+            errors.append('tags 含空项')
+        elif t in seen:
+            errors.append(f'tags 重复: {t}')
+        seen.add(t)
+        if CODE_LEAK_PATTERN.search(t):
+            errors.append(f'tags 含代码残留: {t}')
+    fm_text = json.dumps(fm, ensure_ascii=False)
+    if CODE_LEAK_PATTERN.search(fm_text):
+        errors.append('frontmatter 含代码残留')
+    return errors
+
+
+def crawl(url: str) -> dict:
+    req = request.Request(CRAWL_URL, data=json.dumps({'urls': [url]}).encode(),
+                          headers={'Content-Type': 'application/json'})
+    with request.urlopen(req, timeout=180) as resp:
+        data = json.loads(resp.read())
+    return data['results'][0]
+
+
+def build_frontmatter(cfg: dict, fetched_at: str, content_mode: str) -> str:
+    tags = cfg['tags']
+    # 去重保序 + 强制带 素材
+    seen = []
+    for t in ['素材'] + tags:
+        t = t.strip()
+        if t and t not in seen:
+            seen.append(t)
+    lines = ['---']
+    for k in ['title', 'url', 'source']:
+        lines.append(f'{k}: {cfg[k]}')
+    lines.append(f'fetched_at: {fetched_at}')
+    lines.append('status: raw')
+    lines.append(f'authority: {cfg.get("authority", "")}')
+    lines.append(f'system: {cfg.get("system", "")}')
+    lines.append('tags:')
+    lines += [f'  - {t}' for t in seen]
+    lines.append('type: 网页快照')
+    lines.append(f'content_mode: {content_mode}')
+    lines.append('---')
+    return '\n'.join(lines)
+
+
+def ingest(cfg: dict, dry_run: bool = False):
+    res = crawl(cfg['url'])
+    if not res.get('success'):
+        print(f"FAIL {cfg['file']}: 抓取失败 {res.get('error')}")
+        return False
+    mode = cfg.get('content_mode', 'fit_markdown')
+    content = res.get('fit_markdown') if mode == 'fit_markdown' else res.get('markdown')
+    fetched_at = datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
+    fm = {
+        'title': cfg['title'], 'url': cfg['url'], 'source': cfg['source'],
+        'fetched_at': fetched_at, 'status': 'raw', 'type': '网页快照',
+        'content_mode': mode,
+    }
+    errors = validate_frontmatter(fm, cfg['tags'])
+    if errors:
+        print(f"FAIL {cfg['file']}: frontmatter 卫生校验不过 -> {errors}")
+        return False
+    md = build_frontmatter(cfg, fetched_at, mode) + '\n\n' + content
+    path = os.path.join(VAULT_RAW_DIR, cfg['file'])
+    if dry_run:
+        print(f"OK(dry) {cfg['file']} ({len(md)} chars)")
+        return True
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(md)
+    print(f"OK {cfg['file']} ({len(md)} chars)")
+    return True
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(1)
+    cfg_path = sys.argv[1]
+    dry_run = '--dry-run' in sys.argv
+    with open(cfg_path, encoding='utf-8') as f:
+        cfgs = json.load(f)
+    ok = all(ingest(c, dry_run) for c in cfgs)
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == '__main__':
+    main()
