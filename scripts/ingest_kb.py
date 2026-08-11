@@ -31,6 +31,28 @@ from urllib import request
 
 CRAWL_URL = 'http://127.0.0.1:11235/crawl'
 VAULT_RAW_DIR = r'D:\OBsidian\Ku\Learn\素材池\网页快照'
+_NOISE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ingest_noise_filters.json')
+
+
+def _load_noise_filters() -> dict:
+    """源站噪音过滤配置：域名 -> [{pattern, note}]（配置驱动，加源站只改配置不动代码）"""
+    if not os.path.exists(_NOISE_FILE):
+        return {}
+    with open(_NOISE_FILE, encoding='utf-8') as f:
+        return json.load(f)
+
+
+def _host_of(url: str) -> str:
+    return url.split('/')[2].replace('www.', '') if '//' in url else url
+
+
+def apply_noise_filters(url: str, text: str) -> str:
+    """按域名应用噪音过滤正则（整串匹配，宁可少滤不可错滤）"""
+    filters = _load_noise_filters()
+    rules = filters.get(_host_of(url), [])
+    for rule in rules:
+        text = re.sub(rule['pattern'], '', text)
+    return text
 
 REQUIRED_FIELDS = ['title', 'url', 'source', 'fetched_at', 'status', 'type', 'content_mode']
 CODE_LEAK_PATTERN = re.compile(r'\.TrimEnd\(\)|\.strip\(\)|Out-String|ForEach-Object|\$it\.|to_json|replace\(', re.I)
@@ -98,6 +120,8 @@ def ingest(cfg: dict, dry_run: bool = False):
         return False
     mode = cfg.get('content_mode', 'fit_markdown')
     content = res.get('fit_markdown') if mode == 'fit_markdown' else res.get('markdown')
+    # 源站噪音过滤（版权尾巴/广告，按域名配置）
+    content = apply_noise_filters(cfg['url'], content)
     fetched_at = datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
     fm = {
         'title': cfg['title'], 'url': cfg['url'], 'source': cfg['source'],
