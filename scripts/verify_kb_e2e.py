@@ -23,8 +23,9 @@ sys.path.insert(0, _ROOT)
 from knowledge_base.obsidian_retriever import retrieve, evidence_pack
 from services.llm_client import _call_api
 
-# 回归词表：术语面扩展时在此追加（含预期分流词）
-REGRESSION_TERMS = ['化忌', '庙旺', '四化', '来因宫']
+# 回归词表（选词标准 2026-08-11 定）：优先收“两系都用但含义不同”的跨体系术语（消歧页的料），
+# 单系术语不进，避免噪音稀释回归信号；核心单系概念可例外（如来因宫=引擎第一落点，检索不可挂）
+REGRESSION_TERMS = ['化忌', '庙旺', '四化', '来因宫']  # 来因宫：核心单系例外
 
 
 def quick_regression():
