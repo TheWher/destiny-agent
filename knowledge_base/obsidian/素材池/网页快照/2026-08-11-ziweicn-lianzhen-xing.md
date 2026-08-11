@@ -3,7 +3,7 @@ title: 紫微斗数廉贞星之概论
 url: http://www.ziweicn.com/xingyaoxingqing/shisizhuxing/3108.html
 source: 紫微斗数学堂 ziweicn.com
 fetched_at: 2026-08-11T17:33:45
-status: raw
+status: digested
 authority: 个人站
 system: 飞星
 tags:

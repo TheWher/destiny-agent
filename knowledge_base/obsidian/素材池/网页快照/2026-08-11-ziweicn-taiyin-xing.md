@@ -3,7 +3,7 @@ title: 紫微斗数太阴星之概论
 url: https://www.ziweicn.com/xingyaoxingqing/shisizhuxing/3113.html
 source: 紫微斗数学堂 ziweicn.com
 fetched_at: 2026-08-11T17:29:28
-status: raw
+status: digested
 authority: 个人站
 system: 飞星
 tags:

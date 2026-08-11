@@ -3,7 +3,7 @@ title: 紫微斗数天相星之细论
 url: http://www.ziweicn.com/show/3120.html
 source: 紫微斗数学堂 ziweicn.com
 fetched_at: 2026-08-11T17:34:05
-status: raw
+status: digested
 authority: 个人站
 system: 飞星
 tags:
