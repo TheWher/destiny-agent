@@ -319,6 +319,13 @@
   .analysis-text .key-warn { color: var(--vermillion); font-weight: 600; }
   .analysis-text .key-info { color: var(--azure); font-weight: 600; }
   .chat-area { margin-top: 14px; }
+  .chat-suggestions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .chat-suggestions .sg-chip {
+    border:1px solid var(--line-soft); background:var(--paper-card); color:var(--ink);
+    font-size:12px; padding:6px 12px; border-radius:14px; cursor:pointer; line-height:1.4;
+    transition: border-color .15s, color .15s;
+  }
+  .chat-suggestions .sg-chip:hover { border-color:var(--vermillion); color:var(--vermillion); }
   .chat-msg {
     margin: 6px 0; padding: 8px 12px; border-radius: 2px;
     font-size: 12px; line-height: 1.6;
@@ -552,11 +559,12 @@
 
   <!-- 追问 -->
   <div class="chat-area no-print" id="chat-area">
+    <div id="chat-messages" style="margin-top:8px"></div>
+    <div id="chat-suggestions" class="chat-suggestions"></div>
     <div class="chat-input-row">
       <textarea id="chat-input" rows="2" placeholder="追问Agent，例如：我今年换工作合适吗？"></textarea>
       <button id="btn-chat" onclick="sendChat()">发送</button>
     </div>
-    <div id="chat-messages" style="margin-top:8px"></div>
   </div>
 </div>
 
@@ -1369,6 +1377,7 @@ async function analyzeScope(){
       msgs.push({role:'assistant', content: d.analysis});
       await fetch('/api/ziwei/sessions/'+sid, { method:'PATCH', headers:Object.assign({'Content-Type':'application/json'},_authHdrs()), body:JSON.stringify({messages: msgs}) });
       document.getElementById('analysis-text').innerHTML += '<hr style="border:none;border-top:1px dashed var(--line-faint);margin:14px 0"><h2>\ud83d\udcdc 叠盘分析</h2>' + formatText(d.analysis);
+      renderSuggestions(d.suggestions);
       document.getElementById('analysis-text').scrollIntoView({behavior:'smooth',block:'start'});
       track('overlay_done',{scope: scope.yearly?('Y'+scope.yearly.year):(scope.decade?('D'+scope.decade.pName):'base')});
     } else {
@@ -1465,6 +1474,7 @@ async function startAnalysis(plate, password){
           return;
         }
         area.innerHTML = formatText(d.analysis);
+        renderSuggestions(d.suggestions);
         area.scrollIntoView({behavior:'smooth',block:'start'});
         track('report_rendered',{tier: (d.tier||''), wait_seconds: Math.round((Date.now()-_rptT0)/1000)});
         await fetch('/api/ziwei/sessions/'+sid, {
@@ -1488,6 +1498,32 @@ function renderAnalysis(messages){
   const aiMsg = messages.filter(m => m.role==='assistant');
   let html = aiMsg.map(m => formatText(m.content)).join('\n<hr style="border:none;border-top:1px dashed var(--line-faint);margin:12px 0">\n');
   $('analysis-text').innerHTML = html;
+  // 刷新后恢复建议追问（取最后一条 assistant 消息末尾的引导区）
+  const lastAi = aiMsg[aiMsg.length-1];
+  if(lastAi) renderSuggestions(extractSuggestions(lastAi.content));
+}
+function extractSuggestions(text, limit){
+  limit = limit || 5;
+  if(!text) return [];
+  const lines = text.split('\n');
+  let start = -1;
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].indexOf('💡')>=0 || lines[i].indexOf('还想深入了解')>=0){ start=i; break; }
+  }
+  if(start===-1) return [];
+  const out=[], seen={};
+  for(let j=start+1;j<lines.length;j++){
+    let s=lines[j].trim();
+    if(!s) continue;
+    s=s.replace(/\*\*/g,'').replace(/`/g,'');
+    s=s.replace(/^\d+[.、)]\s*/,'').replace(/^[-*•·]\s*/,'');
+    const m=s.match(/[「“"\'’]([^」”"\'’]{2,60})[」”"\'’]/);
+    if(m) s=m[1].trim();
+    if(!s || s.length<4 || s.length>80 || seen[s]) continue;
+    seen[s]=1; out.push(s);
+    if(out.length>=limit) break;
+  }
+  return out;
 }
 function escapeHtml(str){
   return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -1532,6 +1568,20 @@ function formatText(t){
 }
 
 // ── 追问 ──
+function renderSuggestions(list){
+  const box = $('chat-suggestions');
+  if(!box) return;
+  if(!list || !list.length){ box.innerHTML=''; return; }
+  box.innerHTML = list.map(function(q){
+    return '<button type="button" class="sg-chip" onclick="askSuggestion(this)">'+escapeHtml(q)+'</button>';
+  }).join('');
+}
+function askSuggestion(btn){
+  const q = (btn.textContent||'').trim();
+  if(!q) return;
+  $('chat-input').value = q;
+  sendChat();
+}
 async function sendChat(){
   const input = $('chat-input'), reply = input.value.trim();
   if(!reply) return;
@@ -1568,6 +1618,10 @@ async function sendChat(){
     const d = await res.json();
     if(d.success){
       chatArea.innerHTML += `<div class="chat-msg agent"><div class="who">Agent</div>${formatText(d.analysis)}</div>`;
+      renderSuggestions(d.suggestions);
+      // 滚动到最新追问下方（输入框沉底后，用户视线应落在最新回复）
+      const last = chatArea.lastElementChild;
+      if(last && last.scrollIntoView) last.scrollIntoView({behavior:'smooth', block:'nearest'});
       track('chat_turn',{len: reply.length});
       // 追加到 session
       msgs.push({role:'user', content: reply});

@@ -207,6 +207,7 @@ def _build_specs():
         ('2100年 不崩溃', lambda n: _t_edge(n, 2100,1,1,0,0,'女')),
         ('农历排盘', lambda n: _t_lunar(n)),
         ('cache_key 不崩溃', lambda n: _t_cache_key(n)),
+        ('建议追问提取 容错', lambda n: _t_suggestions(n)),
     ]))
 
     return specs
@@ -308,6 +309,26 @@ def _t_cache_key(name):
         key = _make_ziwei_cache_key(plate)
         ok = key and len(key)==16
     except: ok = False
+    check(name, ok)
+
+# 建议追问提取（2026-08-11 韩湘生 加，陪 chat chip 功能）：容错解析引导区，坏条目丢弃
+def _t_suggestions(name):
+    from routes.ziwei import _extract_suggestions as ex
+    ok = True
+    # 标准引导区：提取「」内具体问题
+    std = '## 综合\n先优势后挑战。\n\n💡 **还想深入了解哪个方面？**\n- 聊聊某个具体宫位（比如「子女宫怎么样」）\n- 看看某个大限的详细走势（比如「我45-54岁要注意什么」）'
+    r = ex(std)
+    if r != ['子女宫怎么样', '我45-54岁要注意什么']: ok = False
+    # 无引导区 → 空
+    if ex('## 综合\n没有引导区') != []: ok = False
+    if ex('') != []: ok = False
+    # 脏格式：序号/引号/加粗剥干净，超短/超长/重复丢弃
+    dirty = '💡 还想深入了解哪个方面？\n1. 事业\n2. "我今年适合跳槽吗？"\n3. **感情什么时候稳定？**\n4. x\n5. ' + '长'*90 + '\n6. 重复\n6. 重复'
+    r = ex(dirty)
+    if r != ['我今年适合跳槽吗？', '感情什么时候稳定？']: ok = False
+    # 双重前缀：加粗+序号 / 序号+破折号（春鳥橋 补，2026-08-11）
+    dbl = '💡 还想深入了解哪个方面？\n1. **今年换工作合适吗？**\n3. - 感情方面要注意什么'
+    if ex(dbl) != ['今年换工作合适吗？', '感情方面要注意什么']: ok = False
     check(name, ok)
 
 # ── pytest 统一入口（TODO-PAIPAN-PYTEST 参数化，2026-08-06 mose 落）──

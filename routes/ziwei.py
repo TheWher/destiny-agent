@@ -31,6 +31,39 @@ _SESSIONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sessio
 
 
 
+def _extract_suggestions(text: str, limit: int = 5) -> list:
+    """从解读文本尾部提取引导追问建议列表（供前端渲染为可点击 chip）。
+    容错：剥序号/引号/markdown 标记，坏条目直接丢弃，宁可少不可脏。"""
+    if not text:
+        return []
+    lines = text.splitlines()
+    start = -1
+    for i, ln in enumerate(lines):
+        if '💡' in ln or '还想深入了解' in ln:
+            start = i
+            break
+    if start == -1:
+        return []
+    out, seen = [], set()
+    for ln in lines[start + 1:]:
+        s = ln.strip()
+        if not s:
+            continue
+        s = s.replace('**', '').replace('`', '')
+        s = re.sub(r'^\d+[.、)]\s*', '', s)
+        s = re.sub(r'^[-*•·]\s*', '', s)
+        m = re.search(r'[「“"\'’]([^」”"\'’]{2,60})[」”"\'’]', s)
+        if m:
+            s = m.group(1).strip()
+        if not s or len(s) < 4 or len(s) > 80 or s in seen:
+            continue
+        seen.add(s)
+        out.append(s)
+        if len(out) >= limit:
+            break
+    return out
+
+
 def _compute_bazi_ref(plate_dict: dict) -> dict | None:
     """从紫微 plate_dict 提取生辰，排完整八字参考信息用于交叉验证"""
     input_info = plate_dict.get("input", {})
@@ -481,6 +514,7 @@ def api_ziwei_analyze():
     cache_key = _make_ziwei_cache_key(plate_dict)
     cached = _cache_get(cache_key)
     if cached:
+        cached.setdefault("suggestions", _extract_suggestions(cached.get("analysis", "")))
         return jsonify({**cached, "cached": True})
 
     user_id2, tier2 = resolve_user_from_request(request)
@@ -502,6 +536,7 @@ def api_ziwei_analyze():
             "analysis": result["analysis"],
             "model": result.get("model", ""),
             "usage": result.get("usage", {}),
+            "suggestions": _extract_suggestions(result["analysis"]),
         }
         if result.get("verification"):
             response_data["verification"] = result["verification"]
@@ -621,7 +656,8 @@ def api_ziwei_analyze_continue():
         return jsonify({"success": False, "error": f"分析异常: {str(e)}"}), 500
 
     if result["success"]:
-        return jsonify({"success": True, "analysis": result["analysis"]})
+        return jsonify({"success": True, "analysis": result["analysis"],
+                        "suggestions": _extract_suggestions(result["analysis"])})
     else:
         return jsonify({"success": False, "error": result["error"]}), 500
 
