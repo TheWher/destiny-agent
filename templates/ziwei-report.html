@@ -1530,8 +1530,12 @@ function escapeHtml(str){
 }
 function formatText(t){
   // 第一阶段：标记块级语法（先于 HTML 转义）
+  // 空引用行/空列表项（带或不带尾随空格）→ 无尾随空格标记，避免 trim 后失配泄漏
+  t = t.replace(/^> ?$/gm,'\u0001Q');
   t = t.replace(/^> /gm,'\u0001Q ');
+  t = t.replace(/^[-*] ?$/gm,'\u0001UL');
   t = t.replace(/^[-*] /gm,'\u0001UL ');
+  t = t.replace(/^(\d+)\. ?$/gm,'\u0001OL');
   t = t.replace(/^(\d+)\. /gm,'\u0001OL ');
   t = t.replace(/^---+$/gm,'\u0001HR');
   // HTML 转义
@@ -1544,6 +1548,8 @@ function formatText(t){
   for(const raw of lines){
     let line = raw.trim();
     if(!line){ closeList(); out.push('<br>'); continue; }
+    // 空引用行/空列表项：渲染为空行，不泄漏裸标记
+    if(line === '\u0001Q' || line === '\u0001UL' || line === '\u0001OL'){ closeList(); out.push('<br>'); continue; }
     // 还原 Unicode 标记
     if(line.startsWith('\u0001Q ')){ closeList(); out.push('<blockquote>'+line.slice(3)+'</blockquote>'); continue; }
     if(line.startsWith('\u0001UL ')){
