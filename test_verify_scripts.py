@@ -11,6 +11,7 @@
 """
 from scripts.verify_laiyin_anchors import run as laiyin_run
 from scripts.verify_geju_mingzhu import run as geju_run
+from scripts.verify_fixture_snap import run as fixture_run
 
 
 def test_laiyin_anchors_regression():
@@ -23,3 +24,9 @@ def test_geju_mingzhu_regression():
     """日月系格局 6 盘 × 19 断言常驻回归"""
     failures = geju_run()
     assert not failures, f"geju 校验尺 {len(failures)} 项断言未过: {failures}"
+
+
+def test_fixture_snap_regression():
+    """解析器三层回归骨架（fixture 值集快照锁版本，snap-20260812-0）"""
+    failures = fixture_run()
+    assert not failures, f"fixture 校验 {len(failures)} 项断言未过: {failures}"

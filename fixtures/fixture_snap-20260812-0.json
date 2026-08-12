@@ -1,0 +1,291 @@
+{
+  "schema": "fixture-v1",
+  "version": "snap-20260812-0",
+  "value_set_baseline": "v2 冻结 + 2026-08-12 凌晨共识。含 v3 登记中：标记层 N/A（生年干句强制）、主语类别扩值、三态函数待定输出、静态线单轴（有无四化来源）、判据档（判据/判定函数变更进 v3）。",
+  "locked_at": "2026-08-12 02:20 GMT+8",
+  "notes": [
+    "全绿只证明解析器与预期一致，不证明预期正确；假说验证靠第一波料（20-30 谓词样本，料源三侧，掺边界句）。",
+    "原文待补：自化配单点句原文。占位符以 <PLACEHOLDER> 标出，落盘前从料核，不编。",
+    "s03 原文已核（2026-08-12）：ziweicn 快照 2026-08-11-ziweicn-wangtingzhi-taiweifu-jingjie.md 第 44 行。赋文第 43 行'禄逢衝破，吉处藏凶'，注解第 44 行'原局化禄受大限化忌衝破，最为吃紧'。原文用异体'衝破'，sentence 保留规范字'冲破'，source_line 保真异体；'受'在受动主语后（原局化禄受…衝破），fixture 的静态受动框架组件 text 标'受冲破'即此受动结构。冲字双义注疏侧证据同段：'所谓「衝破」，即对宫见化忌'，王亭之将衝破明确解为忌义；古籍原文层仍待查。受动分布第一笔：该段为原局/大限/流年/流月层级矩阵互冲，全部运限层受动、三合注疏侧，料单可少抽此形态。",
+    "s01 句面/路径绑定：现有句面'财帛飞禄以入'（宫名独现+方向词入）→ 可计算档。落盘料核时若原文实为裸'飞禄以入'，句面改回且路径复为隐式，二者同改，不得单换。",
+    "static_components.classification 第三值'静态受动框架'为第三桶：不进静态线计数（counted_in_static_line=false 强制），加载器对两小类做计数分支，第三桶放行但不计数。",
+    "s04 句面为占位符，expected_status 按层标 {surface: 待核, parse: 定稿}；脚本遇 <PLACEHOLDER> 跳过句面断言、只验结构层，与 s03 组件级待精读同套路。",
+    "断言范围按解析器三层 + 静态成分段；预期状态分级：定稿全验、待精读只验上层（切分/词表/主语档位）、待定不判。",
+    "值集快照 +1 时：旧 fixture 留档不覆盖，新 fixture 复制本文件改 version，回归脚本锁版本跑。",
+    "声明修正 changelog（执行规格级，值集未动，不进 v3，版本不变）：role 枚举'注疏性'→'注疏性动态'（v2#5 第五类标签全称，简写残留去除，替换非并存）；layer 枚举新增'本命'（生年干句层级，与宫干句的'本命盘宫干层'区分）。layer 与 subject.category 派生映射：宫干→本命盘宫干层、大限→运限、流年→流年、生年干→本命、待定→待定，后续样本声明时按此对。",
+    "s04 句面核转正（2026-08-12，二次修订）：最终句面'本宫天同自化忌'（tongju-chenxu-huaxing L26，剥承接语'又有'，出处保真原句'本宫天同又有自化忌'），source_type=注疏，surface 定稿。首选'本命天梁自化权'因星名载体 FAIL 换句；执行规格补'宫名独现+自化标记→宫干/可计算'分支、PALACES 补'本宫=命宫'（语境相关）。止损线未触发。"
+  ],
+  "schema_fields": {
+    "subject.category": ["宫干", "大限", "流年", "生年干", "待定"],
+    "subject.path": ["显式", "可计算", "隐式"],
+    "sihua.marker_words": ["飞", "转", "自化"],
+    "segments.marker": ["N/A", "无", "自化", "转", "飞"],
+    "signature.layer": ["本命盘宫干层", "本命", "运限", "流年", "待定"],
+    "signature.role": ["机制性", "注疏性动态", "转述", "静态注记", "待定"],
+    "evidence_facing.facing": ["句式", "框架", "术语"],
+    "evidence_facing.exemption": ["无", "豁免", "保留"],
+    "source_type": ["原创", "引述", "注疏"],
+    "static_components.classification": ["注记", "骨架", "静态受动框架"],
+    "static_components.counted_in_static_line": [true, false],
+    "expected_status": ["定稿", "待精读", "待定"]
+  },
+  "samples": [
+    {
+      "id": "s01",
+      "source_line": "<PLACEHOLDER: 梁系/刘韫龄断语出处行待核>",
+      "sentence": "财帛飞禄以入",
+      "source_type": "原创",
+      "evidence_facing": {
+        "facing": ["句式"],
+        "exemption": "无"
+      },
+      "signature": {
+        "layer": "本命盘宫干层",
+        "role": "机制性"
+      },
+      "subject": {
+        "category": "宫干",
+        "path": "可计算",
+        "value": "财帛宫干（天干值需排盘，盘不在场记天干未定）",
+        "chart_present": null,
+        "status": "定稿"
+      },
+      "sihua": {
+        "structures": ["飞禄"],
+        "marker_words": ["飞"],
+        "compound": "飞禄（标记词+四化词，凝固）",
+        "direction_word_present": true,
+        "direction_word": "入",
+        "missing_word_flag": null,
+        "status": "定稿"
+      },
+      "segments": {
+        "count": 1,
+        "marker": "飞",
+        "chain_length": null,
+        "start_end": "起落异（起=财帛，落=目标宫句面未示，落点待核）",
+        "status": "定稿"
+      },
+      "static_components": [],
+      "diagonal_check": {
+        "layer": "本命盘宫干层",
+        "term_side": "新术语",
+        "expected_diagonal": true
+      },
+      "evidence_basis": ["v2#7 术语分层交叉表", "v2#8 判定单位谓词级", "判据2 跨界（本命盘宫干层）"],
+      "expected_status": "定稿"
+    },
+    {
+      "id": "s02",
+      "source_line": "<PLACEHOLDER: 梁系/刘韫龄断语出处行待核>",
+      "sentence": "转父母癸贪狼忌入命",
+      "source_type": "原创",
+      "evidence_facing": {
+        "facing": ["句式"],
+        "exemption": "无"
+      },
+      "signature": {
+        "layer": "本命盘宫干层",
+        "role": "机制性"
+      },
+      "subject": {
+        "category": "宫干",
+        "path": "显式",
+        "value": "父母宫干（癸）",
+        "chart_present": false,
+        "status": "定稿"
+      },
+      "sihua": {
+        "structures": ["贪狼忌"],
+        "marker_words": ["转"],
+        "compound": null,
+        "chain": true,
+        "direction_word_present": true,
+        "direction_word": "入",
+        "missing_word_flag": null,
+        "status": "定稿"
+      },
+      "segments": {
+        "count": 2,
+        "marker": "转",
+        "chain_length": 2,
+        "start_end": "多段：起=X（待核）→ 父母 → 落=命；整体记转，不拆段",
+        "status": "定稿"
+      },
+      "static_components": [],
+      "diagonal_check": {
+        "layer": "本命盘宫干层",
+        "term_side": "新术语",
+        "expected_diagonal": true
+      },
+      "evidence_basis": ["v2#10 结构类型键四维（标记层=转）", "转链定义（每步宫干四化，链长入配价维）"],
+      "expected_status": "定稿"
+    },
+    {
+      "id": "s03",
+      "source_line": "ziweicn 快照 2026-08-11-ziweicn-wangtingzhi-taiweifu-jingjie.md 第 44 行：原局化禄受大限化忌衝破，最为吃紧（赋文第 43 行：禄逢衝破，吉处藏凶；原文异体'衝'）",
+      "sentence": "大限化忌冲破（原局禄）",
+      "sentence_note": "摘编句面：原文完整形态为'原局化禄受大限化忌衝破'（受动主语在前、'受'字在受动主语后）。fixture 句面取动态主句+括号标受动对象，静态受动框架由 static_components 组件承载；原文完整形态的切分预期留首波样本验证",
+      "source_type": "注疏",
+      "evidence_facing": {
+        "facing": ["句式", "框架"],
+        "exemption": {
+          "句式": "豁免",
+          "框架": "保留"
+        }
+      },
+      "signature": {
+        "layer": "运限",
+        "role": "注疏性动态"
+      },
+      "subject": {
+        "category": "大限",
+        "path": "显式",
+        "value": "大限（具体天干值需排盘，待定）",
+        "chart_present": null,
+        "status": "定稿"
+      },
+      "sihua": {
+        "structures": ["化忌"],
+        "marker_words": [],
+        "compound": null,
+        "direction_word_present": true,
+        "direction_word": "冲破",
+        "direction_note": "冲破=凝固复合形态；冲字双义：注疏侧已解（王亭之：所谓「衝破」即对宫见化忌，解为忌义），古籍原文层仍待查；方位词归属随待查，可计算档前置不激活",
+        "missing_word_flag": null,
+        "status": "定稿"
+      },
+      "segments": {
+        "count": 1,
+        "marker": "无",
+        "chain_length": null,
+        "start_end": "起=大限，落=原局化禄（受动者，原文已核）；化忌动程为动态谓词主体",
+        "status": "定稿"
+      },
+      "static_components": [
+        {
+          "text": "原局化禄",
+          "classification": "注记",
+          "source_layer": "生年",
+          "counted_in_static_line": true,
+          "status": "定稿"
+        },
+        {
+          "text": "受冲破",
+          "classification": "静态受动框架",
+          "source_layer": null,
+          "counted_in_static_line": false,
+          "note": "第三桶：classification 枚举第三值，不进静态线两小类计数",
+          "status": "待精读"
+        }
+      ],
+      "diagonal_check": {
+        "layer": "运限",
+        "term_side": "古籍术语",
+        "expected_diagonal": true
+      },
+      "evidence_basis": ["v2#5 第五类标签（注疏性动态）", "v2#6 证据面向（句式豁免/框架保留）", "待查组：冲字双义（注疏侧已解：即对宫见化忌；古籍原文层待查）", "v2#4 时间标尺按域分行"],
+      "expected_status": "定稿"
+    },
+    {
+      "id": "s04",
+      "source_line": "ziweicn 快照 2026-08-11-ziweicn-geju-tongju-chenxu-huaxing.md 第 26 行：本宫天同又有自化忌，也无损格局（存句剥承接语'又有'，出处保真原句；本宫=命宫，同页语境可证）",
+      "sentence": "本宫天同自化忌",
+      "sentence_note": "自化配单点句核转正（2026-08-12，二次修订）：首选'本命天梁自化权'载体为星名，verifier 推导生年干/显式 FAIL；换'本宫天同自化忌'（宫名载体+自化标记→宫干/可计算，执行规格补分支）。'又有'为承接语，不含量词/方向词/标记词，剥后两版切分一致（s03 先例：句面摘编、出处保真）。止损线未触发。",
+      "source_type": "注疏",
+      "evidence_facing": {
+        "facing": ["术语"],
+        "exemption": "无"
+      },
+      "signature": {
+        "layer": "本命盘宫干层",
+        "role": "机制性"
+      },
+      "subject": {
+        "category": "宫干",
+        "path": "可计算",
+        "value": "宫名所在宫干（天干值需排盘，盘不在场记天干未定）",
+        "chart_present": null,
+        "status": "定稿"
+      },
+      "sihua": {
+        "structures": ["自化X"],
+        "marker_words": ["自化"],
+        "compound": "自化X（凝固）",
+        "direction_word_present": null,
+        "direction_word": null,
+        "missing_word_flag": null,
+        "status": "定稿"
+      },
+      "segments": {
+        "count": 1,
+        "marker": "自化",
+        "chain_length": null,
+        "start_end": "起落同（起点=落点）",
+        "status": "定稿"
+      },
+      "static_components": [],
+      "diagonal_check": {
+        "layer": "本命盘宫干层",
+        "term_side": "新术语",
+        "expected_diagonal": false,
+        "anomaly_shape": "矩阵形状（自化配单点=词句解耦，术语先渗信号）"
+      },
+      "evidence_basis": ["结构类型键 自化单独成类型（v3登记）", "四格矩阵错位组合", "探针环：矩阵形状→术语先渗"],
+      "expected_status": {
+        "surface": "定稿",
+        "parse": "定稿"
+      }
+    },
+    {
+      "id": "s05",
+      "source_line": "<PLACEHOLDER: 三合/判据1样本出处行待核>",
+      "sentence": "命宫生年禄入命",
+      "source_type": "<PLACEHOLDER>",
+      "evidence_facing": {
+        "facing": ["句式"],
+        "exemption": "无"
+      },
+      "signature": {
+        "layer": "本命",
+        "role": "静态注记"
+      },
+      "subject": {
+        "category": "生年干",
+        "path": "显式",
+        "value": "生年干",
+        "chart_present": false,
+        "status": "定稿"
+      },
+      "sihua": {
+        "structures": ["生年禄"],
+        "marker_words": [],
+        "compound": null,
+        "direction_word_present": true,
+        "direction_word": "入",
+        "direction_note": "判据1：带入不认三元，带\"入\"字但单点注记，落宫即品质",
+        "missing_word_flag": null,
+        "status": "定稿"
+      },
+      "segments": {
+        "count": 1,
+        "marker": "N/A",
+        "chain_length": null,
+        "start_end": "单点注记，不激活三元结构",
+        "status": "定稿"
+      },
+      "static_components": [
+        {
+          "text": "生年禄入命（全句）",
+          "classification": "注记",
+          "source_layer": "生年",
+          "counted_in_static_line": true,
+          "status": "定稿"
+        }
+      ],
+      "diagonal_check": null,
+      "evidence_basis": ["判据1（生年四化=静态注记）", "标记层 N/A 规则（v3登记）", "主语=生年干时∨第二支不激活"],
+      "expected_status": "定稿"
+    }
+  ]
+}

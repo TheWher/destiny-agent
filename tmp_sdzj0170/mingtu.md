@@ -1,0 +1,120 @@
+[](https://www.shidianguji.com/ "识典古籍")
+# 新锓希夷陈先生紫微斗数全书
+新锓希夷陈先生紫微斗数全书
+[北宋] 陈抟 撰
+[书库](https://www.shidianguji.com/library "书库")
+## 命图
+### 孔仲尼命
+###### 阳男土五局
+活禄逢迎，夫子文童冠世。辛亥年六十二岁，在陈绝粮。盖因太岁有劫空，小限逢天伤，七十三岁，小限在天罗，太岁入地网，戌生人有忌，故死。
+[下一篇](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fhh5x "子路之命")
+标记
+写想法
+复制
+问题反馈
+[下一篇](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fhh5x "子路之命")
+[目录](https://www.shidianguji.com/book/SDZJ0170/chapter/1l8c31cc86psj)
+目录
+[新锓希夷陈先生紫微斗数全书卷之一](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzoopnqo0t6)
+新锓希夷陈先生紫微斗数全书卷之一
+[新锓希夷陈先生紫微斗数全书卷之二](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzootg40y05)
+新锓希夷陈先生紫微斗数全书卷之二
+[新锓希夷陈先生紫微斗数全书 卷之三](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzooy7dkbhh)
+新锓希夷陈先生紫微斗数全书 卷之三
+[新锓希夷陈先生紫微斗数全书卷之四](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop13hw26h)
+新锓希夷陈先生紫微斗数全书卷之四
+[新锓希夷陈先生紫微斗数全书卷之五](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop58rvdbm)
+新锓希夷陈先生紫微斗数全书卷之五
+[命图](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fgrvp)
+命图
+[孔仲尼命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fh4it)
+孔仲尼命
+[子路之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fhh5x)
+子路之命
+[颜亚圣命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fhtt1)
+颜亚圣命
+[孟轲之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fi6g5)
+孟轲之命
+[端木赐命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fij39)
+端木赐命
+[子羔之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fivqd)
+子羔之命
+[冉求之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fj8dh)
+冉求之命
+[子产之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fjl0l)
+子产之命
+[苏丞相命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fjxnp)
+苏丞相命
+[晏平仲命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop88fkaat)
+晏平仲命
+[孙膑之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7olyq)
+孙膑之命
+[庞涓之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7oylu)
+庞涓之命
+[伍明辅命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7pb8y)
+伍明辅命
+[萧何之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7pnw2)
+萧何之命
+[陈平之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7q0j6)
+陈平之命
+[耿弇之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7qd6a)
+耿弇之命
+[蒯文通命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7qpte)
+蒯文通命
+[项羽之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7r2gi)
+项羽之命
+[张子房命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7rf3m)
+张子房命
+[韩信之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7rrqq)
+韩信之命
+[赵高之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7s4du)
+赵高之命
+[李斯之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7sh0y)
+李斯之命
+[曹参之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7sto2)
+曹参之命
+[郦生之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7t6b6)
+郦生之命
+[庆忌之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7tiya)
+庆忌之命
+[百里奚命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7tvle)
+百里奚命
+[廉颇之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7u88i)
+廉颇之命
+[蔺相如命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7ukvm)
+蔺相如命
+[刘伶之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7uxiq)
+刘伶之命
+[韩通之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8d7va5u)
+韩通之命
+[宋璟之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn322b)
+宋璟之命
+[贾谊之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn3epf)
+贾谊之命
+[马周之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn3rcj)
+马周之命
+[传毅之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn43zn)
+传毅之命
+[魏豹之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn4gmr)
+魏豹之命
+[刘都衙命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn4t9v)
+刘都衙命
+[姜恒之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn55wz)
+姜恒之命
+[周勃之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn5ik3)
+周勃之命
+[乐谷之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn5v77)
+乐谷之命
+[赵奢之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn67ub)
+赵奢之命
+[陆贾之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn6khf)
+陆贾之命
+[杨孔目命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn6x4j)
+杨孔目命
+[郭恪之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn79rn)
+郭恪之命
+[叶英之命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn7mer)
+叶英之命
+[王钦若命](https://www.shidianguji.com/book/SDZJ0170/chapter/1jvzop8fn7z1v)
+王钦若命
+登录后阅读更方便
