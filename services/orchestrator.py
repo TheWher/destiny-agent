@@ -14,6 +14,7 @@
 
 import json
 import os
+import re
 import time
 import traceback
 from dataclasses import dataclass, field
@@ -23,6 +24,90 @@ if TYPE_CHECKING:
     from services.plugin_manager import SandboxPolicy
 
 # ── 类型定义 ─────────────────────────────────────────────
+
+_META_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "knowledge_base", "obsidian_meta")
+_META_CACHE = None
+
+
+def _obsidian_meta_tags(rel_file: str) -> dict:
+    """读取 Obsidian 素材的结构化语义标签（文体/结局梯度/引文链）。
+
+    数据源：knowledge_base/obsidian_meta/*.json（mose 语义资产）：
+      - style_tags.json：三层六类文体规格（含章节→文体映射）
+      - outcome_grades.json：结局词梯度 L1-L4 定义
+      - quote_chains.json：跨卷引文链（去重依据）
+    返回：{styles, outcome_grades, quote_chains}；文件缺失时返回空 dict。
+    """
+    global _META_CACHE
+    if _META_CACHE is None:
+        cache = {}
+        if os.path.isdir(_META_DIR):
+            for fn in os.listdir(_META_DIR):
+                if not fn.endswith(".json"):
+                    continue
+                try:
+                    with open(os.path.join(_META_DIR, fn), encoding="utf-8") as f:
+                        cache[fn] = json.load(f)
+                except Exception:
+                    cache[fn] = {}
+        _META_CACHE = cache
+    if not _META_CACHE:
+        return {}
+
+    out = {}
+    # 1) 文体：从 style_tags 提取 章节→文体 映射（文件级标注：该文件涉及的文体集合）
+    st = _META_CACHE.get("style_tags.json", {})
+    chapter_style = {}
+    for _lname, lv in (st.get("分层") or {}).items():
+        for sname, sv in (lv.get("子类") or {}).items():
+            for ch in (sv.get("章节") or []):
+                chapter_style[ch] = sname
+    base = os.path.basename(rel_file)
+    styles = []
+    for ch, st_name in chapter_style.items():
+        if ch in base or ch in _file_title_hint(base, st):
+            if st_name not in styles:
+                styles.append(st_name)
+    if styles:
+        out["styles"] = styles
+
+    # 2) 结局词梯度表（供解读 Agent 对照断语严重度）
+    og = _META_CACHE.get("outcome_grades.json", {})
+    grades = og.get("梯度") or {}
+    if grades:
+        out["outcome_grades"] = {
+            k: {"描述": v.get("描述", ""), "词": v.get("词", [])[:5]}
+            for k, v in grades.items()
+        }
+
+    # 3) 引文链主题（跨卷同源提示，去重依据）
+    qc = _META_CACHE.get("quote_chains.json", {})
+    chains = qc.get("链") or []
+    if chains:
+        out["quote_chains"] = [
+            {"主题": c.get("主题"), "关系": c.get("关系")} for c in chains
+        ]
+    return out
+
+
+def _file_title_hint(base: str, style_tags: dict) -> str:
+    """从文件名提取章节线索（如 juan1/卷之一 等），辅助文体匹配。"""
+    hints = []
+    if "卷之一" in base or "juan1" in base:
+        hints.append("卷之一")
+    if "卷之二" in base or "juan2" in base:
+        hints.append("卷之二")
+    if "卷之三" in base or "juan3" in base:
+        hints.append("卷之三")
+    if "卷之四" in base or "juan4" in base:
+        hints.append("卷之四")
+    if "卷之五" in base or "juan5" in base:
+        hints.append("卷之五")
+    if "命圖" in base or "mingtu" in base:
+        hints.append("命圖")
+    return "|".join(hints)
+
 
 @dataclass
 class ToolDef:
@@ -824,6 +909,75 @@ class AnalysisOrchestrator:
                     "top_k": {"type": "integer", "description": "返回条目数"},
                 },
                 "required": ["query", "kb_name"],
+            },
+            category="query",
+        ))
+
+        def _tool_kb_obsidian_retrieve(query: str, system: str = "",
+                                       top_k: int = 5) -> dict:
+            """Obsidian 知识库检索（古籍断语+出处链证据包）
+
+            双源策略（2026-08-14 团队共识）：同源断语 Obsidian 优先（带出处链），
+            JSON 知识库（kb_retrieve）当兜底。本工具命中即返回证据包：
+            title/url/source/authority/excerpt + 结构化标签（文体/结局梯度，
+            来自 knowledge_base/obsidian_meta/，mose 资产落盘后生效）。
+            """
+            try:
+                from knowledge_base.obsidian_retriever import retrieve, evidence_pack, _normalize
+            except Exception as e:
+                return {"error": f"obsidian_retriever 不可用: {e}"}
+            sys_filter = system.strip() or None
+            hits = retrieve(query, system=sys_filter, top_k=max(top_k * 10, 50))
+            # 重排：古籍原文（raw 素材断语）优先，是解读引用的首选；笔记/MOC 次之
+            def _rank_key(item):
+                _s, h = item
+                a = h.get("authority", "") or ""
+                if "古籍原文" in a:
+                    return 0
+                if h.get("type") in ("moc", "note"):
+                    return 1
+                return 2
+            hits.sort(key=lambda it: (_rank_key(it), -it[0]))
+            packs = []
+            _obsidian_meta_tags("")
+            per_line = {}
+            for _fn, _data in (_META_CACHE or {}).items():
+                if _fn == "style_tags_per_line.json" and isinstance(_data, list):
+                    per_line = {(str(x.get("PageId")), str(x.get("行号"))): x.get("文体", "") for x in _data if x.get("PageId")}
+            for _score, h in hits[:top_k]:
+                ep = evidence_pack(h)
+                ep["source_kb"] = "obsidian"
+                ep["file"] = h["file"]
+                ep["meta"] = _obsidian_meta_tags(h["file"])
+                # 行级文体标签：从素材表格找含查询词的行，按 PageId 查 per_line 表
+                if per_line:
+                    tags = []
+                    for m in re.finditer(r"\|\s*\d+\s*\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|", h.get("body", "")):
+                        _ln, _lt, _pid, _txt = m.groups()
+                        if _normalize(_txt).find(_normalize(query)) >= 0 and (str(_pid), _ln) in per_line:
+                            tags.append({"行号": _ln, "PageId": _pid, "文体": per_line[(str(_pid), _ln)], "原文": _txt.strip()[:50]})
+                    if tags:
+                        ep["meta"]["line_tags"] = tags[:5]
+                packs.append(ep)
+            return {
+                "text": json.dumps(packs, ensure_ascii=False, indent=1),
+                "hits": len(packs),
+                "kb": "obsidian",
+                "note": "Obsidian 优先于 JSON 库；同源断语以此为准",
+            }
+
+        self.tools.register(ToolDef(
+            name="kb_obsidian_retrieve",
+            description="从 Obsidian 古籍知识库检索断语（带出处链与结构化标签）。与 kb_retrieve 互补：同源命中时本工具优先（出处链完整、含文体/结局梯度标签），JSON 库当兜底。",
+            fn=_tool_kb_obsidian_retrieve,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "检索关键词（星曜/断语/宫位等）"},
+                    "system": {"type": "string", "description": "体系过滤（三合/飞星），可选"},
+                    "top_k": {"type": "integer", "description": "返回条目数"},
+                },
+                "required": ["query"],
             },
             category="query",
         ))

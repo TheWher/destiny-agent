@@ -20,6 +20,35 @@ _KB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'obsidian')
 
 AUTHORITY_ORDER = ['本人确认', '古籍原文', '官方', '百科', '个人站']
 
+# ── 简繁+异体归一（2026-08-14 hanako 验出缺陷、mose 补异体坑后加） ──
+# opencc t2s 处理繁简；异体字 opencc 不覆盖，用表补充（㐫/凶/兇 互通为卷二 431 实证）
+_VARIANT_MAP = {
+    '㐫': '凶',
+    '兇': '凶',
+    '䧟': '陷',
+    '𢙣': '恶',
+    '𠔥': '兼',
+    '尢': '尤',
+}
+_NORM_CC = None
+
+
+def _normalize(text: str) -> str:
+    """简繁归一（t2s）+ 异体字归一，供检索匹配；不改变原文存储。"""
+    global _NORM_CC
+    if not text:
+        return ""
+    if _NORM_CC is None:
+        try:
+            from opencc import OpenCC
+            _NORM_CC = OpenCC('t2s')
+        except Exception:
+            _NORM_CC = None
+    s = _NORM_CC.convert(text) if _NORM_CC else text
+    for v, n in _VARIANT_MAP.items():
+        s = s.replace(v, n)
+    return s
+
 
 def _parse_frontmatter(text):
     """解析 md frontmatter（简易 key: value，含列表只取首项）"""
@@ -53,6 +82,7 @@ def _load_all():
             docs.append({
                 'file': os.path.relpath(path, _KB_DIR).replace(os.sep, '/'),
                 'title': fm.get('title', f),
+                'title_norm': _normalize(fm.get('title', f)),
                 'status': fm.get('status', ''),
                 'authority': fm.get('authority', ''),
                 'system': fm.get('system', ''),
@@ -60,6 +90,7 @@ def _load_all():
                 'url': fm.get('url', ''),
                 'source': fm.get('source', ''),
                 'body': body,
+                'body_norm': _normalize(body),
             })
     return docs
 
@@ -68,7 +99,8 @@ def retrieve(term, system=None, top_k=5, _docs=None):
     """关键词检索，返回按 消歧页提权 + digested 优先 + authority 排序的证据包列表"""
     if _docs is None:
         _docs = _load_all()
-    t = term.strip()
+    t = _normalize(term)
+    t = t.strip()
     if not t:
         return []
 
@@ -76,8 +108,8 @@ def retrieve(term, system=None, top_k=5, _docs=None):
     for d in _docs:
         if system and d['system'] and system != d['system']:
             continue
-        title_hit = t in d['title']
-        body_hit = t in d['body']
+        title_hit = t in d.get('title_norm', '')
+        body_hit = t in d.get('body_norm', '')
         if not (title_hit or body_hit):
             continue
         # 计分：title 命中 > body 命中；消歧页提权；digested > raw；authority 排序
