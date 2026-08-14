@@ -4,7 +4,6 @@ url: https://www.ziweicn.com/show/3389.html
 source: 紫微斗数学堂 ziweicn.com
 fetched_at: 2026-08-12T10:06:41
 status: raw
-authority: 注疏体剥离（原文段，来源见各段标注）
 system: 古籍
 tags:
   - 素材

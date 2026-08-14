@@ -21,7 +21,14 @@ logger = logging.getLogger(__name__)
 
 _KB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'obsidian')
 
-AUTHORITY_ORDER = ['本人确认', '古籍原文', '官方', '百科', '个人站']
+AUTHORITY_ORDER = ['本人确认', '古籍原文', '古籍数字化平台', '官方', '百科', '个人站']
+
+# 古籍权威层：raw 惩罚豁免对象（数字化原文只低原文半档，2026-08-14 质检定）
+_ANCIENT_AUTHORITIES = ('古籍原文', '古籍数字化平台')
+
+
+def _is_ancient(a):
+    return any(level in a for level in _ANCIENT_AUTHORITIES)
 
 # ── 简繁+异体归一（2026-08-14 hanako 验出缺陷、mose 补异体坑后加） ──
 # opencc t2s 处理繁简；异体字 opencc 不覆盖，用表补充（㐫/凶/兇 互通为卷二 431 实证）
@@ -68,8 +75,13 @@ def _parse_frontmatter(text):
 
 
 def _authority_rank(fm):
+    """best-rank-wins 包含匹配：authority 值带括号变体（如「本人确认（数据层…）」）也归位
+    （2026-08-14 质检修：原精确匹配把 10 个变体值全打为未知 rank 垫底）"""
     a = fm.get('authority', '')
-    return AUTHORITY_ORDER.index(a) if a in AUTHORITY_ORDER else len(AUTHORITY_ORDER)
+    for i, level in enumerate(AUTHORITY_ORDER):
+        if level in a:
+            return i
+    return len(AUTHORITY_ORDER)
 
 
 def _load_all():
@@ -122,7 +134,8 @@ def retrieve(term, system=None, top_k=5, _docs=None):
             score += 100
         if d['status'] == 'digested':
             score += 20
-        elif d['status'] == 'raw':
+        elif d['status'] == 'raw' and not _is_ancient(d.get('authority', '')):
+            # 古籍权威层 raw 豁免（2026-08-14 质检修：raw -20 会压过 authority 优势，古籍原文被埋出 top5）
             score -= 20
         score -= _authority_rank(d) * 2
         scored.append((score, d))

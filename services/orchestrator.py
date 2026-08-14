@@ -923,16 +923,16 @@ class AnalysisOrchestrator:
             来自 knowledge_base/obsidian_meta/，mose 资产落盘后生效）。
             """
             try:
-                from knowledge_base.obsidian_retriever import retrieve, evidence_pack, _normalize
+                from knowledge_base.obsidian_retriever import retrieve, evidence_pack, _normalize, _is_ancient
             except Exception as e:
                 return {"error": f"obsidian_retriever 不可用: {e}"}
             sys_filter = system.strip() or None
             hits = retrieve(query, system=sys_filter, top_k=max(top_k * 10, 50))
-            # 重排：古籍原文（raw 素材断语）优先，是解读引用的首选；笔记/MOC 次之
+            # 重排：古籍权威（古籍原文/古籍数字化平台）优先，是解读引用的首选；笔记/MOC 次之
+            # （2026-08-14 统一为 retriever._is_ancient 单一来源，消除三处拷贝漂移）
             def _rank_key(item):
                 _s, h = item
-                a = h.get("authority", "") or ""
-                if "古籍原文" in a:
+                if _is_ancient(h.get("authority", "") or ""):
                     return 0
                 if h.get("type") in ("moc", "note"):
                     return 1

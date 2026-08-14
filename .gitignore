@@ -41,3 +41,7 @@ routes/share/
 # 会话归档（发码前数据卫生用，绝不入库）
 sessions_archive/
 
+
+# 临时探测/验证目录（不入库）
+tmp_sdzj0170/
+

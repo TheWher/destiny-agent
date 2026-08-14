@@ -4,7 +4,6 @@ url: https://www.ziweishuyuan.com/textbook/ziwei-complete-works/188.html
 source: 紫微取象派 ziweishuyuan.com
 fetched_at: 2026-08-12T10:06:41
 status: raw
-authority: 注疏体剥离（原文段，来源见各段标注）
 system: 古籍
 tags:
   - 素材

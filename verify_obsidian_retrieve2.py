@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""复验 kb_obsidian_retrieve（湘生修复后）：简体/异体搜索、meta 三字段、证据包。"""
+"""复验 kb_obsidian_retrieve（湘生修复后）：简体/异体搜索、meta 三字段、证据包。
+⚠️ 已过期：管道逻辑以 services/orchestrator 为准，本脚本 _rank_key 为旧单键版
+（只认古籍原文，不含古籍数字化平台），仅作历史行为参照，勿用于验证（2026-08-14 标注）。
+"""
 import sys, os, json
 BASE = r"D:\OH-WorkSpace\Destiny_agent"
 sys.path.insert(0, BASE)
