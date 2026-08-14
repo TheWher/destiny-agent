@@ -29,6 +29,12 @@
 - **测试** 新增 test_no_orphan_tools 孤儿工具守卫：所有已注册 Tool 必须至少挂进一个 capability，未装配即红（机器校验替代靠人记得挂）
 - 139 全绿（138 + 孤儿守卫 1 条）
 
+### 消费端指令落地（2026-08-14 15:49，草案 rev2）
+- **决策点** 草案 rev1 的 L1/L4 方向标反（hanako/mose 双核 outcome_grades.json v1.2 纠正）：四级梯度 L1 遇凶陈述最轻（未定死伤）→ L4 死亡终局最重（含 L4_修辞型如「其数安能逃哉」语义同为必死），按原样落地即反向校准
+- **变更** ziwei-master.md 新增两节：结局梯度校准（校准锚非内容源、无标签中性、禁搬梯度文字）+ 断语出处纪律（关键断语强制带出处、泛论不强制、出处只取证据包禁凭记忆编）；traditional-bazi-master.md 加双源句（bazi 侧已内嵌经典出处纪律，出处纪律轻量版设计时再定，挂账）
+- **决策点** 双源句落地于两个 agent md 而非 routes FC（生产路径无 run_with_fc 调用，routes 走 _load_*_system_prompt）；草案归档 docs/prompt_consumption_draft_20260814.md
+- 139 全绿保持
+
 ### 挂账（2026-08-14 14:33 更新）
 - 已清：注疏体剥离 authority 语义错位（3 篇删冗余 authority 行，信息在 title/type/source，行为不变，138 全绿）
 - 已回滚：古籍断语标注补 status=digested 实测挤出古籍原文 top5（个人站 digested 11 vs 古籍原文 -1，+20 压过权威层），回滚保持 status 空
