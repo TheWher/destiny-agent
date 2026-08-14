@@ -32,6 +32,37 @@ def test_sihua_disambiguation_first():
     assert hits and hits[0]['type'] == 'disambiguation', [h['title'] for h in hits]
 
 
+def test_outcome_grades_per_hit_level():
+    """结局梯度 per-hit 定级（2026-08-14 补）：证据包 meta 必须带行级梯度标签
+
+    背景：rev2 措辞「命中条目自带梯度标签」数据层永不成立（evidence_pack 无 per-hit 标签，
+    meta 只挂完整 L1-L4 词表），严格照做恒中性。修复：工具侧扫含查询词的行，
+    命中结局词即挂 outcome_grades_level（机器定级，级别从重到轻+词长降序防子串冲突）。
+    """
+    from services.orchestrator import AnalysisOrchestrator
+    import json
+
+    orch = AnalysisOrchestrator()
+    orch.register_defaults()
+
+    # 命例体结局词：p466 古峯僧命 → L4_修辞型；p491 吕太后命 → L4_死亡终局
+    for q, expect in [('其数安能逃哉', 'L4_修辞型'), ('夀終', 'L4_死亡终局')]:
+        r = orch.tools.call('kb_obsidian_retrieve', query=q, top_k=3)
+        assert r.success, r.error
+        packs = json.loads(r.data['text'])
+        assert any(
+            p['meta'].get('outcome_grades_level') == expect
+            for p in packs
+        ), f"{q}: 未找到 {expect} 定级，实际={[p['meta'].get('outcome_grades_level') for p in packs]}"
+
+    # 赋体段无结局词（禄逢冲破：吉处藏凶非词表词）→ 中性兜底，不得被全文别处污染
+    r = orch.tools.call('kb_obsidian_retrieve', query='禄逢冲破', top_k=5)
+    packs = json.loads(r.data['text'])
+    for p in packs:
+        assert 'outcome_grades_level' not in p['meta'], \
+            f"{p['file']}: 禄逢冲破段不应被全文别处结局词污染"
+
+
 def test_raw_exemption_limited_to_ancient():
     """raw 豁免只给古籍权威层：top5 不允许出现非古籍权威的 raw（防豁免范围扩大）
     注：digested 优先（+20）是既有机制未改动，此处钉的是修复边界"""

@@ -944,11 +944,34 @@ class AnalysisOrchestrator:
             for _fn, _data in (_META_CACHE or {}).items():
                 if _fn == "style_tags_per_line.json" and isinstance(_data, list):
                     per_line = {(str(x.get("PageId")), str(x.get("行号"))): x.get("文体", "") for x in _data if x.get("PageId")}
+            # 结局梯度词表摊平（per-hit 定级用）：级别从重到轻 + 同级别词长降序，
+            # 防子串冲突（「甚㐫」含「㐫」、「是以㐫也」含「㐫也」）让短词先抢
+            # （2026-08-14 hanako 抓结构缺口：evidence_pack 无 per-hit 梯度标签，
+            #   rev2 措辞「命中条目自带梯度标签」数据层永不成立，恒中性；此段补机器定级）
+            _LEVEL_WEIGHT = {"L4_死亡终局": 0, "L4_修辞型": 0, "L3_伤亡": 1, "L2_断凶": 2, "L1_遇凶陈述": 3}
+            _og = (_META_CACHE.get("outcome_grades.json") or {}).get("梯度") or {}
+            _grade_words = sorted(
+                ((lv, w) for lv, v in _og.items() for w in (v.get("词") or [])),
+                key=lambda t: (_LEVEL_WEIGHT.get(t[0], 9), -len(t[1])),
+            )
             for _score, h in hits[:top_k]:
                 ep = evidence_pack(h)
                 ep["source_kb"] = "obsidian"
                 ep["file"] = h["file"]
                 ep["meta"] = _obsidian_meta_tags(h["file"])
+                # 结局梯度 per-hit 定级：只扫含查询词的行（按行切分，不依赖表格列数，
+                # 防全文别处结局词污染本段定级，如全覽 6 万字别处「命終」误挂到「禄逢冲破」段）；
+                # 无命中行则不定级（中性兜底）
+                if _grade_words:
+                    _rows = [ln for ln in (h.get("body", "") or "").splitlines()
+                             if "|" in ln and _normalize(query) in _normalize(ln)]
+                    _g = None
+                    if _rows:
+                        _hay = "\n".join(_rows)
+                        _g = next((t for t in _grade_words if t[1] in _hay), None)
+                    if _g:
+                        ep["meta"]["outcome_grades_level"] = _g[0]
+                        ep["meta"]["outcome_grades_word"] = _g[1]
                 # 行级文体标签：从素材表格找含查询词的行，按 PageId 查 per_line 表
                 if per_line:
                     tags = []

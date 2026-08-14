@@ -35,6 +35,13 @@
 - **决策点** 双源句落地于两个 agent md 而非 routes FC（生产路径无 run_with_fc 调用，routes 走 _load_*_system_prompt）；草案归档 docs/prompt_consumption_draft_20260814.md
 - 139 全绿保持
 
+### 结局梯度 per-hit 定级（2026-08-14 16:00，hanako 抓结构缺口）
+- **决策点** rev2 校准条件「命中条目自带梯度标签」数据层永不成立：evidence_pack 只带 title/url/source/authority/excerpt，meta 挂的是完整 L1-L4 词表（每包同一张表），严格照做输出恒中性，验收光谱「带出处+中性=弱生效」会误判放行（hanako/mose 双核证实）
+- **修法 a（机器定级）** orchestrator 工具侧扫含查询词的行（按行切分不依赖表格列数，防全文别处结局词污染本段），对照 outcome_grades 词表命中即挂 meta.outcome_grades_level + outcome_grades_word；级别从重到轻（L4 死亡终局/修辞型 → L3 → L2 → L1）+ 同级别词长降序，防子串冲突（「甚㐫」含「㐫」）
+- **行为验证** 禄逢冲破段无结局词→中性（赋体不定级，正确）；「其数安能逃哉」→L4_修辞型（p466）、「夀終」→L4_死亡终局（p491）
+- **测试** test_obsidian_retriever.py 新增 test_outcome_grades_per_hit_level（L4 两型正判定级 + 禄逢冲破防污染）
+- 140 全绿（139 + 定级 1 条）
+
 ### 挂账（2026-08-14 14:33 更新）
 - 已清：注疏体剥离 authority 语义错位（3 篇删冗余 authority 行，信息在 title/type/source，行为不变，138 全绿）
 - 已回滚：古籍断语标注补 status=digested 实测挤出古籍原文 top5（个人站 digested 11 vs 古籍原文 -1，+20 压过权威层），回滚保持 status 空
