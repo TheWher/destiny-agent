@@ -1,0 +1,12 @@
+# 生产部署清单（免费档 pythonwhere 专用，2026-08-14 建）
+# 只放生产必需依赖，总量约 6MB，适配免费档 500MB 磁盘配额。
+# 禁止用此清单之外的方式整包重装：requirements.txt 含 sentence-transformers，
+# 会强制拉 torch（约 500MB）直接打爆免费档配额。
+# 部署机一律：pip install -r requirements-prod.txt
+flask>=3.1.0
+fpdf2>=2.8.0
+requests>=2.34.0
+zhdate>=0.1
+iztro-py>=0.3.5,<0.4
+sxtwl>=2.0.0
+opencc-python-reimplemented>=0.1.7

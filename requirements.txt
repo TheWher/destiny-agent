@@ -4,5 +4,5 @@ requests>=2.34.0
 zhdate>=0.1
 iztro-py>=0.3.5,<0.4
 sxtwl>=2.0.0
-sentence-transformers>=2.7.0
+sentence-transformers>=2.7.0  # 生产勿装（拉 torch ~500MB，超免费档配额；免费档不跑 embedding，见 requirements-prod.txt）
 opencc-python-reimplemented>=0.1.7

@@ -36,6 +36,7 @@
 
 ## 0. 拉取
 
+- [ ] **依赖安装（免费档铁律，2026-08-14 定）**：一律 `pip install -r requirements-prod.txt`（约 6MB），**禁止**整包重装 `requirements.txt`——其中 sentence-transformers 会强制拉 torch（约 500MB），超过免费档磁盘配额直接打爆网页。生产增量装依赖时只装新增的那一个包。
 - [ ] `git pull` 一次拉全，对照 `git log --oneline -3` 最新一条（如 3e8a5b8 或更新的 commit），能对上即拉全
 - [ ] 确认 `scripts/ziwei_sessions_tool.py` 存在
 - [ ] 确认 `.gitignore` 含 `routes/share/` 与 `sessions_archive/`
