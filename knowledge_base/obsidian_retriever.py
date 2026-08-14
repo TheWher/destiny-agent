@@ -15,6 +15,9 @@
 """
 import os
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 _KB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'obsidian')
 
@@ -44,6 +47,7 @@ def _normalize(text: str) -> str:
             _NORM_CC = OpenCC('t2s')
         except Exception:
             _NORM_CC = None
+            logger.warning("opencc 不可用，简繁归一失效（仅异体字表生效）— pip install opencc-python-reimplemented")
     s = _NORM_CC.convert(text) if _NORM_CC else text
     for v, n in _VARIANT_MAP.items():
         s = s.replace(v, n)

@@ -5,3 +5,4 @@ zhdate>=0.1
 iztro-py>=0.3.5,<0.4
 sxtwl>=2.0.0
 sentence-transformers>=2.7.0
+opencc-python-reimplemented>=0.1.7
