@@ -775,31 +775,42 @@ def verify_interpretation_against_plate(analysis_text: str, plate_dict: dict) ->
         unverified.append('decadal_mutagen')
 
     # 5. 格局引用（肯定语境）：LLM 声称有某格局但盘面引擎判无 → 逮
+    # 2026-08-14 mose 修（生产 bug）：canon 两侧统一去「格」后缀。旧逻辑 alias 把
+    # 「日月并明」映射成「日月并明格」，但引擎名就是「日月并明」（无格后缀），canon
+    # 永远对不上 engine_pats，导致 King 盘（日月并明成立）的正确提及被修正循环改写为
+    # 「无日月并明」。实测复现：text='此盘日月并明成立，明珠出海亦成' → 改写为
+    # '此盘无日月并明成立'。修复后引擎名与文本提及统一走 _geju_canon（alias + 去格）。
+    _GEJU_ALIAS = {'机月同梁': '机月同梁格', '机月格': '机月同梁格', '杀破狼': '杀破狼格',
+                   '紫府朝垣': '紫府朝垣格', '府相朝垣': '府相朝垣格', '火贪': '火贪格',
+                   '铃贪': '铃贪格', '日月并明': '日月并明格', '石中隐玉': '石中隐玉格',
+                   '紫微天府': '紫府同宫', '君臣庆会': '君臣庆会', '月朗天门': '月朗天门',
+                   '日照雷门': '日照雷门'}
+
+    def _geju_canon(n):
+        c = _GEJU_ALIAS.get(n, n)
+        return c[:-1] if c.endswith('格') else c
+
     try:
         from ziwei_calculator import detect_patterns
-        engine_pats = {p.get('name', '') for p in detect_patterns(plate_dict)}
+        engine_pats = {_geju_canon(p.get('name', '')) for p in detect_patterns(plate_dict)}
     except Exception:
         engine_pats = set()
     if engine_pats:
-        _GEJU_ALIAS = {'机月同梁': '机月同梁格', '机月格': '机月同梁格', '杀破狼': '杀破狼格',
-                       '紫府朝垣': '紫府朝垣格', '府相朝垣': '府相朝垣格', '火贪': '火贪格',
-                       '铃贪': '铃贪格', '日月并明': '日月并明格', '石中隐玉': '石中隐玉格',
-                       '紫微天府': '紫府同宫', '君臣庆会': '君臣庆会', '月朗天门': '月朗天门',
-                       '日照雷门': '日照雷门'}
-        _known_names = sorted(set(engine_pats) | set(_GEJU_ALIAS.keys()) | set(_GEJU_ALIAS.values()), key=len, reverse=True)
+        _known_names = sorted({_geju_canon(n) for n in
+                               (set(engine_pats) | set(_GEJU_ALIAS.keys()) | set(_GEJU_ALIAS.values()))},
+                              key=len, reverse=True)
         _reported_geju = set()  # 按 canon 去重（'日月并明'与'日月并明格'同源只报一次）
         for gname in _known_names:
-            canon = _GEJU_ALIAS.get(gname, gname)
-            if canon in _reported_geju:
+            if gname in _reported_geju:
                 continue
             for m in re.finditer(re.escape(gname), text):
                 pre = text[max(0, m.start() - 6):m.start()]
                 if any(neg in pre for neg in ('无', '未', '不', '非', '不成', '没有', '不具备')):
                     continue
-                if canon not in engine_pats:
+                if gname not in engine_pats:
                     issues.append({'type': 'geju', 'found': gname, 'expected': '盘面无此格局',
                                   'raw': m.group(0)})
-                    _reported_geju.add(canon)
+                    _reported_geju.add(gname)
                     break
     else:
         unverified.append('geju')  # 引擎格局判读不可用时诚实标注
