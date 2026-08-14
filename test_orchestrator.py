@@ -246,34 +246,42 @@ def _run_all():
 
     # get_tools_for_capability
     bazi_tools = orch.get_tools_for_capability("bazi_analysis")
-    check("bazi_analysis 关联 5 个 Tool",
-          len(bazi_tools) == 5,
+    check("bazi_analysis 关联 6 个 Tool",
+          len(bazi_tools) == 6,
           f"实际: {bazi_tools}")
     check("bazi_analysis 包含 paipan_bazi",
           "paipan_bazi" in bazi_tools)
     check("bazi_analysis 包含 wuxing_query",
           "wuxing_query" in bazi_tools)
+    check("bazi_analysis 包含 kb_obsidian_retrieve",
+          "kb_obsidian_retrieve" in bazi_tools)
     check("bazi_analysis 包含 kb_retrieve",
           "kb_retrieve" in bazi_tools)
 
     ziwei_tools = orch.get_tools_for_capability("ziwei_analysis")
-    check("ziwei_analysis 关联 5 个 Tool",
-          len(ziwei_tools) == 5,
+    check("ziwei_analysis 关联 6 个 Tool",
+          len(ziwei_tools) == 6,
           f"实际: {ziwei_tools}")
     check("ziwei_analysis 包含 paipan_ziwei",
           "paipan_ziwei" in ziwei_tools)
+    check("ziwei_analysis 包含 kb_obsidian_retrieve",
+          "kb_obsidian_retrieve" in ziwei_tools)
 
     verify_tools = orch.get_tools_for_capability("verify_panel")
-    check("verify_panel 关联 5 个 Tool（含 paipan）",
-          len(verify_tools) == 5,
+    check("verify_panel 关联 6 个 Tool（含 paipan）",
+          len(verify_tools) == 6,
           f"实际: {verify_tools}")
     check("verify_panel 包含 kb_retrieve",
           "kb_retrieve" in verify_tools)
+    check("verify_panel 包含 kb_obsidian_retrieve",
+          "kb_obsidian_retrieve" in verify_tools)
 
     cross_tools = orch.get_tools_for_capability("cross_validate")
-    check("cross_validate 关联 7 个 Tool（全量）",
-          len(cross_tools) == 7,
+    check("cross_validate 关联 8 个 Tool（全量）",
+          len(cross_tools) == 8,
           f"实际: {cross_tools}")
+    check("cross_validate 包含 kb_obsidian_retrieve",
+          "kb_obsidian_retrieve" in cross_tools)
 
     # 不存在的 Capability
     check("不存在的能力返回空列表",
@@ -328,13 +336,15 @@ def _run_all():
 
     # 验证 Tool 动态注入逻辑
     bazi_tools = orch.get_tools_for_capability("bazi_analysis")
-    check("bazi_analysis 的 Tool 有 5 个",
-          len(bazi_tools) == 5,
+    check("bazi_analysis 的 Tool 有 6 个",
+          len(bazi_tools) == 6,
           f"实际: {bazi_tools}")
 
     # tool_names 匹配验证
     check("bazi_analysis Tool 包含 paipan_bazi",
           "paipan_bazi" in bazi_tools)
+    check("bazi_analysis Tool 包含 kb_obsidian_retrieve",
+          "kb_obsidian_retrieve" in bazi_tools)
     check("bazi_analysis Tool 包含 kb_retrieve",
           "kb_retrieve" in bazi_tools)
     check("bazi_analysis Tool 包含 memory_retrieve",
@@ -476,6 +486,22 @@ def test_error_path_route_no_inject_without_plate_dict():
     result = _new_orch().route("帮我排八字", inject_tools=False)
     assert isinstance(result, CapabilityResult)
     assert not result.success
+
+
+def test_no_orphan_tools():
+    """孤儿工具守卫：所有已注册 Tool 必须至少挂进一个 Capability
+
+    2026-08-14 kb_obsidian_retrieve 注册后未挂任何 capability、默认解读流程
+    走不到 obsidian 库。此用例把"靠人记得挂"换成机器校验：新增工具未装配即红。
+    """
+    orch = _new_orch()
+    orch.register_defaults()
+    all_tools = set(t.name for t in orch.tools.list_all())
+    mounted = set()
+    for cap in orch.capabilities.list_all():
+        mounted.update(orch.get_tools_for_capability(cap.name))
+    orphans = all_tools - mounted
+    assert not orphans, f"孤儿工具未挂进任何 Capability: {sorted(orphans)}"
 
 
 if __name__ == "__main__":

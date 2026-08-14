@@ -968,7 +968,7 @@ class AnalysisOrchestrator:
 
         self.tools.register(ToolDef(
             name="kb_obsidian_retrieve",
-            description="从 Obsidian 古籍知识库检索断语（带出处链与结构化标签）。与 kb_retrieve 互补：同源命中时本工具优先（出处链完整、含文体/结局梯度标签），JSON 库当兜底。",
+            description="从 Obsidian 古籍知识库检索断语（带出处链与结构化标签）。断语/古籍引用优先调用本工具，命中即用；kb_retrieve（JSON 库）仅作本工具未命中时的兜底。同源命中时本工具优先（出处链完整、含文体/结局梯度标签）。",
             fn=_tool_kb_obsidian_retrieve,
             parameters={
                 "type": "object",
@@ -1057,7 +1057,7 @@ class AnalysisOrchestrator:
                 "刑冲合害", "神煞参考", "大运流年", "交叉验证",
             ],
             category="analysis",
-            tools=["paipan_bazi", "wuxing_query", "kb_retrieve", "memory_retrieve", "memory_store"],
+            tools=["paipan_bazi", "wuxing_query", "kb_obsidian_retrieve", "kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
         # ── 紫微分析流水线 ──
@@ -1077,7 +1077,7 @@ class AnalysisOrchestrator:
                 "大限流年", "叠盘分析",
             ],
             category="analysis",
-            tools=["paipan_ziwei", "star_lookup", "kb_retrieve", "memory_retrieve", "memory_store"],
+            tools=["paipan_ziwei", "star_lookup", "kb_obsidian_retrieve", "kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
         # ── 验盘流水线 ──
@@ -1095,7 +1095,7 @@ class AnalysisOrchestrator:
             fn=_cap_verify_panel,
             stages=["信号提取", "事件倒推", "等级标注", "合规校验"],
             category="verify",
-            tools=["paipan_bazi", "paipan_ziwei", "kb_retrieve", "memory_retrieve", "memory_store"],
+            tools=["paipan_bazi", "paipan_ziwei", "kb_obsidian_retrieve", "kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
         # ── 交叉验证流水线 ──
@@ -1150,7 +1150,7 @@ class AnalysisOrchestrator:
             fn=_cap_cross_validate,
             stages=["八字排盘", "八字独立分析", "紫微独立分析", "结论比对", "差异注入"],
             category="verify",
-            tools=["paipan_bazi", "paipan_ziwei", "wuxing_query", "star_lookup", "kb_retrieve", "memory_retrieve", "memory_store"],
+            tools=["paipan_bazi", "paipan_ziwei", "wuxing_query", "star_lookup", "kb_obsidian_retrieve", "kb_retrieve", "memory_retrieve", "memory_store"],
         ))
 
     def _register_skills(self):

@@ -23,6 +23,12 @@
 - **决策** 完整分层键序（消歧0/authority1/status2/命中3/文件名4）继续挂账：管道重排已实现古籍权威优先，剩余问题小，等真出问题再上
 - 138 全绿保持
 
+### 解读流程接入 obsidian 库（2026-08-14 15:44，King 问优化空间 → 韩湘生执行）
+- **决策点** 孤儿工具修复：kb_obsidian_retrieve 注册于 970 行但未挂进任何 capability，默认解读流程（ziwei/bazi 分析走 join_classics JSON 库）根本调不到 obsidian 库，今天修的检索质量默认路径用不上
+- **变更** 四个 capability（bazi_analysis/ziwei_analysis/verify_panel/cross_validate）tools 列表全部挂入 kb_obsidian_retrieve；工具 description 强化双源指令（断语/古籍引用优先 obsidian、命中即用，kb_retrieve JSON 仅兜底）
+- **测试** 新增 test_no_orphan_tools 孤儿工具守卫：所有已注册 Tool 必须至少挂进一个 capability，未装配即红（机器校验替代靠人记得挂）
+- 139 全绿（138 + 孤儿守卫 1 条）
+
 ### 挂账（2026-08-14 14:33 更新）
 - 已清：注疏体剥离 authority 语义错位（3 篇删冗余 authority 行，信息在 title/type/source，行为不变，138 全绿）
 - 已回滚：古籍断语标注补 status=digested 实测挤出古籍原文 top5（个人站 digested 11 vs 古籍原文 -1，+20 压过权威层），回滚保持 status 空
