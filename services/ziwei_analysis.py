@@ -131,6 +131,37 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
             parts.append(f"- {m['star']} → {m['mutagen']}（{m['palace']}·{m['branch']}）")
         parts.append("")
 
+    # ═══ 格局注入（2026-08-14 定案：引擎 detect_patterns + 破格表直接注入，LLM 不再自由发挥）═══
+    # 2026-08-17 补账：主解读路径此前未接入（08-14 注入只落在 routes/ziwei.py yearly 聚焦路径），
+    # 现与 yearly 同口径补齐：reject 不列、破格/受损/成立带核验状态与命中明细。
+    try:
+        from ziwei_calculator import detect_patterns as _detect_patterns
+        _detected = _detect_patterns(p)
+    except Exception as _e:
+        _pattern_str = f'无特殊格局（引擎检测失败：{_e}，禁止静默）'
+    else:
+        _g_lines = []
+        _g_st_map = {'成立': '✅', '受损': '⚠️', '破格': '❌', '不成立': '❌'}
+        for _pp in _detected:
+            if _pp.get('geju_status') == '不成立':
+                continue  # reject：不列格局
+            _g_st = _pp.get('geju_status', '成立')
+            _g_line = f"{_pp['name']}（{_pp.get('level', '')}）{_g_st_map.get(_g_st, '')}{_g_st}"
+            if _pp.get('palace'):
+                _g_line += f"[{_pp['palace']}]"
+            if _pp.get('breaking_hits'):
+                _g_line += ' 破格:' + ','.join(_pp['breaking_hits'])
+            if _pp.get('weakener_hits'):
+                _g_line += ' 减弱:' + ','.join(_pp['weakener_hits'])
+            if _pp.get('enhancer_hits'):
+                _g_line += ' 加分:' + ','.join(_pp['enhancer_hits'])
+            _g_lines.append(_g_line)
+        _pattern_str = '\n'.join(_g_lines) if _g_lines else '无特殊格局'
+    parts.append("## 格局（引擎判定+核验状态，禁止自行推翻；reject 已剔除不列）")
+    parts.append("")
+    parts.append(_pattern_str)
+    parts.append("")
+
     # ═══ 大限四化 + 流年数据（引擎计算，禁止 LLM 自行推算） ═══
     GAN_SIHUA = {
         '甲': {'化禄': '廉贞', '化权': '破军', '化科': '武曲', '化忌': '太阳'},
@@ -249,6 +280,13 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
     if geju_text:
         parts.append("\n## 🏛 格局诗（全书卷一，公版古籍；成格条件+断语，核验格局时引用）")
         parts.append(geju_text)
+
+    # ═══ 格局判据词典按需检索（2026-08-17 mose 加，今传口径+实测校正；显式否定常见误解，
+    # ═══ 治 LLM 窄口径 prior 盖过注入信息；与古籍诗桶分离，来源各自标注）═══
+    dict_text = retrieve_kb(geju_kw, "geju_dict.json", top_k=3)
+    if dict_text:
+        parts.append("\n## 📚 格局判据词典（今传口径+实测校正，常见误解栏显式否定；引用时以引擎盘面为准）")
+        parts.append(dict_text)
 
     # ═══ 卷三星曜分宫断语按需检索（2026-08-04 加，按盘面星曜取分宫断语）═══
     juan3_text = retrieve_kb(keywords, "ziwei_juan3.json", top_k=4)

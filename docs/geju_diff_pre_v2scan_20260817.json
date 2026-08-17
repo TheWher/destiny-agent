@@ -1,0 +1,1060 @@
+{
+  "meta": {
+    "note": "构造盘 expected 真值清单 v1（2026-08-14 hanako 建；2026-08-17 韩湘生填 baseline text）。来源：docs/geju_trigger_pans_v3.md 类别标签。text=注入前旧 prompt 路径的 LLM 原文风格判词（按 v3 旧引擎口径撰写：会照算格、reject 盘仍列名，不带校验器噪声）；expected=教材口径真值列，harness 按五类对齐规则裁决。kind=构造盘（验规则自洽，禁止当真人命例）"
+  },
+  "cases": [
+    {
+      "id": "ht-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        2,
+        1,
+        4,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "杀破狼",
+        "火贪",
+        "铃贪"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "杀破狼",
+        "火贪",
+        "铃贪"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "火贪": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "ht-clean-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        2,
+        2,
+        8,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "杀破狼",
+        "火贪",
+        "铃贪"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "杀破狼",
+        "火贪"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "铃贪"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "铃贪"
+      ],
+      "truth": {
+        "火贪": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "ht-brk-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        3,
+        4,
+        6,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "府相朝垣",
+        "杀破狼",
+        "火贪",
+        "紫微独坐"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "火贪",
+        "紫微独坐"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "府相朝垣",
+        "杀破狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "府相朝垣",
+        "杀破狼"
+      ],
+      "truth": {
+        "火贪": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "忌",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "ht-brk-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        3,
+        7,
+        18,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "府相朝垣",
+        "日照雷门",
+        "月朗天门",
+        "杀破狼",
+        "火贪",
+        "紫微独坐"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "府相朝垣",
+        "日照雷门",
+        "月朗天门",
+        "火贪"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "杀破狼",
+        "紫微独坐"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "杀破狼",
+        "紫微独坐"
+      ],
+      "truth": {
+        "火贪": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "ht-rej-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        5,
+        8,
+        14,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "杀破狼",
+        "火贪"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "杀破狼",
+        "火贪"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "火贪": {
+          "truth": "reject",
+          "engine_present": true,
+          "engine_status": "不成立",
+          "engine_level": "吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "ht-wkn-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        2,
+        26,
+        12,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "君臣庆会",
+        "杀破狼",
+        "火贪",
+        "紫微贪狼"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "君臣庆会",
+        "火贪",
+        "紫微贪狼"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "杀破狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "杀破狼"
+      ],
+      "truth": {
+        "火贪": {
+          "truth": "weakener",
+          "engine_present": true,
+          "engine_status": "受损",
+          "engine_level": "吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "ht-hz-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        27,
+        2,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "廉杀同宫",
+        "杀破狼",
+        "火贪"
+      ],
+      "sihua_labels": [
+        "官祿化权"
+      ],
+      "mentioned": [
+        "廉杀同宫",
+        "火贪"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "杀破狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "杀破狼"
+      ],
+      "truth": {
+        "火贪": {
+          "truth": "huizhao_only",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "忌",
+          "llm_mentioned": true,
+          "align": "known_dispute"
+        }
+      }
+    },
+    {
+      "id": "lt-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        28,
+        4,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "日照雷门",
+        "月朗天门",
+        "杀破狼",
+        "火贪",
+        "铃贪"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "日照雷门",
+        "月朗天门",
+        "杀破狼",
+        "铃贪"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "火贪"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "火贪"
+      ],
+      "truth": {
+        "铃贪": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "lt-clean-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        28,
+        12,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "杀破狼",
+        "火贪",
+        "铃贪"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "火贪"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "火贪"
+      ],
+      "truth": {
+        "铃贪": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "lt-brk-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        2,
+        6,
+        8,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "sihua_labels": [
+        "财帛宫化忌"
+      ],
+      "mentioned": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "铃贪": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "忌",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "lt-brk-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        2,
+        6,
+        12,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "sihua_labels": [
+        "财帛宫化忌"
+      ],
+      "mentioned": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "铃贪": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "lt-rej-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        2,
+        8,
+        0,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "sihua_labels": [
+        "财帛宫化忌"
+      ],
+      "mentioned": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "铃贪": {
+          "truth": "reject",
+          "engine_present": true,
+          "engine_status": "不成立",
+          "engine_level": "吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "lt-wkn-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        8,
+        12,
+        22,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "杀破狼",
+        "紫微贪狼",
+        "铃贪"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "紫微贪狼",
+        "铃贪"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "杀破狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "杀破狼"
+      ],
+      "truth": {
+        "铃贪": {
+          "truth": "weakener",
+          "engine_present": true,
+          "engine_status": "受损",
+          "engine_level": "吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "lt-hz-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        27,
+        16,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "杀破狼",
+        "火贪",
+        "铃贪"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "杀破狼",
+        "火贪",
+        "铃贪"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "铃贪": {
+          "truth": "huizhao_only",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "known_dispute"
+        }
+      }
+    },
+    {
+      "id": "jc-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        3,
+        16,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微七杀"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微七杀"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "君臣庆会": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "上吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "jc-clean-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        7,
+        20,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "君臣庆会": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "上吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "jc-brk-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        7,
+        12,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微破军"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "君臣庆会",
+        "紫微破军"
+      ],
+      "false_pos": [],
+      "false_neg": [
+        "杀破狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "杀破狼"
+      ],
+      "truth": {
+        "君臣庆会": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "jc-brk-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        13,
+        8,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "君臣庆会": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "sp-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        2,
+        0,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "杀破狼",
+        "紫微破军"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "杀破狼",
+        "紫微破军"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "杀破狼": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "sp-clean-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        3,
+        4,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "廉贪同宫",
+        "杀破狼"
+      ],
+      "sihua_labels": [
+        "官祿化权"
+      ],
+      "mentioned": [
+        "廉贪同宫",
+        "杀破狼"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "杀破狼": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "sp-brk-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        1,
+        18,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "杀破狼"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "杀破狼"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "杀破狼": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "忌",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "sp-brk-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        3,
+        2,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "杀破狼"
+      ],
+      "sihua_labels": [],
+      "mentioned": [
+        "杀破狼"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "杀破狼": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "忌",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "jy-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        2,
+        2,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "机月同梁"
+      ],
+      "sihua_labels": [
+        "财帛宫化忌"
+      ],
+      "mentioned": [
+        "机月同梁"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "机月同梁": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "上吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "jy-clean-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        3,
+        6,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "三奇嘉会",
+        "日月并明",
+        "机月同梁"
+      ],
+      "sihua_labels": [
+        "官禄宫化忌"
+      ],
+      "mentioned": [
+        "三奇嘉会",
+        "日月并明",
+        "机月同梁"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "机月同梁": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "上吉",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "jy-brk-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        27,
+        4,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "三奇嘉会",
+        "日月并明",
+        "机月同梁"
+      ],
+      "sihua_labels": [
+        "官禄宫化忌"
+      ],
+      "mentioned": [
+        "三奇嘉会",
+        "日月并明",
+        "机月同梁"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "机月同梁": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "jy-brk-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        27,
+        12,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "同梁同宫",
+        "机月同梁"
+      ],
+      "sihua_labels": [
+        "命宫化忌"
+      ],
+      "mentioned": [
+        "同梁同宫",
+        "机月同梁"
+      ],
+      "false_pos": [],
+      "false_neg": [],
+      "fn_expression": [],
+      "fn_cognitive": [],
+      "truth": {
+        "机月同梁": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": true,
+          "align": "ok"
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "构造盘": {
+      "total": 26,
+      "fp": [],
+      "fn": [
+        "府相朝垣",
+        "杀破狼",
+        "火贪",
+        "紫微独坐",
+        "铃贪"
+      ],
+      "truth_total": 26,
+      "truth_ok": 24,
+      "truth_bug": 0,
+      "truth_dispute": 2,
+      "truth_detail": [
+        "分歧:火贪:huizhao_only(引擎破格)",
+        "分歧:铃贪:huizhao_only(引擎成立)"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "府相朝垣",
+        "杀破狼",
+        "火贪",
+        "紫微独坐",
+        "铃贪"
+      ]
+    }
+  },
+  "note": "v2：name 级双向 diff + 真值列（expected=教材口径/古籍断语标签，裁决引擎与 LLM）；状态级文本提取留待注入后"
+}

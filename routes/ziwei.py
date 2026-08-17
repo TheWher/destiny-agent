@@ -11,7 +11,7 @@ from flask import Blueprint, jsonify, render_template, request, send_file, Respo
 import requests
 
 from bazi_calculator import paipan, get_shishen
-from ziwei_calculator import ziwei_paipan, plate_to_dict as ziwei_plate_to_dict, get_horoscope
+from ziwei_calculator import ziwei_paipan, plate_to_dict as ziwei_plate_to_dict, get_horoscope, detect_patterns
 from utils.auth import check_password, check_rate_limit, check_conv_rate_limit, check_global_ip_limit, WEB_PASSWORD, ADMIN_TOKEN
 from utils.tier import resolve_user_from_request, get_rate_limit, TIER_FREE
 from utils.cache import _make_cache_key, _cache_get, _make_ziwei_cache_key, _cache_set
@@ -353,9 +353,27 @@ def api_ziwei_analyze_yearly():
         ym = plate_dict.get('year_mutagens', [])
         sihua_str = ' · '.join(f"{m['star']}{m['mutagen']}({m['palace']})" for m in ym)
 
-        # 格局
-        patterns = plate_dict.get('patterns', [])
-        pattern_str = ' · '.join(p['name'] for p in patterns) if patterns else '无特殊格局'
+        # 格局（2026-08-14 注入升级：引擎判定 + 破格状态，LLM 不再自由发挥）
+        try:
+            _detected = detect_patterns(plate_dict)
+        except Exception as _e:
+            pattern_str = f'无特殊格局（引擎检测失败：{_e}，禁止静默）'
+        else:
+            _lines = []
+            _st_map = {'成立': '✅', '受损': '⚠️', '破格': '❌', '不成立': '❌'}
+            for _p in _detected:
+                if _p.get('geju_status') == '不成立':
+                    continue  # reject：不列格局
+                _st = _p.get('geju_status', '成立')
+                _line = f"{_p['name']}（{_p.get('level', '')}）{_st_map.get(_st, '')}{_st}"
+                if _p.get('palace'):
+                    _line += f"[{_p['palace']}]"
+                if _p.get('breaking_hits'):
+                    _line += ' 破格:' + ','.join(_p['breaking_hits'])
+                if _p.get('weakener_hits'):
+                    _line += ' 减弱:' + ','.join(_p['weakener_hits'])
+                _lines.append(_line)
+            pattern_str = '\n'.join(_lines) if _lines else '无特殊格局'
 
         # ── 大限十年全景 + 流年三年（Pro 深度注入，引擎已算好禁止自行推算） ──
         GAN_SIHUA = {

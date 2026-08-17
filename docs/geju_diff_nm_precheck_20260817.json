@@ -1,0 +1,540 @@
+{
+  "meta": {
+    "note": "非命宫格局 expected 真值清单 v1（2026-08-17 hanako 建，注入 [宫位] 锚点疗效对照专用）。来源：docs/geju_trigger_pans_v4_nonming.md。text 留空待韩湘生跑 LLM 填充。expected=引擎 geju_status 映射五类（成立=clean/破格=breaking），harness 按对齐规则裁决。kind=构造盘（验规则自洽，禁止当真人命例）"
+  },
+  "cases": [
+    {
+      "id": "nm-铃贪-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        8,
+        14,
+        18,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "杀破狼",
+        "紫微七杀",
+        "铃贪"
+      ],
+      "sihua_labels": [],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "杀破狼",
+        "紫微七杀",
+        "铃贪"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "杀破狼",
+        "紫微七杀",
+        "铃贪"
+      ],
+      "truth": {
+        "铃贪": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "吉",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-铃贪-clean-2",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        10,
+        21,
+        18,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "命无正曜",
+        "府相朝垣",
+        "杀破狼",
+        "辅弼夹命",
+        "铃贪"
+      ],
+      "sihua_labels": [
+        "命宫化忌"
+      ],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "命无正曜",
+        "府相朝垣",
+        "杀破狼",
+        "辅弼夹命",
+        "铃贪"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "命无正曜",
+        "府相朝垣",
+        "杀破狼",
+        "辅弼夹命",
+        "铃贪"
+      ],
+      "truth": {
+        "铃贪": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "吉",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-铃贪-breaking-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        2,
+        16,
+        12,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "sihua_labels": [
+        "财帛宫化忌"
+      ],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "杀破狼",
+        "铃贪"
+      ],
+      "truth": {
+        "铃贪": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-火贪-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1942,
+        5,
+        15,
+        12,
+        0,
+        "男"
+      ],
+      "year_gz": "壬午",
+      "engine_pats": [
+        "三奇嘉会",
+        "君臣庆会",
+        "杀破狼",
+        "火贪",
+        "紫微七杀"
+      ],
+      "sihua_labels": [
+        "命宮化权",
+        "财帛宫化忌"
+      ],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "三奇嘉会",
+        "君臣庆会",
+        "杀破狼",
+        "火贪",
+        "紫微七杀"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "三奇嘉会",
+        "君臣庆会",
+        "杀破狼",
+        "火贪",
+        "紫微七杀"
+      ],
+      "truth": {
+        "火贪": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "吉",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-火贪-breaking-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        3,
+        17,
+        18,
+        0,
+        "男"
+      ],
+      "year_gz": "辛巳",
+      "engine_pats": [
+        "府相朝垣",
+        "日照雷门",
+        "月朗天门",
+        "杀破狼",
+        "火贪",
+        "紫微独坐"
+      ],
+      "sihua_labels": [],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "府相朝垣",
+        "日照雷门",
+        "月朗天门",
+        "杀破狼",
+        "火贪",
+        "紫微独坐"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "府相朝垣",
+        "日照雷门",
+        "月朗天门",
+        "杀破狼",
+        "火贪",
+        "紫微独坐"
+      ],
+      "truth": {
+        "火贪": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-君臣庆会-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        11,
+        20,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "sihua_labels": [],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "truth": {
+        "君臣庆会": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "上吉",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-君臣庆会-breaking-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        14,
+        8,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "sihua_labels": [],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "君臣庆会",
+        "杀破狼",
+        "紫微贪狼"
+      ],
+      "truth": {
+        "君臣庆会": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "中",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-杀破狼-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        3,
+        12,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "廉杀同宫",
+        "杀破狼"
+      ],
+      "sihua_labels": [
+        "官祿化权"
+      ],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "廉杀同宫",
+        "杀破狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "廉杀同宫",
+        "杀破狼"
+      ],
+      "truth": {
+        "杀破狼": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "中",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-杀破狼-breaking-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        3,
+        20,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "杀破狼",
+        "武杀同宫"
+      ],
+      "sihua_labels": [
+        "命宮化权"
+      ],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "杀破狼",
+        "武杀同宫"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "杀破狼",
+        "武杀同宫"
+      ],
+      "truth": {
+        "杀破狼": {
+          "truth": "breaking",
+          "engine_present": true,
+          "engine_status": "破格",
+          "engine_level": "忌",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-府相朝垣-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        1,
+        4,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "命无正曜",
+        "府相朝垣",
+        "杀破狼"
+      ],
+      "sihua_labels": [],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "命无正曜",
+        "府相朝垣",
+        "杀破狼"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "命无正曜",
+        "府相朝垣",
+        "杀破狼"
+      ],
+      "truth": {
+        "府相朝垣": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "上吉",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    },
+    {
+      "id": "nm-机月同梁-clean-1",
+      "kind": "构造盘",
+      "birth": [
+        1941,
+        1,
+        3,
+        14,
+        0,
+        "男"
+      ],
+      "year_gz": "庚辰",
+      "engine_pats": [
+        "三奇嘉会",
+        "机月同梁"
+      ],
+      "sihua_labels": [
+        "官禄宫化忌"
+      ],
+      "mentioned": [],
+      "false_pos": [],
+      "false_neg": [
+        "三奇嘉会",
+        "机月同梁"
+      ],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "三奇嘉会",
+        "机月同梁"
+      ],
+      "truth": {
+        "机月同梁": {
+          "truth": "clean",
+          "engine_present": true,
+          "engine_status": "成立",
+          "engine_level": "上吉",
+          "llm_mentioned": false,
+          "align": "ok"
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "构造盘": {
+      "total": 11,
+      "fp": [],
+      "fn": [
+        "三奇嘉会",
+        "君臣庆会",
+        "命无正曜",
+        "府相朝垣",
+        "廉杀同宫",
+        "日照雷门",
+        "月朗天门",
+        "机月同梁",
+        "杀破狼",
+        "武杀同宫",
+        "火贪",
+        "紫微七杀",
+        "紫微独坐",
+        "紫微贪狼",
+        "辅弼夹命",
+        "铃贪"
+      ],
+      "truth_total": 11,
+      "truth_ok": 11,
+      "truth_bug": 0,
+      "truth_dispute": 0,
+      "truth_detail": [],
+      "fn_expression": [],
+      "fn_cognitive": [
+        "三奇嘉会",
+        "君臣庆会",
+        "命无正曜",
+        "府相朝垣",
+        "廉杀同宫",
+        "日照雷门",
+        "月朗天门",
+        "机月同梁",
+        "杀破狼",
+        "武杀同宫",
+        "火贪",
+        "紫微七杀",
+        "紫微独坐",
+        "紫微贪狼",
+        "辅弼夹命",
+        "铃贪"
+      ]
+    }
+  },
+  "note": "v2：name 级双向 diff + 真值列（expected=教材口径/古籍断语标签，裁决引擎与 LLM）；状态级文本提取留待注入后"
+}

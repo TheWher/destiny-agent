@@ -905,7 +905,7 @@ class AnalysisOrchestrator:
                 "type": "object",
                 "properties": {
                     "query": {"type": "string", "description": "检索关键词"},
-                    "kb_name": {"type": "string", "description": "知识库名。八字: bazi_basics/bazi_extended/tiaohou/signal_rules/shishen_domains/glossary/classical_references。紫微: ziwei_stars/ziwei_fuzuo/ziwei_star_palace/ziwei_classics"},
+                    "kb_name": {"type": "string", "description": "知识库名。八字: bazi_basics/bazi_extended/tiaohou/signal_rules/shishen_domains/glossary/classical_references。紫微: ziwei_stars/ziwei_fuzuo/ziwei_star_palace/ziwei_classics/geju_dict(格局判据词典，今传口径+常见误解显式否定)"},
                     "top_k": {"type": "integer", "description": "返回条目数"},
                 },
                 "required": ["query", "kb_name"],

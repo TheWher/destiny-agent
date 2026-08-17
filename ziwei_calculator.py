@@ -16,6 +16,9 @@
     data = plate_to_dict(plate, input_info)
 """
 
+import json
+from pathlib import Path
+
 # ---- 常量表 ----
 
 # iztro-py 英文 key → 中文名称映射
@@ -531,6 +534,23 @@ def calculate_liuyao(liunian_gan: str, liunian_zhi: str, palaces: list) -> dict:
     return result
 
 
+# 破格表（docs/geju_breaking_annotations_v1.json）模块级缓存
+_GJ_BREAKING_TABLE = None
+
+
+def _load_geju_breaking() -> dict:
+    """加载破格表。缺失/损坏显式抛错，禁止静默降级（2026-08-14 消费口防御）"""
+    global _GJ_BREAKING_TABLE
+    if _GJ_BREAKING_TABLE is not None:
+        return _GJ_BREAKING_TABLE
+    cand = Path(__file__).resolve().parent / 'docs' / 'geju_breaking_annotations_v1.json'
+    if not cand.exists():
+        raise FileNotFoundError(f'破格表缺失: {cand}（消费口禁止静默跳过）')
+    with open(cand, encoding='utf-8') as f:
+        _GJ_BREAKING_TABLE = json.load(f)
+    return _GJ_BREAKING_TABLE
+
+
 def detect_patterns(plate_data: dict) -> list[dict]:
     """自动检测命盘格局，基于 ziwei-doushu patterns.ts 体系。
 
@@ -617,12 +637,21 @@ def detect_patterns(plate_data: dict) -> list[dict]:
     sf_sha_count = sum(_sha_count(p, SHA_HARD) for p in sf_palaces)
     ym = plate_data.get('year_mutagens', [])
 
-    def add_pat(name, desc, level='中', conditions=None, source=''):
+    def add_pat(name, desc, level='中', conditions=None, source='', palace=None):
         if not any(p['name'] == name for p in patterns):
             p = {'name': name, 'desc': desc, 'level': level}
             if conditions: p['conditions'] = conditions
             if source: p['source'] = source
+            if palace: p['palace'] = palace
             patterns.append(p)
+
+    def _pname(p):
+        """宫位对象 → 规范中文宫名（PALACE_NAME_SIMP 繁简统一后补『宫』后缀）。"""
+        n = p.get('name', '')
+        simp = PALACE_NAME_SIMP.get(n, n)
+        if simp.endswith('宫'):
+            return simp
+        return simp + '宫'
 
     # ═══ 紫微系 ═══
     if _has_star(ming, '紫微'):
@@ -639,15 +668,23 @@ def detect_patterns(plate_data: dict) -> list[dict]:
             add_pat('紫微贪狼', '紫贪在命，社交强多才艺但需节制', '中')
         elif len(set(major_names(ming))) == 1:
             add_pat('紫微独坐', '紫微独坐命宫，帝王孤星，需辅星来朝', '中', None, '《紫微斗数全书》')
-        # 君臣庆会
+        # 君臣庆会（教材口径：百官任一在三方四正会合即可，非双弼齐会；见煞即破）
+        # 《紫微斗数全书·君臣庆会格》『命宫有紫微，得府相/辅弼/昌曲/三台八座/龙池凤阁/恩光天贵等
+        # 吉星在三方四正会合，无煞方合；见四煞空劫忌为奴欺主臣蔽君，不合』——实现只取辅弼子集，
+        # 2026-08-17 修：required 文本与 palace 锚点去掉『双弼』暗示，避免注入自相矛盾（mose 发现）。
         if bool(sf_set & ZUO_YOU):
             breaking = []
             if _has_sha(ming, SHA_HARD): breaking.append('命宫坐煞')
             if sf_sha_count >= 3: breaking.append('三方煞重')
-            add_pat('君臣庆会', '紫微入命辅弼同会三方，帝王得贤臣辅佐',
+            _jq_z = _find_star_palace('左辅'); _jq_y = _find_star_palace('右弼')
+            _jq_parts = []
+            for _s, _q in (('左辅', _jq_z), ('右弼', _jq_y)):
+                if _q and _q.get('earthly_branch', '') in _sansifang_branches(ming_branch):
+                    _jq_parts.append(_s + _pname(_q))
+            add_pat('君臣庆会', '紫微入命辅弼会照三方，帝王得贤臣辅佐',
                     '吉' if breaking else '上吉',
-                    {'required': ['紫微在命宫', '辅弼在命三方四正'], 'bonus': [], 'breaking': breaking},
-                    '《紫微斗数全书·君臣庆会格》')
+                    {'required': ['紫微在命宫', '辅弼任一在命三方四正'], 'bonus': [], 'breaking': breaking},
+                    '《紫微斗数全书·君臣庆会格》', palace='、'.join(_jq_parts) or None)
 
     # ═══ 日月系 ═══
     # 日月并明（庙旺会照版，古书本义）：太阳太阴各居庙旺并会照命三方。
@@ -661,7 +698,8 @@ def detect_patterns(plate_data: dict) -> list[dict]:
             and _sun_p.get('earthly_branch', '') in _sansifang_branches(ming_branch)
             and _moon_p.get('earthly_branch', '') in _sansifang_branches(ming_branch)):
         add_pat('日月并明', '太阳太阴各居庙旺会照命三方，日月辉映', '上吉', None,
-                '《斗数全书》『日月并明佐九重于尧殿』（庙旺会照主流解）+ 王亭之《太微赋》精解『守不如照』')
+                '《斗数全书》『日月并明佐九重于尧殿』（庙旺会照主流解）+ 王亭之《太微赋》精解『守不如照』',
+                palace=f"太阳{_pname(_sun_p)}·太阴{_pname(_moon_p)}")
     # 明珠出海（古诀专名）：日卯月亥、安命未。
     # 《斗数全书》『日卯月亥，安命未，多折桂』；《骨髓赋》『三合明珠生旺地，稳步蟾宫』，
     # 注文『未宫安命，日卯月亥来朝，为明珠出海，定主财官双美』。
@@ -670,7 +708,8 @@ def detect_patterns(plate_data: dict) -> list[dict]:
             and _moon_p and _moon_p.get('earthly_branch') == '亥'
             and _brightness(_sun_p, '太阳') and _brightness(_moon_p, '太阴')):
         add_pat('明珠出海', '太阳卯庙+太阴亥庙+命坐未，日月辉映如明珠出海', '上吉', None,
-                '《斗数全书》『日卯月亥，安命未，多折桂』；《骨髓赋》『三合明珠生旺地，稳步蟾宫』（未宫安命日卯月亥来朝）')
+                '《斗数全书》『日卯月亥，安命未，多折桂』；《骨髓赋》『三合明珠生旺地，稳步蟾宫』（未宫安命日卯月亥来朝）',
+                palace=f"太阳{_pname(_sun_p)}·太阴{_pname(_moon_p)}")
     # 日月同臨（《骨髓赋》『日月同临官居侯伯』）：日月同宫于丑或未 + 命坐丑或未。
     # 注文『命安丑宫日月在未、命安未宫日月在丑谓之同临』；机检实证（2026-08-05）日月同宫
     # 只出现在丑未两宫。不要求庙旺——丑宫太阳本陷（王亭之拆台的正是这一点），同臨钉的是
@@ -683,14 +722,19 @@ def detect_patterns(plate_data: dict) -> list[dict]:
                 '《骨髓赋》『日月同临官居侯伯』注文『命安丑宫日月在未、命安未宫日月在丑谓之同临』')
     if _has_star(ming, '太阳') and _has_star(ming, '巨门'):
         add_pat('巨日同宫', '太阳巨门在命，口才出众，适合法律/教育/传媒', '中')
+    # ═══ 月朗天门 / 日照雷门（2026-08-17 收窄：须守命，非任何宫太阳卯/太阴亥）═══
+    # 教材口径（古诀）：日照雷门=太阳守命于卯（卯宫太阳必与天梁同宫，『太阳守命于卯地，昼生人富贵荣华』）；
+    # 月朗天门=太阴守命于亥（『月朗天门于亥地，进爵封侯』）。旧实现任何宫太阳在卯/太阴在亥都报，
+    # 与火贪格 08-14 修掉的宽口径同构；26 盘实证：ht-brk-2（命午）、lt-clean-1（命子）太阳皆不在命宫
+    # 而引擎照报日照雷门，LLM 拒绝反被记漏判。
     for p in palaces:
-        if _has_star(p, '太阴') and p.get('earthly_branch') == '亥':
+        if _has_star(p, '太阴') and p.get('earthly_branch') == '亥' and p is ming:
             b = _brightness(p, '太阴')
-            add_pat('月朗天门', '太阴在亥宫庙旺，月朗天门。情感丰富文艺天赋',
+            add_pat('月朗天门', '太阴守命在亥宫庙旺，月朗天门。情感丰富文艺天赋',
                     '上吉' if b else '吉', None, '《骨髓赋》')
-        if _has_star(p, '太阳') and p.get('earthly_branch') == '卯':
+        if _has_star(p, '太阳') and p.get('earthly_branch') == '卯' and p is ming:
             b = _brightness(p, '太阳')
-            add_pat('日照雷门', '太阳在卯宫庙旺，日照雷门。热情开朗',
+            add_pat('日照雷门', '太阳守命在卯宫庙旺，日照雷门。热情开朗',
                     '上吉' if b else '吉', None, '《骨髓赋》')
 
     # ═══ 杀破狼 ═══
@@ -701,11 +745,21 @@ def detect_patterns(plate_data: dict) -> list[dict]:
         if (sf_set & ZUO_YOU) == ZUO_YOU: bonus.append('辅弼同会')
         if sf_sha_count >= 3: breaking.append('煞重')
         if sf_set & SHA_KONG: breaking.append('坐空劫')
+        _sp_parts = []
+        for _s in ('七杀', '破军', '贪狼'):
+            _pp = _find_star_palace(_s)
+            if _pp and _pp.get('earthly_branch', '') in _sansifang_branches(ming_branch):
+                _sp_parts.append(f"{_s}在{_pname(_pp)}")
         add_pat('杀破狼格', '七杀破军贪狼三方齐聚，大起大落，变动中求发展',
                 '中', {'required': ['杀破狼三星齐入三方四正'], 'bonus': bonus, 'breaking': breaking},
-                '《紫微斗数全书》')
+                '《紫微斗数全书》', palace='、'.join(_sp_parts) or None)
     elif sp:
-        add_pat('杀破狼格', f'命三方坐{"·".join(sorted(sp))}（不全），有变动倾向', '中')
+        _sp_parts = []
+        for _s in sorted(sp):
+            _pp = _find_star_palace(_s)
+            if _pp and _pp.get('earthly_branch', '') in _sansifang_branches(ming_branch):
+                _sp_parts.append(f"{_s}在{_pname(_pp)}")
+        add_pat('杀破狼格', f'命三方坐{"·".join(sorted(sp))}（不全），有变动倾向', '中', palace='、'.join(_sp_parts) or None)
 
     # ═══ 机月同梁 ═══
     jy = JYTL & sf_set
@@ -713,35 +767,58 @@ def detect_patterns(plate_data: dict) -> list[dict]:
         breaking = []
         if sf_sha_count >= 3: breaking.append('煞重')
         if _has_sha(ming, SHA_HARD): breaking.append('命坐煞')
+        _jy_parts = []
+        for _s in JYTL:
+            _pp = _find_star_palace(_s)
+            if _pp and _pp.get('earthly_branch', '') in _sansifang_branches(ming_branch):
+                _jy_parts.append(f"{_s}在{_pname(_pp)}")
         add_pat('机月同梁格', '天机太阴天同天梁四星齐入命三方四正，宜文职',
                 '吉' if breaking else '上吉',
                 {'required': ['机月同梁四星齐入三方四正'], 'bonus': [], 'breaking': breaking},
-                '《紫微斗数全书》')
+                '《紫微斗数全书》', palace='、'.join(_jy_parts) or None)
     elif len(jy) >= 2:
-        add_pat('机月同梁格', f'命三方有{",".join(sorted(jy))}（不全），偏文职', '吉')
+        _jy_parts = []
+        for _s in jy:
+            _pp = _find_star_palace(_s)
+            if _pp and _pp.get('earthly_branch', '') in _sansifang_branches(ming_branch):
+                _jy_parts.append(f"{_s}在{_pname(_pp)}")
+        add_pat('机月同梁格', f'命三方有{",".join(sorted(jy))}（不全），偏文职', '吉', palace='、'.join(_jy_parts) or None)
 
     # ═══ 府相朝垣 ═══
     tf = _find_star_palace('天府'); tx = _find_star_palace('天相')
     if tf and tx and tf != tx:
         if tf.get('earthly_branch','') in _sansifang_branches(ming_branch) and            tx.get('earthly_branch','') in _sansifang_branches(ming_branch):
             add_pat('府相朝垣', '天府天相分守命宫三方四正，权印双辉',
-                    '上吉', None, '《紫微斗数全书·府相朝垣格》')
+                    '上吉', None, '《紫微斗数全书·府相朝垣格》',
+                    palace=f"天府{_pname(tf)}·天相{_pname(tx)}")
 
-    # ═══ 火贪/铃贪 ═══
+    # ═══ 火贪/铃贪（2026-08-14 成格收窄：贪狼须坐命三方；同宫正格、会照次格）═══
+    # 量化依据（hanako 20000 盘抽样）：旧逻辑不看命三方、会照即报，命中 33.4%（任何宫位同宫基数 8.3%）
+    # 成格出处（易水盟·三合火贪格详解）：贪狼守命宫/财帛/官禄/迁移/田宅/身宫之一，与火铃同宫或三方四正相会；
+    #   火铃与贪狼同宫为上格，仅三方相会合格但次之（会照次格即本档）。教材严格口径（贪狼守命）实测 1.5%，
+    #   本方三方四正口径 5.5% 与易水盟放宽版一致（2026-08-14 定位实验，勿再拿 8.3% 当教材口径）。
     tan = _find_star_palace('贪狼')
-    if tan:
+    ming_sf_b = _sansifang_branches(ming_branch)
+    if tan and tan.get('earthly_branch', '') in ming_sf_b:
+        tan_branch = tan.get('earthly_branch', '')
+        tan_sf = _sansifang_branches(tan_branch)
         for sha_name, sha in [('火星', '火贪格'), ('铃星', '铃贪格')]:
             sha_p = _find_star_palace(sha_name)
-            if sha_p and (sha_p.get('earthly_branch') == tan.get('earthly_branch') or
-                          sha_p.get('earthly_branch') in _sansifang_branches(tan.get('earthly_branch',''))):
-                adj = '同宫' if sha_p.get('earthly_branch') == tan.get('earthly_branch') else '会照'
+            if not sha_p: continue
+            sha_branch = sha_p.get('earthly_branch', '')
+            if sha_branch == tan_branch:
                 bonus = []
                 if _brightness(tan, '贪狼'): bonus.append('贪狼庙旺')
                 sihua = _si_hua(tan, '贪狼')
                 if sihua in ('禄', '权'): bonus.append(f'贪狼化{sihua}')
-                add_pat(sha, f'贪狼{adj}{sha_name}，爆发力强，横发之格',
+                add_pat(sha, f'贪狼同宫{sha_name}，爆发力强，横发之格',
                         '吉' if bonus else '中',
-                        {'required': [f'贪狼{adj}{sha_name}'], 'bonus': bonus}, '《骨髓赋》')
+                        {'required': ['贪狼坐命三方', f'贪狼同宫{sha_name}'], 'bonus': bonus}, '《骨髓赋》',
+                        palace=f"贪狼{_pname(tan)}同宫{sha_name}")
+            elif sha_branch in tan_sf:
+                add_pat(sha, f'贪狼会照{sha_name}（次格），爆发力弱于同宫', '中',
+                        {'required': ['贪狼坐命三方', f'贪狼会照{sha_name}']}, '《骨髓赋》',
+                        palace=f"贪狼{_pname(tan)}会照{sha_name}在{_pname(sha_p)}")
 
     # ═══ 四化格局 ═══
     for m in ym:
@@ -813,6 +890,78 @@ def detect_patterns(plate_data: dict) -> list[dict]:
     ]:
         if _has_star(ming, s1) and _has_star(ming, s2):
             add_pat(nm, desc, lv)
+
+    # ═══ 破格表消费（2026-08-14：接 docs/geju_breaking_annotations_v1.json）═══
+    def _check_brk(pat_name, cond):
+        """按格局名 + 条件关键词翻译判定。命中返回 True"""
+        if pat_name in ('火贪格', '铃贪格'):
+            tan_p = _find_star_palace('贪狼')
+            if not tan_p: return False
+            tan_sf = _sansifang_branches(tan_p.get('earthly_branch', ''))
+            def _sf_has(names):
+                return any(all_star_names(_get_palace_by_branch(br)) & set(names) for br in tan_sf)
+            if '擎羊或陀罗' in cond and '同宫' in cond:
+                minor = all_star_names(tan_p)
+                return bool(minor & {'擎羊', '陀罗'}) and bool(minor & {'火星', '铃星'})
+            if '文昌或文曲' in cond:
+                return _si_hua(tan_p, '贪狼') == '化忌' and _sf_has({'文昌', '文曲'})
+            if '地空或地劫' in cond and '天刑或化忌' in cond:
+                return _sf_has({'地空', '地劫'}) and (_sf_has({'天刑'}) or _si_hua(tan_p, '贪狼') == '化忌')
+            if '擎羊或陀罗或化忌' in cond:
+                return _sf_has({'擎羊', '陀罗'}) or _si_hua(tan_p, '贪狼') == '化忌'
+            if '单见地空或地劫' in cond:
+                return _sf_has({'地空', '地劫'}) and not (_sf_has({'天刑'}) or _si_hua(tan_p, '贪狼') == '化忌')
+            if '紫微' in cond and '同宫' in cond:
+                return _has_star(tan_p, '紫微')
+            if '廉贞' in cond and '同宫' in cond:
+                return _has_star(tan_p, '廉贞')
+            if '庙旺' in cond:
+                return bool(_brightness(tan_p, '贪狼'))
+        if pat_name == '君臣庆会':
+            if '命宫坐煞' in cond:
+                return _sha_count(ming, SHA_HARD) >= 1
+            if '三方煞重' in cond:
+                return sf_sha_count >= 3
+        if pat_name == '杀破狼格':
+            if '三方硬煞' in cond:
+                return sf_sha_count >= 3
+            if '地空或地劫' in cond:
+                return bool(sf_set & SHA_KONG)  # 底单原义：三方会空劫（2026-08-14 对齐，勿窄化为命宫）
+        if pat_name == '机月同梁格':
+            if '三方煞重' in cond:
+                return sf_sha_count >= 3
+            if '命宫坐煞' in cond:
+                return _sha_count(ming, SHA_HARD) >= 1
+        return False
+
+    _table = _load_geju_breaking()
+    LVL_ORDER = ['上吉', '吉', '中', '忌']
+    def _lvl_down(lv):
+        return LVL_ORDER[min((LVL_ORDER.index(lv) if lv in LVL_ORDER else 2) + 1, 3)]
+    for p in patterns:
+        spec = _table.get('patterns', {}).get(p['name'])
+        if not spec or p.get('conditions') is None:
+            p.setdefault('geju_status', '成立')  # 无表或不全变体：成立，破格表不适用
+            continue
+        status = '成立'
+        hit_ids = []
+        for b in spec.get('breaking', []):
+            if _check_brk(p['name'], b.get('condition', '')):
+                hit_ids.append(b['id'])
+                sem = b.get('semantics') or spec.get('breaking_semantics', '').replace('hit_any_', '')
+                if sem == 'reject':
+                    status = '不成立'
+                    break
+                status = '破格'
+                p['level'] = _lvl_down(p.get('level', '中'))
+        wk = [w['id'] for w in spec.get('weakener', []) if _check_brk(p['name'], w.get('condition', ''))]
+        en = [e['id'] for e in spec.get('enhancer', []) if _check_brk(p['name'], e.get('condition', ''))]
+        if status not in ('破格', '不成立') and wk:
+            status = '受损'
+        p['geju_status'] = status
+        if hit_ids: p['breaking_hits'] = hit_ids
+        if wk: p['weakener_hits'] = wk
+        if en: p['enhancer_hits'] = en
 
     return patterns[:12]
 

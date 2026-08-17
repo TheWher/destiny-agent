@@ -1,0 +1,183 @@
+{
+ "meta": {
+  "note": "非命宫格局 expected 真值清单 v1（2026-08-17 hanako 建，注入 [宫位] 锚点疗效对照专用）。来源：docs/geju_trigger_pans_v4_nonming.md。text 留空待韩湘生跑 LLM 填充。expected=引擎 geju_status 映射五类（成立=clean/破格=breaking），harness 按对齐规则裁决。kind=构造盘（验规则自洽，禁止当真人命例）"
+ },
+ "cases": [
+  {
+   "id": "nm-铃贪-clean-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    8,
+    14,
+    18,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "铃贪格": "clean"
+   }
+  },
+  {
+   "id": "nm-铃贪-clean-2",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    10,
+    21,
+    18,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "铃贪格": "clean"
+   }
+  },
+  {
+   "id": "nm-铃贪-breaking-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    2,
+    16,
+    12,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "铃贪格": "breaking"
+   }
+  },
+  {
+   "id": "nm-火贪-clean-1",
+   "kind": "构造盘",
+   "birth": [
+    1942,
+    5,
+    15,
+    12,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "火贪格": "clean"
+   }
+  },
+  {
+   "id": "nm-火贪-breaking-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    3,
+    17,
+    18,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "火贪格": "breaking"
+   }
+  },
+  {
+   "id": "nm-君臣庆会-clean-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    1,
+    11,
+    20,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "君臣庆会": "clean"
+   }
+  },
+  {
+   "id": "nm-君臣庆会-breaking-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    1,
+    14,
+    8,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "君臣庆会": "breaking"
+   }
+  },
+  {
+   "id": "nm-杀破狼-clean-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    1,
+    3,
+    12,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "杀破狼格": "clean"
+   }
+  },
+  {
+   "id": "nm-杀破狼-breaking-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    1,
+    3,
+    20,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "杀破狼格": "breaking"
+   }
+  },
+  {
+   "id": "nm-府相朝垣-clean-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    1,
+    1,
+    4,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "府相朝垣": "clean"
+   }
+  },
+  {
+   "id": "nm-机月同梁-clean-1",
+   "kind": "构造盘",
+   "birth": [
+    1941,
+    1,
+    3,
+    14,
+    0,
+    "男"
+   ],
+   "text": "",
+   "expected": {
+    "机月同梁格": "clean"
+   }
+  }
+ ]
+}

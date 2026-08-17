@@ -37,6 +37,7 @@ _DISPATCH_ALLOWLIST_FALLBACK = [
     "classical_references.json",
     "ziwei_stars.json", "ziwei_fuzuo.json", "ziwei_star_palace.json",
     "ziwei_classics.json", "ziwei_hua.json", "ziwei_sihua_interact.json",
+    "geju_dict.json",
 ]
 _EVAL_WHITELIST_PATH = os.path.join(_ROOT, "evaluation_sets", "kb_whitelist.json")
 _dispatch_allowlist_cache: list[str] | None = None
@@ -239,6 +240,9 @@ def _retrieve_kb_lexical_str(query_keywords: list[str], kb_name: str, top_k: int
     # ziwei_juan3.json：卷三星曜分宫断语（按星匹配）
     if kb_name == "ziwei_juan3.json":
         return _format_juan3(_match_juan3(kb, query_keywords, top_k))
+    # geju_dict.json：格局判据词典（entries 条目级，按 name 精确优先，2026-08-17 mose 加）
+    if kb_name == "geju_dict.json":
+        return _format_dict(_match_dict(kb, query_keywords, top_k))
     # ── 通用检索 ──
     return _format_generic(_match_generic(kb, query_keywords, top_k))
 
@@ -265,6 +269,8 @@ def _retrieve_kb_lexical_hits(query_keywords: list[str], kb_name: str, top_k: in
         return [p.get('name', '') for _, p in _match_geju(kb, query_keywords, top_k)]
     if kb_name == "ziwei_juan3.json":
         return [p.get('star', '') for _, p in _match_juan3(kb, query_keywords, top_k)]
+    if kb_name == "geju_dict.json":
+        return [name for _, name, _ in _match_dict(kb, query_keywords, top_k)]
     return [key for _, key, _ in _match_generic(kb, query_keywords, top_k)]
 
 
@@ -519,6 +525,45 @@ def _match_classics(kb: dict, keywords: list[str], top_k: int) -> list:
             matched.append((score, name, text))
     matched.sort(key=lambda x: -x[0])
     return matched[:top_k]
+
+
+def _match_dict(kb: dict, keywords: list[str], top_k: int) -> list:
+    """格局判据词典条目级匹配：返回 [(score, 格局名, 条目文本)]。
+
+    结构：{"entries": [{"name": 格局名, "text": 四栏全文}]}。
+    name 命中权重最高（格局名精确优先），text 命中次之。
+    str 出口与 hits 出口共用本匹配，保证名单与文本一致。
+    """
+    entries = kb.get("entries", [])
+    if not isinstance(entries, list):
+        return []
+    matched = []
+    for e in entries:
+        if not isinstance(e, dict):
+            continue
+        name = str(e.get("name", ""))
+        text = e.get("text", "")
+        if not isinstance(text, str):
+            continue
+        score = 0
+        for kw in keywords:
+            if kw and kw in name:
+                score += 2
+            if kw and kw in text:
+                score += 1
+        if score > 0:
+            matched.append((score, name, text))
+    matched.sort(key=lambda x: -x[0])
+    return matched[:top_k]
+
+
+def _format_dict(matched: list) -> str:
+    if not matched:
+        return ""
+    parts = []
+    for _, name, text in matched:
+        parts.append(f"### {name}\n{text}")
+    return "\n\n".join(parts)
 
 
 def _format_generic(matched: list) -> str:

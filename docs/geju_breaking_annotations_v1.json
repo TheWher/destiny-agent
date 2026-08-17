@@ -1,0 +1,324 @@
+{
+  "schema_version": "1.2",
+  "generated": "2026-08-14",
+  "source_tiers": {
+    "original": "古籍原文有据，source 必须含具体篇目+版本（《全书》刻本差异要标）",
+    "common": "通行归纳（教材/师承），source 必须含作者或教材名"
+  },
+  "authority_rank": {
+    "1": "古籍原文（带篇目+版本），如《紫微斗数全书》各刻本、《骨髓赋》《太微赋》原典",
+    "2": "宗师注疏（体系传承明确），如王亭之《中州派紫微斗数》、陆斌兆《紫微斗数评注》",
+    "3": "通行教材/师承作者，如易水盟、神机阁等",
+    "4": "网络资料/知乎系（无体系归属）"
+  },
+  "arbitration": "分歧时取 authority_rank 数值最小（最权威）的一套作为判定依据；次权威异议保留为注记，解读脚注带出，不删信息。同层同派内打架（如中州派同源）先核条文语境，语境不同则并存不判冲突；语境确同才启用下一级仲裁",
+  "patterns": {
+    "火贪格": {
+      "base_level": "吉",
+      "grade_tiers": {
+        "highest": "贪狼庙旺居辰戌，火星/铃星庙旺同宫，武曲对照（上格）",
+        "mid": "贪狼武曲同宫于丑未，见火铃同度（次格）",
+        "low": "其余宫位（更次）"
+      },
+      "enhancer": [
+        {
+          "id": "ht-enh-001",
+          "condition": "贪狼庙旺（辰戌）",
+          "effect": "成格加分：爆发力与持久度提升",
+          "source_tier": "common",
+          "source": "陆斌兆讲义原文（《紫微斗数讲义》，五十年代油印本）：辰戌上格丑未次格他宫更次",
+          "status": "verified",
+          "authority_rank": 2,
+          "notes": "火贪大旺于铃贪，铃贪持久于火贪（章真言 8698.tw）；章真言主张仅戌宫火铃庙旺成格（辰宫火铃落陷），与陆斌兆辰戌上格分歧，按 authority_rank 取陆斌兆（rank2），章真言（rank4）异说脚注；传承链：陆斌兆讲义（五十年代油印）→ 王亭之补注《紫微斗数讲义评注》（1986）"
+        }
+      ],
+      "breaking": [
+        {
+          "id": "ht-brk-001",
+          "condition": "贪狼与火星同宫，且同宫见擎羊或陀罗",
+          "effect": "不符合火贪格（硬性排除）",
+          "semantics": "reject",
+          "source_tier": "common",
+          "source": "通行教材（易水盟系）；王亭之补注《紫微斗数讲义评注》贪狼篇评注（三）：贪狼最喜火铃、最畏擎羊陀罗",
+          "status": "verified",
+          "disputed": false,
+          "authority_rank": 2,
+          "notes": "v1.3 限定贪狼同宫前提：会照盘（火星与贪狼不同宫）不触发本条，避免误伤（2026-08-14 构造盘清单暴露）"
+        },
+        {
+          "id": "ht-brk-002",
+          "condition": "贪狼化忌且三方四正会文昌或文曲",
+          "effect": "暴发转暴败，摔下难翻身",
+          "semantics": "downgrade",
+          "source_tier": "common",
+          "source": "神机阁·贪狼化忌篇（贪狼化忌与火铃同度，凶则暴起暴跌）",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 3
+        },
+        {
+          "id": "ht-brk-003",
+          "condition": "三方四正会地空或地劫，且同见天刑或化忌（空劫刑忌并见）",
+          "effect": "暴发暴败，先得后失",
+          "semantics": "downgrade",
+          "source_tier": "common",
+          "source": "王亭之《中州派紫微斗数》（韩湘生核验转述 2026-08-14）",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 2,
+          "schools": ["王亭之·中州派（三合）"],
+          "notes": "「见空劫刑忌」一手出处未直接抓到（转述核验），待补"
+        },
+        {
+          "id": "ht-brk-004",
+          "condition": "三方四正会擎羊或陀罗或化忌",
+          "effect": "横发横破，先得后失，尤其不利投机",
+          "semantics": "downgrade",
+          "source_tier": "common",
+          "source": "王亭之补注《紫微斗数讲义评注》贪狼篇评注（三）：三方四正更有擎羊陀罗化忌则防横发横破（国学典籍网电子版，纸本 ISBN 9789573511236 待比对）",
+          "status": "verified",
+          "disputed": false,
+          "authority_rank": 2
+        }
+      ],
+      "weakener": [
+        {
+          "id": "ht-wkn-001",
+          "condition": "三方四正单见地空或地劫（无刑忌并见）",
+          "effect": "爆发力被吸蚀，横发机会大减；另有派系主张空劫制化贪狼反能习正，解读需注明分歧",
+          "source_tier": "common",
+          "source": "减分说：王亭之补注《紫微斗数讲义评注》（火贪见空劫刑忌暴发暴败，韩湘生转述）；制化说：陆斌兆讲义原文（贪狼见空曜天刑反主清白端正）、知乎系专文",
+          "status": "draft",
+          "disputed": true,
+          "authority_rank": 2,
+          "schools": ["王亭之补注·中州派（减分）", "陆斌兆讲义原文（清白格语境）", "知乎系（制化不破）"],
+          "notes": "陆斌兆讲义原文「空曜天刑清白端正」为贪狼坐命清白格语境，非火贪格语境，不构成直接冲突；知乎系制化说（rank4）作脚注带出"
+        },
+        {
+          "id": "ht-wkn-002",
+          "condition": "贪狼与紫微同宫且见火星或铃星（紫贪同宫成火贪）",
+          "effect": "受帝曜制约，暴发性质减弱",
+          "source_tier": "common",
+          "source": "王亭之补注《紫微斗数讲义评注》贪狼篇评注（三）：紫微贪狼同度暴发受约制",
+          "status": "verified",
+          "disputed": false,
+          "authority_rank": 2
+        },
+        {
+          "id": "ht-wkn-003",
+          "condition": "贪狼与廉贞同宫且见火星或铃星（廉贪同宫成火贪）",
+          "effect": "性质浮荡，发而不能耐久",
+          "source_tier": "common",
+          "source": "王亭之补注《紫微斗数讲义评注》贪狼篇评注（三）：廉贞贪狼同度发不能耐久",
+          "status": "verified",
+          "disputed": false,
+          "authority_rank": 2
+        }
+      ],
+      "breaking_semantics": "hit_any_downgrade"
+    },
+    "铃贪格": {
+      "base_level": "吉",
+      "grade_tiers": {
+        "highest": "贪狼庙旺居辰戌，铃星庙旺同宫，武曲对照（上格）",
+        "mid": "贪狼武曲同宫于丑未，见铃星同度（次格）",
+        "low": "其余宫位（更次）"
+      },
+      "enhancer": [
+        {
+          "id": "lt-enh-001",
+          "condition": "贪狼庙旺（辰戌）",
+          "effect": "成格加分：持久度提升",
+          "source_tier": "common",
+          "source": "陆斌兆讲义原文（《紫微斗数讲义》，五十年代油印本）",
+          "status": "verified",
+          "authority_rank": 2,
+          "notes": "铃贪持久于火贪（章真言）；传承链：陆斌兆讲义（五十年代油印）→ 王亭之补注（1986）"
+        }
+      ],
+      "breaking": [
+        {
+          "id": "lt-brk-001",
+          "condition": "贪狼与铃星同宫，且同宫见擎羊或陀罗",
+          "effect": "不符合铃贪格（硬性排除）",
+          "semantics": "reject",
+          "source_tier": "common",
+          "source": "通行教材（易水盟系）；王亭之补注《紫微斗数讲义评注》贪狼篇评注（三）",
+          "status": "verified",
+          "disputed": false,
+          "authority_rank": 2,
+          "notes": "v1.3 限定贪狼同宫前提（2026-08-14 构造盘清单暴露）"
+        },
+        {
+          "id": "lt-brk-002",
+          "condition": "贪狼化忌且三方四正会文昌或文曲",
+          "effect": "暴发转暴败，摔下难翻身",
+          "semantics": "downgrade",
+          "source_tier": "common",
+          "source": "神机阁·贪狼化忌篇",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 3
+        },
+        {
+          "id": "lt-brk-003",
+          "condition": "三方四正会地空或地劫，且同见天刑或化忌（空劫刑忌并见）",
+          "effect": "暴发暴败，先得后失",
+          "semantics": "downgrade",
+          "source_tier": "common",
+          "source": "王亭之《中州派紫微斗数》（韩湘生核验转述 2026-08-14）",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 2,
+          "schools": ["王亭之·中州派（三合）"],
+          "notes": "「见空劫刑忌」一手出处待补"
+        },
+        {
+          "id": "lt-brk-004",
+          "condition": "三方四正会擎羊或陀罗或化忌",
+          "effect": "横发横破，先得后失，尤其不利投机",
+          "semantics": "downgrade",
+          "source_tier": "common",
+          "source": "王亭之补注《紫微斗数讲义评注》贪狼篇评注（三）",
+          "status": "verified",
+          "disputed": false,
+          "authority_rank": 2
+        }
+      ],
+      "weakener": [
+        {
+          "id": "lt-wkn-001",
+          "condition": "三方四正单见地空或地劫（无刑忌并见）",
+          "effect": "爆发力被吸蚀，横发机会大减；另有派系主张空劫制化贪狼反能习正，解读需注明分歧",
+          "source_tier": "common",
+          "source": "减分说：王亭之补注《紫微斗数讲义评注》；制化说：陆斌兆讲义原文（清白格语境）、知乎系专文",
+          "status": "draft",
+          "disputed": true,
+          "authority_rank": 2,
+          "schools": ["王亭之补注·中州派（减分）", "陆斌兆讲义原文（清白格语境）", "知乎系（制化不破）"],
+          "notes": "同 ht-wkn-001"
+        },
+        {
+          "id": "lt-wkn-002",
+          "condition": "贪狼与紫微同宫且见铃星（紫贪同宫成铃贪）",
+          "effect": "受帝曜制约，暴发性质减弱",
+          "source_tier": "common",
+          "source": "王亭之补注《紫微斗数讲义评注》贪狼篇评注（三）",
+          "status": "verified",
+          "disputed": false,
+          "authority_rank": 2
+        },
+        {
+          "id": "lt-wkn-003",
+          "condition": "贪狼与廉贞同宫且见铃星（廉贪同宫成铃贪）",
+          "effect": "性质浮荡，发而不能耐久",
+          "source_tier": "common",
+          "source": "王亭之补注《紫微斗数讲义评注》贪狼篇评注（三）",
+          "status": "verified",
+          "disputed": false,
+          "authority_rank": 2
+        }
+      ],
+      "breaking_semantics": "hit_any_downgrade"
+    },
+    "君臣庆会": {
+      "base_level": "吉",
+      "breaking": [
+        {
+          "id": "jc-brk-001",
+          "condition": "命宫坐煞（擎羊/陀罗/火星/铃星）",
+          "effect": "破格",
+          "source_tier": "common",
+          "source": "通行归纳（后世教材，无古籍原文直接支撑）",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 3,
+          "schools": ["后世教材归纳"]
+        },
+        {
+          "id": "jc-brk-002",
+          "condition": "三方煞重（引擎自定阈值：三方硬煞≥3）",
+          "effect": "破格",
+          "source_tier": "common",
+          "source": "通行归纳；「≥3」阈值为引擎自定，古籍无量化表述",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 3,
+          "schools": ["后世教材归纳", "引擎自定阈值"]
+        }
+      ],
+      "breaking_semantics": "hit_any_downgrade"
+    },
+    "杀破狼格": {
+      "base_level": "中",
+      "enhancer": [
+        {
+          "id": "sp-enh-001",
+          "condition": "三方四正化禄或化权；辅弼同会",
+          "effect": "成格加分（底单 bonus 承接）",
+          "source_tier": "common",
+          "source": "引擎原 bonus 条件（2026-08-14 底单）",
+          "status": "draft",
+          "authority_rank": 3
+        }
+      ],
+      "breaking": [
+        {
+          "id": "sp-brk-001",
+          "condition": "三方硬煞≥3（擎羊/陀罗/火星/铃星，引擎自定阈值）",
+          "effect": "破格",
+          "source_tier": "common",
+          "source": "通行归纳；「≥3」阈值为引擎自定，古籍无量化表述",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 3,
+          "schools": ["后世教材归纳", "引擎自定阈值"],
+          "notes": "key 用引擎裸名；本表适用于三星齐正格（引擎 name=杀破狼格 且 conditions 非 None），不全变体（conditions=None）不适用破格表"
+        },
+        {
+          "id": "sp-brk-002",
+          "condition": "三方四正会地空或地劫",
+          "effect": "破格",
+          "source_tier": "common",
+          "source": "通行归纳（后世教材，无古籍原文直接支撑）",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 3,
+          "schools": ["后世教材归纳"],
+          "notes": "适用三星齐正格；不全变体不适用"
+        }
+      ],
+      "breaking_semantics": "hit_any_downgrade"
+    },
+    "机月同梁格": {
+      "base_level": "吉",
+      "breaking": [
+        {
+          "id": "jy-brk-001",
+          "condition": "三方煞重（引擎自定阈值：三方硬煞≥3）",
+          "effect": "破格",
+          "source_tier": "common",
+          "source": "通行归纳；「≥3」阈值为引擎自定，古籍无量化表述",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 3,
+          "schools": ["后世教材归纳", "引擎自定阈值"],
+          "notes": "key 用引擎裸名；本表适用于四星齐正格（引擎 name=机月同梁格 且 conditions 非 None），不全变体（conditions=None）不适用破格表"
+        },
+        {
+          "id": "jy-brk-002",
+          "condition": "命宫坐煞（擎羊/陀罗/火星/铃星）",
+          "effect": "破格",
+          "source_tier": "common",
+          "source": "通行归纳（后世教材，无古籍原文直接支撑）",
+          "status": "draft",
+          "disputed": false,
+          "authority_rank": 3,
+          "schools": ["后世教材归纳"],
+          "notes": "适用四星齐正格；不全变体不适用"
+        }
+      ],
+      "breaking_semantics": "hit_any_downgrade"
+    }
+  }
+}
