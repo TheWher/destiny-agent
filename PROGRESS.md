@@ -16,7 +16,7 @@
 **文档债（2026-09-09 清偿两条注释，剩数据拆字段两项待做）：**
 - ✅ `services/ziwei_analysis.py:56` 注释已按 2026-09-09 实现真值改写（七源注入清单 + star_palace 走工具链）
 - ✅ `services/kb_loader.py:229` 注释已改写（str 出口 generic 转发、classics_full 未登记 allowlist、hits 出口条目级供 join）
-- ziwei_classics.json 真伪分层已核：14 条干净真引文 / 3 条混合（紫微独坐、巨日同宫、杀破狼格）/ 23 条纯转述（含 13 条单星条目书名号挂现代白话）。计划拆字段：引文/按语/来源真伪标记，外层“格局名→条目” key 形态不动（评测 target 依赖此结构，零返工）。
+- ziwei_classics.json 真伪分层已核：14 条干净真引文 / 3 条混合（紫微独坐、巨日同宫、杀破狼格）/ 23 条纯转述（含 13 条单星条目书名号挂现代白话）。~~计划拆字段~~ → ✅ 2026-09-09 以更小刀法落地：schema 不动（外层 key 零返工），在 kb_loader str 出口新增 _format_classics_truth 按 sidecar source_truth 分层呈现（原「generic dump 保基线锚点」口径废除——regression_baseline 实测不涉 kb 检索），sidecar 缺条目显式标「出处未标注」；test_kb_classics_truth.py 4 条回归（原文引文格式/转述剥引号伪装/缺标注显式/hits-str 一致性）。至此 kb_retrieve 工具链与注入层同源，假出处所有出口结构上堵死。
 - classics_full 75 段 source 标注（gusuifu/quanji/quanshu）实为主题标签非原文出处，全库零整篇原文。source 降级排后（死数据不影响用户），第一优先级是 classics.json 引文标记。
 
 ### 已上线

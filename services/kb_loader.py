@@ -225,8 +225,12 @@ def _retrieve_kb_lexical_str(query_keywords: list[str], kb_name: str, top_k: int
     # ziwei_star_palace.json：{星曜名: {宫位名: "解释"}}
     if kb_name == "ziwei_star_palace.json":
         return _format_star_palace(_match_star_palace(kb, query_keywords, top_k))
-    # ziwei_classics.json：str 出口 generic 转发（与 classics_full 同走 _format_generic，
-    # classics_full 未登记 dispatch_allowlist 即不受理）；hits 出口才做条目级 _match_classics 供注入层 join
+    # ziwei_classics.json：str 出口同源真伪分层（2026-09-09 补残洞，同日文档债注释升级为实现）。
+    # 此前 generic 裸 dump 引文按语混写串，kb_retrieve 工具链可把转述当原文引用；
+    # 现按 annotations sidecar source_truth 标注出处状态，与注入层 join_classics_str 同源。
+    # classics_full 未登记 dispatch_allowlist，不受影响。
+    if kb_name == "ziwei_classics.json":
+        return _format_classics_truth(kb, query_keywords, top_k)
     if kb_name == "ziwei_classics.json":
         return _format_generic(_match_generic(kb, query_keywords, top_k))
     # ziwei_qawenlun.json：诸星问答论（按 star 字段精确匹配）
@@ -503,11 +507,36 @@ def _match_generic(kb: dict, keywords: list[str], top_k: int) -> list:
     return matched[:top_k]
 
 
+def _format_classics_truth(kb: dict, query_keywords: list[str], top_k: int) -> str:
+    """classics str 出口：按 sidecar source_truth 分层呈现（与 kb_inject._render_block 同源）。
+
+    旧口径「str 出口保持 generic dump（保护基线锚点）」废除（2026-09-09）：
+    regression_baseline 实测不涉 kb 检索，无锚点可保；残洞是 kb_retrieve 工具链
+    拿到引文按语混写串、转述可被当原文引用——假出处要在所有出口结构上堵死。
+    sidecar 缺条目时显式标「出处未标注」，不静默裸奔。
+    """
+    try:
+        from services.kb_inject import _load_annotations, _render_block
+        annotations = _load_annotations()
+    except Exception:
+        annotations = {}
+    parts = []
+    for _, name, text in _match_classics(kb, query_keywords, top_k):
+        a = annotations.get(name)
+        if a:
+            parts.append(_render_block(name, a)["presentation"])
+        else:
+            parts.append(f"【{name}】出处未标注（原文/转述待核，不得作原文引用）：{text}")
+    if not parts:
+        return ""
+    return "\n\n## 📖 古籍引用（出处核验状态标注：转述/未标注不得作原文引用）\n\n" + "\n\n".join(parts)
+
+
 def _match_classics(kb: dict, keywords: list[str], top_k: int) -> list:
     """古籍引用条目级匹配：返回 [(score, 格局名, 条目文本)]。
 
     结构：{_description, sources, patterns: {格局名: 引文+按语 str}}。
-    只供 hits 出口用；str 出口保持 generic dump（保护基线锚点）。
+    hits 出口做条目级供注入层 join；str 出口经 _format_classics_truth 真伪分层（2026-09-09 起）。
     """
     patterns = kb.get("patterns", {})
     if not isinstance(patterns, dict):
