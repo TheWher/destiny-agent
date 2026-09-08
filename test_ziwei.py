@@ -166,11 +166,26 @@ def _build_specs():
 
     # ── 流年 ═══
     horo = get_horoscope(1991,8,15,1,'男',2025)
+    horo_grid = get_horoscope(1991,8,15,1,'男',2025, grid_start=2020)
     specs.append(('流年盘', [
         ('yearly_gz 正确', lambda n: check(n, horo['yearly_gz'])),
         ('yearly_palace 有效', lambda n: check(n, horo['yearly_palace'])),
         ('decadal_gz 有效', lambda n: check(n, horo['decadal_gz'])),
         ('liuyao 有数据', lambda n: check(n, len(horo['liuyao'])>=8)),
+        # TODO-GZ-LIUNIAN 引擎注入：前端流年/流月/流日标签全部消费以下注入值，禁前端自算
+        ('year_grid 12 格', lambda n: check(n, len(horo.get('year_grid',[]))==12)),
+        ('year_grid 覆盖窗口', lambda n: check(n, [g['year'] for g in horo_grid.get('year_grid',[])]==list(range(2020,2032)))),
+        ('year_grid 干支锚', lambda n: check(n, horo_grid.get('year_grid',[{}])[4]['gz']=='甲辰')),
+        ('today_day_zhi 有效', lambda n: check(n, horo.get('today_day_zhi') in '子丑寅卯辰巳午未申酉戌亥')),
+    ]))
+
+    # ── 流年干支引擎注入 unit（TODO-GZ-LIUNIAN，2026-09-09 落）═══
+    from ziwei_calculator import year_gz as _year_gz, year_gz_labels as _year_gz_labels
+    specs.append(('流年干支注入', [
+        ('1984=甲子', lambda n: check(n, _year_gz(1984)=='甲子')),
+        ('2024=甲辰', lambda n: check(n, _year_gz(2024)=='甲辰')),
+        ('2026=丙午', lambda n: check(n, _year_gz(2026)=='丙午')),
+        ('labels 连续 3 年', lambda n: check(n, [g['gz'] for g in _year_gz_labels(1984,3)]==['甲子','乙丑','丙寅'])),
     ]))
 
     # ── 流曜 ═══

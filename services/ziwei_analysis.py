@@ -14,6 +14,7 @@ import requests
 from services.kb_loader import _KB_DIR, _kb_cache, _load_json_kb, KB_PATH, KB_EXTENDED_PATH, retrieve_kb, extract_ziwei_keywords
 from services.kb_inject import join_classics_str
 from services.llm_client import API_CONFIG, _call_api, _call_api_stream
+from ziwei_calculator import year_gz
 
 # Agent 定义文件
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -175,18 +176,13 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
         '壬': {'化禄': '天梁', '化权': '紫微', '化科': '左辅', '化忌': '武曲'},
         '癸': {'化禄': '破军', '化权': '巨门', '化科': '太阴', '化忌': '贪狼'},
     }
-    GAN = '甲乙丙丁戊己庚辛壬癸'
-    ZHI = '子丑寅卯辰巳午未申酉戌亥'
 
     import datetime as _dt
     current_year = _dt.date.today().year
-    liunian_gan = GAN[(current_year - 4) % 10]
-    liunian_zhi = ZHI[(current_year - 4) % 12]
-    liunian_gz = liunian_gan + liunian_zhi
-
-    # 前后一年
-    prev_gz = GAN[(current_year - 5) % 10] + ZHI[(current_year - 5) % 12]
-    next_gz = GAN[(current_year - 3) % 10] + ZHI[(current_year - 3) % 12]
+    # 年干支引擎注入（TODO-GZ-LIUNIAN，2026-09-09 落地），禁前端公式自算残留
+    liunian_gz = year_gz(current_year)
+    prev_gz = year_gz(current_year - 1)
+    next_gz = year_gz(current_year + 1)
 
     # 当前年龄
     birth_str = info.get('birth_datetime', '')
@@ -243,11 +239,10 @@ def _build_ziwei_user_message(plate_dict: dict, bazi_ref: dict = None) -> str:
     parts.append(f"| 年份 | 干支 | 流年四化 |")
     parts.append(f"|------|------|----------|")
     for offset, label in [(-1, f'{current_year-1}年'), (0, f'{current_year}年（当前）'), (1, f'{current_year+1}年')]:
-        yg = GAN[(current_year + offset - 4) % 10]
-        yz = ZHI[(current_year + offset - 4) % 12]
-        y_fly = GAN_SIHUA.get(yg, {})
+        _gz = year_gz(current_year + offset)  # 引擎注入，禁自算
+        y_fly = GAN_SIHUA.get(_gz[0], {})
         fly_str = '、'.join(f'{mu}→{star}' for mu, star in y_fly.items()) if y_fly else '—'
-        parts.append(f"| {label} | {yg}{yz} | {fly_str} |")
+        parts.append(f"| {label} | {_gz} | {fly_str} |")
     parts.append("")
     parts.append("**⛔ 以上所有干支、四化均为排盘引擎精确计算结果。不要自行推算干支，不要编造年份。直接引用上表。**")
     parts.append("")

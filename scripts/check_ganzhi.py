@@ -28,33 +28,12 @@ SKIP_DIRS = ['node_modules']
 # 指纹: 括号内以 ±4 收尾后取模 10/12 (干支序列换算常数: 1984=甲子)
 PATTERN = re.compile(r'\([^()\n]*?[-+]\s*4\s*\)\s*%\s*(10|12)')
 
-# 白名单: 仅认已记档的流年/大运公历口径 (1-2 月窗口差一年, 待办)。
-# 格式: (相对路径, 行号)。引擎化后删白名单 → 零命中零白名单 = 彻底清零。
-# 生命周期: 本组条目对应待办 [TODO-GZ-LIUNIAN] (docs/ziwei-mutual-verification.md 六)。
-# 完成定义三件事绑定: 引擎化 + 按 ID 清白名单对应条目 + 零命中零白名单判据满足。
+# 白名单: 引擎化完成后已清空（2026-09-09 TODO-GZ-LIUNIAN 落地）。
+# 引擎注入: ziwei_calculator.year_gz / year_gz_labels / get_horoscope(year_grid, yearly_gan,
+# yearly_zhi, today_day_zhi) + bazi_calculator.year_ganzhi；前端流年/流月/流日标签全部消费注入值。
+# 生命周期: 零命中零白名单 = "干支自算彻底清零"判据达成；新残留直接报违规，先记档再入白名单。
 # 防止白名单变成新暂缓区 (hanako 2026-08-04)。
-WHITELIST = [
-    ('templates/ziwei.html', 1298),          # [TODO-GZ-LIUNIAN] renderFlowYears 流年干支
-    ('templates/ziwei.html', 1299),
-    ('templates/ziwei.html', 1308),
-    ('templates/ziwei.html', 1315),
-    ('templates/ziwei-report.html', 963),    # [TODO-GZ-LIUNIAN] renderFlowYears 流年干支
-    ('templates/ziwei-report.html', 964),
-    ('templates/ziwei-report.html', 973),
-    ('templates/ziwei-report.html', 980),
-    ('routes/ziwei.py', 383),                # [TODO-GZ-LIUNIAN] 大限/流年干支
-    ('routes/ziwei.py', 384),
-    ('services/ziwei_analysis.py', 152),     # [TODO-GZ-LIUNIAN] 流年干支 (gan)
-    ('services/ziwei_analysis.py', 153),     # 流年干支 (zhi)
-    ('services/ziwei_analysis.py', 215),     # 大限干支 (offset)
-    ('services/ziwei_analysis.py', 216),
-    ('services/bazi_analysis.py', 308),      # [TODO-GZ-LIUNIAN] 逐年流年干支表 (birth_year→current_year)
-    ('services/bazi_analysis.py', 309),
-    ('services/bazi_analysis.py', 750),      # 验证文本提年份算流年干支
-    ('services/bazi_analysis.py', 751),
-    ('services/bazi_analysis.py', 783),
-    ('services/bazi_analysis.py', 784),
-]
+WHITELIST = []
 
 
 def main():

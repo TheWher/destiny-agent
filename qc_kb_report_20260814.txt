@@ -1,0 +1,56 @@
+=== 1. 文档统计 ===
+文档总数: 205
+type 分布: {'moc': 7, '': 2, 'note': 15, 'disambiguation': 1, '网页快照': 177, '剥离原文': 3}
+authority 分布: {'': 18, '本人确认（数据层，分析结论为团队共识）': 1, '本人确认（2026-08-14 mose 实证，数据源识典 SSR）': 1, '本人确认（Destiny_agent 引擎实现口径）': 1, '个人站（刘韫龄，取象派）': 1, '个人站（王亭之 ziweicn / 刘韫龄 ziweishuyuan）': 1, '本人确认（King 翻书 + 引擎实测）': 1, '官方（江苏省道教协会）+ 个人站（ziweicn 名词解释）': 1, '本人确认（2026-08-14 实测验证）': 1, '官方': 1, '古籍原文': 3, '个人站': 153, '古籍数字化平台': 19, '注疏体剥离（原文段，来源见各段标注）': 3}
+status 分布: {'': 25, 'digested': 22, 'raw': 150, 'complete': 8}
+system 分布: {'': 15, '三合': 60, '飞星': 98, '通用（三合/飞星共用基础概念，引擎采用此口径）': 1, '跨体系（口径对照专用）': 6, '跨体系（口径对照前置工具）': 1, '飞星（含三合对照注）': 1, '通用（两系共用基础术语）': 1, '古籍': 22}
+frontmatter 缺失: {'authority': 18, 'status': 25, 'system': 15, 'type': 2, 'url': 25, 'source': 25}
+
+=== 2. 挂账项1：全覽「禄逢冲破」line_tags 根因 ===
+file=素材池/网页快照/2026-08-11-ziwei-quanshu-quanlan.md
+  title=紫微斗数全书（全覽） | type=网页快照 | authority=古籍原文 | status=raw
+  含表格行结构: True | body 长度: 81590
+  原文命中 行13: 祿逢沖破，吉處藏凶。馬遇空亡，終身奔走。 生逢敗地，發也虛花。絕處逢生，生花不敗。 星臨廟旺，再觀生剋之機。命坐強宮，細察制化之理。 日月最
+  原文命中 行15: 原夫紫微帝座，生為厚重之容。天府尊星，也作純和之體。 金烏圓滿，玉兔清奇。 天機為不長不短之姿，情懷好善。武曲乃至要至緊之操，心性果決。 天
+
+  [对照] SDZJ0170-juan2 表格结构样本:
+
+=== 3. style_tags_per_line 概览 ===
+行级标注条数: 363 | 不同 PageId: 208
+文体分布: {'诀体标题': 76, '赋体': 72, '论体': 67, '注解体': 41, '诀体': 41, '命例体': 37, '斗君体': 15, '赋体歌诀': 7, '目録': 4, '论体标题': 3}
+style_tags.json 键: ['版本', '说明', '总行数', '分层', '兜底规则', '分层合计']
+
+=== 4. 检索抽查（top5） ===
+query=禄逢冲破 命中 5
+  [网页快照] 王亭之《太微赋》精解 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-wangtingzhi-taiweifu-jingjie
+  [note] SDZJ0170 㐫字语义结构 | auth=本人确认（数据层，分析结论为团队共识） status= | 笔记/SDZJ0170-㐫字语义结构.md
+  [note] SDZJ0170 引文链与讹字样本 | auth=本人确认（2026-08-14 mose 实证，数据源识典 SSR） status= | 笔记/SDZJ0170-引文链与讹字样本.md
+  [note] 古籍断语标注（赋文分篇） | auth=个人站（王亭之 ziweicn / 刘韫龄 ziweishuyuan） status= | 笔记/古籍断语标注.md
+  [note] 四化口径对照（三合 vs 飞星） | auth= status= | 笔记/四化口径对照.md
+query=凶 命中 5
+  [网页快照] 紫微斗数基本术语 | auth=官方 status=digested | 素材池/网页快照/2026-08-11-jsdj-shuyu.md
+  [网页快照] 紫微斗数巨门星之概论 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-jumen-xing.md
+  [网页快照] 紫微斗数廉贞星之概论 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-lianzhen-xing.md
+  [网页快照] 太阳星之概论 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-taiyang-xing.md
+  [网页快照] 紫微斗数太阴星之概论 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-taiyin-xing.md
+query=七杀 命中 5
+  [网页快照] 紫微斗数七杀星之细论 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-qisha-xing.md
+  [网页快照] 紫微斗数基本术语 | auth=官方 status=digested | 素材池/网页快照/2026-08-11-jsdj-shuyu.md
+  [网页快照] 紫微斗数巨门星之概论 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-jumen-xing.md
+  [网页快照] 紫微斗数破军星之细论 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-pojun-xing.md
+  [网页快照] 紫微斗数太阴星之概论 | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweicn-taiyin-xing.md
+query=四化 命中 5
+  [disambiguation] 四化（消歧） | auth= status= | 笔记/四化.md
+  [网页快照] 紫微斗数基本术语 | auth=官方 status=digested | 素材池/网页快照/2026-08-11-jsdj-shuyu.md
+  [网页快照] 百字千金诀（韫龄注解） | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweishuyuan-baizi-qianjin-jue.md
+  [网页快照] 撮要六问断（韫龄注解） | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweishuyuan-cuoyao-liuwenduan.md
+  [网页快照] 斗数骨髓赋（论述篇注解） | auth=个人站 status=digested | 素材池/网页快照/2026-08-11-ziweishuyuan-gusui-fu-zhujie.md
+
+=== 5. 归一化验证 ===
+  '祿逢沖破' -> '禄逢冲破'
+  '㐫' -> '凶'
+  '兇' -> '凶'
+  '䧟' -> '陷'
+  '𢙣' -> '恶'
+  '吉處藏凶' -> '吉处藏凶'
+  '馬遇空亡' -> '马遇空亡'

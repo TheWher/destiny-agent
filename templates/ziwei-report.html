@@ -925,13 +925,13 @@ function renderGrid(plate){
 }
 
 // ── 运限三层架构 ──
-const GAN_ARR = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const ZHI_ARR = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 const GAN_SIHUA = {'甲':['廉贞','破军','武曲','太阳'],'乙':['天机','天梁','紫微','太阴'],'丙':['天同','天机','文昌','廉贞'],'丁':['太阴','天同','天机','巨门'],'戊':['贪狼','太阴','右弼','天机'],'己':['武曲','贪狼','天梁','文曲'],'庚':['太阳','武曲','太阴','天同'],'辛':['巨门','太阳','文曲','文昌'],'壬':['天梁','紫微','左辅','武曲'],'癸':['破军','巨门','太阴','贪狼']};
 const LIMIT_NAMES = ['命宫','兄弟','夫妻','子女','财帛','疾厄','迁移','交友','官禄','田宅','福德','父母'];
 // 叠盘状态：三层可叠加
 let scope = { decade: null, yearly: null, monthly: null, dayOnly: null };
 let horoscopeData = null;  // 当前拉取的流年数据
+let horoGridTy = null;     // horoscopeData.year_grid 对应的输入年（窗口变更时重拉注入）
 
 function renderYunDecade(plate){
   const palaces = plate.palaces || [];
@@ -962,14 +962,21 @@ function renderYunDecade(plate){
     decEl.appendChild(div);
   });
 }
-function renderFlowYears(){
+async function renderFlowYears(){
   const ty = parseInt($('horo-year')?.value) || new Date().getFullYear();
+  // 年/月干支一律消费引擎注入值（铁律禁前端自算）；无盘数据先出年份壳，注入到达后回填
+  if(plateData?.input && (!horoscopeData || horoGridTy !== ty)){
+    await fetchHoroscope(ty);
+  }
+  const gmap = {};
+  (horoscopeData?.year_grid || []).forEach(g => { gmap[g.year] = g; });
   const yg = $('drill-year-grid');
   yg.innerHTML = '';
   for(let i=0; i<12; i++){
     const y = ty - (ty % 12) + i;
-    const gz = GAN_ARR[(y-4)%10] + ZHI_ARR[(y-4)%12];
-    const br = ZHI_ARR[(y-4)%12];
+    const hit = gmap[y];
+    const gz = hit ? hit.gz : '—';
+    const br = hit ? hit.zhi : '';
     const div = document.createElement('div');
     div.className = 'drill-cell';
     if(y === ty) div.classList.add('active');
@@ -977,23 +984,28 @@ function renderFlowYears(){
     div.onclick = () => toggleScope('yearly', { year: y, gz, br });
     yg.appendChild(div);
   }
-  const inp = plateData?.input || {};
-  const yearIdx = (ty - 4) % 12;
   const hi = horoscopeData;
+  // 流年支索引/流月干：引擎注入（yearly_zhi/yearly_gan），缺失降级为无支标签
+  const yearIdx = (hi && hi.yearly_zhi) ? ZHI_ARR.indexOf(hi.yearly_zhi) : -1;
   const dj = (hi && hi.monthly_palace_index >= 0 && hi.monthly_palace_index < 12)
     ? hi.monthly_palace_index
-    : yearIdx;  // fallback: 流年地支索引
+    : yearIdx;
   const mg = $('drill-month-grid');
   mg.innerHTML = '';
-  const ygan = GAN_ARR[(ty-4)%10];
+  const ygan = (hi && hi.yearly_gan) ? hi.yearly_gan : '';
   for(let m=1; m<=12; m++){
-    const idx = (dj + m - 1) % 12;
-    const br = ZHI_ARR[idx];
-    const mgz = ygan + br;
     const div = document.createElement('div');
     div.className = 'drill-cell';
-    div.innerHTML = '<div class="dc-gz">'+m+'月 '+br+'</div><div class="dc-sub">'+br+'宫</div>';
-    div.onclick = () => toggleScope('monthly', { month: m, br, gz: mgz });
+    if(dj >= 0){
+      const idx = (dj + m - 1) % 12;
+      const br = ZHI_ARR[idx];
+      const mgz = ygan ? (ygan + br) : br;
+      div.innerHTML = '<div class="dc-gz">'+m+'月 '+br+'</div><div class="dc-sub">'+br+'宫</div>';
+      div.onclick = () => toggleScope('monthly', { month: m, br, gz: mgz });
+    } else {
+      div.innerHTML = '<div class="dc-gz">'+m+'月</div><div class="dc-sub">—</div>';
+      div.onclick = () => toggleScope('monthly', { month: m, br: '', gz: '' });
+    }
     mg.appendChild(div);
   }
   if(!scope.yearly) $('fpv-year').textContent = '—';
@@ -1016,16 +1028,19 @@ async function fetchHoroscope(year){
     const birthDt = inp.birth_datetime || '';
     const parts = birthDt.match(/(\d{4})-(\d{2})-(\d{2})\s(\d{1,2}):(\d{2})/);
     if(!parts){ $('horo-loading')?.remove(); return; }
+    // 干支一律引擎注入（CLAUDE.md 铁律）；grid_start=当前输入年所在 12 年窗口，保证 year_grid 与展示窗一致
+    const ty0 = parseInt($('horo-year')?.value) || new Date().getFullYear();
     const body = {
       year: parseInt(parts[1]), month: parseInt(parts[2]), day: parseInt(parts[3]),
       hour: parseInt(parts[4]), gender: inp.gender || '男',
-      target_year: year, is_lunar: inp.is_lunar || false
+      target_year: year, is_lunar: inp.is_lunar || false,
+      grid_start: ty0 - (ty0 % 12)
     };
     const r = await fetch('/api/ziwei/horoscope', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify(body)
     });
-    if(r.ok){ horoscopeData = await r.json(); }
+    if(r.ok){ horoscopeData = await r.json(); horoGridTy = ty0; }
   }catch(e){ horoscopeData = null; }
   $('horo-loading')?.remove();
 }
@@ -1069,8 +1084,11 @@ function updateFocusPills(){
   });
   updateScopeStatus();
 }
-function highlightDayOnly(){
-  scope.dayOnly = scope.dayOnly ? null : { day: new Date().getDate(), br: ZHI_ARR[(new Date().getDate()-1)%12] };
+async function highlightDayOnly(){
+  // 日支引擎注入（today_day_zhi），禁前端按日数自算（干支铁律）
+  if(plateData?.input && !horoscopeData){ await fetchHoroscope(new Date().getFullYear()); }
+  const dayBr = (horoscopeData && horoscopeData.today_day_zhi) ? horoscopeData.today_day_zhi : '—';
+  scope.dayOnly = scope.dayOnly ? null : { day: new Date().getDate(), br: dayBr };
   if(scope.dayOnly){
     $('fp-day').textContent = scope.dayOnly.day+'日 '+scope.dayOnly.br;
     $('fp-day').classList.add('active');
@@ -1319,6 +1337,7 @@ function updateScopeStatus(){
 function clearAllScope(){
   scope = { decade: null, yearly: null, monthly: null, dayOnly: null };
   horoscopeData = null;
+  horoGridTy = null;
   $('drill-year').classList.remove('open');
   $('drill-month').classList.remove('open');
   $('fp-year').classList.remove('active'); $('fpv-year').textContent = '—';

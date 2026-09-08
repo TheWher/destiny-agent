@@ -349,9 +349,46 @@ def plate_to_dict(plate_data: dict, input_info: dict = None) -> dict:
     }
 
 
+# ═══ 流年干支注入（TODO-GZ-LIUNIAN 引擎化落地，2026-09-09）═══
+# 项目层（routes/services/前端）禁止按 (y-4)%10/12 自算年干支（干支铁律），
+# 一律消费本函数 / /horoscope 响应注入值。
+
+
+def year_gz(year: int) -> str:
+    """公历年 → 流年干支（农历年口径）。
+
+    探测点 {Y}-03-01：恒在该公历年立春之后、次年春节之前，年柱即农历 Y 年干支，
+    与 get_horoscope 内 iztro 的 {target_year}-03-01 探测同一日历点，两处口径恒一致。
+    """
+    from bazi_calculator import calc_sizhu
+    return calc_sizhu(year, 3, 1, 12, 0)['year']['gz']
+
+
+def year_gz_labels(start_year: int, count: int) -> list:
+    """连续 count 个公历年的流年干支标签（前端流年钻取格直接消费，禁前端自算）。"""
+    out = []
+    for y in range(start_year, start_year + count):
+        gz = year_gz(y)
+        out.append({'year': y, 'gz': gz, 'zhi': gz[1]})
+    return out
+
+
+def _today_day_zhi() -> str:
+    """今天日柱地支（ noon 探测避开夜子时换日；报告页「仅看流日」标签注入用）。"""
+    import datetime as _dt
+    from bazi_calculator import calc_sizhu
+    t = _dt.date.today()
+    return calc_sizhu(t.year, t.month, t.day, 12, 0)['day']['zhi']
+
+
 def get_horoscope(year: int, month: int, day: int, hour: int, gender: str,
-                  target_year: int, is_lunar: bool = False) -> dict:
-    """获取指定年份的流年盘数据"""
+                  target_year: int, is_lunar: bool = False,
+                  grid_start: int = None) -> dict:
+    """获取指定年份的流年盘数据
+
+    grid_start：前端流年钻取格 12 年窗口起点；缺省按 target_year 所在 12 年段取。
+    响应附 year_grid（引擎干支标签）/ target_year / today_day_zhi，供前端注入消费。
+    """
     from iztro_py import astro
 
     date_str = f"{year}-{month}-{day}"
@@ -446,6 +483,10 @@ def get_horoscope(year: int, month: int, day: int, hour: int, gender: str,
         'monthly_mutagens': monthly_mutagen_stars,
         'monthly_gan': monthly_gan,
         'monthly_zhi': monthly_zhi,
+        'target_year': target_year,
+        'year_grid': year_gz_labels(
+            grid_start if grid_start is not None else target_year - (target_year % 12), 12),
+        'today_day_zhi': _today_day_zhi(),
     }
 
 

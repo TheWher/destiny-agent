@@ -2,6 +2,22 @@
 
 记录对用户或架构有影响的变化。不记录每个 commit。
 
+## 2026-09-09 — TODO-GZ-LIUNIAN 结账：流年/大运干支引擎化清零 + 来因宫第三验证样本
+
+### 流年干支引擎化（2026-08-04 挂账 → 今日三件事全清）
+- **引擎** `bazi_calculator.year_ganzhi()`（立春口径，06-01 探测）；`ziwei_calculator.year_gz()`（农历年口径，03-01 探测与 get_horoscope 内 iztro 探测同日历点）+ `year_gz_labels()`（12 年窗标签）+ `_today_day_zhi()`（正午探测避夜子时）；`get_horoscope` 加 `grid_start` 参，响应附 `year_grid`/`target_year`/`today_day_zhi` 注入值
+- **消费端全改注入**：services/ziwei_analysis（当前/前后一年/三年表）、routes/ziwei（三年流年行）、services/bazi_analysis（逐年表+验盘区 6 行）、前端 ziwei.html/ziwei-report.html renderFlowYears 年格+流月干+流日支（dayOnly 原按日数取支系错口径，顺手修）全改引擎注入，GAN_ARR 前端表删除，缺注入显式降级 '—' 不回退自算
+- **顺带修 bug**：流月干此前取输入年干而非所选流年干（跨年钻取错干支）
+- **判据** check_ganzhi.py 白名单 20 条全清，零命中零白名单达成；test_ziwei 新增 year_grid/注入断言组，141→149 绿
+- 挂账销：docs/ziwei-mutual-verification.md TODO-GZ-LIUNIAN 结账段落
+
+### 来因宫锚引擎第三验证样本落断言（15ca83a 遗留）
+- 庚→辰→交友宫盘（1970-04-01 08:00 男，引擎实测：庚戌年/命亥/交友辰/laiyin=交友）5 条断言入 verify_laiyin_anchors.py，补齐 King 盘（乙→酉→福德）之外第二个锚位→功能名旋转映射回归锚
+
+### 文件清账
+- 入库：docs/geju_injected_cases_v1/v2.json（格局注入 LLM 全量用例，词典盘例编号证据源）、qc_kb_20260814.py+报告（King 委托 KB 质检）、scripts/check_rm_pans.py（日照雷门/月朗天门构造盘零 token 核验尺）
+- 删除：diag_king_fix1-4/_probe_js/_probe_geju_baseline 一次性探针（结论已被 216c9d0 词典 v1.5 与校验尺收编）+ 5 个临时输出 txt
+
 ## 2026-08-14 — 检索层排序修复：authority 匹配 + 古籍 raw 豁免（质检驱动）
 
 ### 背景

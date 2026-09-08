@@ -487,6 +487,16 @@ def calc_sizhu(year: int, month: int, day: int, hour: int, minute: int = 0) -> d
     }
 
 
+def year_ganzhi(year: int) -> str:
+    """公历年 → 年干支（立春分界口径，八字流年表用）。
+
+    探测点 {Y}-06-01 恒在立春后，年柱即该公历整年的八字年柱。
+    项目层（services/routes/前端）禁止按 (y-4)%10/12 自算，一律消费本函数
+    [TODO-GZ-LIUNIAN]。逐年调用走 sxtwl 真历法；性能敏感场景可自行缓存。
+    """
+    return calc_sizhu(year, 6, 1, 12, 0)['year']['gz']
+
+
 def calc_true_solar_time(birth_utc_hour: float, longitude: float) -> dict:
     """真太阳时校正
 

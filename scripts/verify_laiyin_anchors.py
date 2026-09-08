@@ -136,6 +136,32 @@ def run():
     check("命未 → 父母申（命+1，逆布）", ZHIS[(ming + 1) % 12] == "申",
           f"got={ZHIS[(ming + 1) % 12]}")
 
+    print("== 第三验证样本断言（庚→辰→交友宫，引擎实测锚定 2026-08-17）==")
+    # King 盘只覆盖 乙→酉→福德 一条旋转位；本样本补 庚→辰→交友，
+    # 验证锚位→功能名旋转映射的第二个实例（PALACE_NAMES_CN 固定表错位坑的回归锚）。
+    # 期望值全部锚定引擎实测（1970-04-01 08:00 男）：
+    #   year_gz=庚戌（立春 1970-02-04 之后，庚戌年口径）命宮在亥，交友在辰（命+5 逆布），
+    #   laiyin_anchor=辰，laiyin=交友。禁止按公式人脑推导改期望，推导只当假设。
+    try:
+        sys.path.insert(0, __file__.rsplit("scripts", 1)[0] or ".")
+        from ziwei_calculator import ziwei_paipan
+        plate = ziwei_paipan(1970, 4, 1, 8, 0, "男")
+        ming_p = next((p for p in plate["palaces"] if "命" in (p.get("name") or "")), None)
+        jy_p = next((p for p in plate["palaces"] if (p.get("name") or "") in ("交友", "交友宮")), None)
+        check("庚年盘 year_gz == 庚戌（立春分界）", plate.get("year_gz") == "庚戌",
+              f"got={plate.get('year_gz')}")
+        check("laiyin_anchor == 辰（锚位表 庚→辰）", plate.get("laiyin_anchor") == "辰",
+              f"got={plate.get('laiyin_anchor')}")
+        check("命宮在亥（样本前提）", ming_p is not None and ming_p.get("earthly_branch") == "亥",
+              f"got={ming_p.get('earthly_branch') if ming_p else None}")
+        check("交友宫在辰（命+5 逆布，盘面实测）",
+              jy_p is not None and jy_p.get("earthly_branch") == "辰",
+              f"got={jy_p.get('earthly_branch') if jy_p else None}")
+        check("laiyin == 交友（锚位→功能名旋转映射）", plate.get("laiyin") == "交友",
+              f"got={plate.get('laiyin')}")
+    except Exception as e:  # 引擎不可达时显式失败，不静默跳过
+        check("第三验证样本引擎可达", False, f"引擎调用异常: {e}")
+
     print()
     if failures:
         print(f"FAILED: {len(failures)} 项断言未过 -> {failures}")

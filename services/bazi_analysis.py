@@ -12,7 +12,7 @@ import re
 import time
 import requests
 
-from bazi_calculator import get_shishen, CANG_GAN
+from bazi_calculator import get_shishen, CANG_GAN, year_ganzhi
 from services.kb_loader import _WX_GAN, _WX_ZHI, _KB_DIR, _kb_cache, _load_json_kb, _load_knowledge_base, KB_PATH, KB_EXTENDED_PATH
 from services.llm_client import API_CONFIG, _call_api, _call_api_stream
 
@@ -264,8 +264,6 @@ def _build_year_lookup_table(plate_dict, current_year, spread=99, balanced=False
     nian_zhi = pillars.get("year", {}).get("zhi", "")
     dayun = p.get("dayun", [])
 
-    tian_gan = '甲乙丙丁戊己庚辛壬癸'
-    di_zhi = '子丑寅卯辰巳午未申酉戌亥'
 
     # 均衡模式：提取原局十神集合
     yuanju_ss = _get_yuanju_shishen_set(plate_dict) if balanced else set()
@@ -305,9 +303,7 @@ def _build_year_lookup_table(plate_dict, current_year, spread=99, balanced=False
 
     for year in range(birth_year, current_year + 1):
         age = year - birth_year
-        stem_idx = (year - 4) % 10
-        branch_idx = (year - 4) % 12
-        ganzhi = tian_gan[stem_idx] + di_zhi[branch_idx]
+        ganzhi = year_ganzhi(year)  # 引擎注入，禁自算（TODO-GZ-LIUNIAN）
 
         # 所属大运
         dayun_label = '—'
@@ -691,8 +687,6 @@ def _verify_predictions(analysis_text: str, plate_dict: dict, current_year: int)
     birth_dt_str = info.get("birth_datetime", "2000-01-01 00:00")
     birth_year = int(birth_dt_str[:4])
 
-    tian_gan = '甲乙丙丁戊己庚辛壬癸'
-    di_zhi = '子丑寅卯辰巳午未申酉戌亥'
 
     rows = []       # 正常行
     warnings = []   # 不匹配警告
@@ -747,9 +741,7 @@ def _verify_predictions(analysis_text: str, plate_dict: dict, current_year: int)
             y = int(ym.group(1))
             if y <= current_year and y not in seen_years:
                 seen_years.add(y)
-                stem_idx = (y - 4) % 10
-                branch_idx = (y - 4) % 12
-                ganzhi = tian_gan[stem_idx] + di_zhi[branch_idx]
+                ganzhi = year_ganzhi(y)  # 引擎注入，禁自算（TODO-GZ-LIUNIAN）
                 actual_level, actual_desc = _evaluate_liunian_signal(
                     ganzhi, ri_ganzhi, yue_zhi, nian_zhi, dayun, y
                 )
@@ -780,9 +772,7 @@ def _verify_predictions(analysis_text: str, plate_dict: dict, current_year: int)
                 continue
             seen_years.add(y)
 
-            stem_idx = (y - 4) % 10
-            branch_idx = (y - 4) % 12
-            ganzhi = tian_gan[stem_idx] + di_zhi[branch_idx]
+            ganzhi = year_ganzhi(y)  # 引擎注入，禁自算（TODO-GZ-LIUNIAN）
 
             actual_level, actual_desc = _evaluate_liunian_signal(
                 ganzhi, ri_ganzhi, yue_zhi, nian_zhi, dayun, y

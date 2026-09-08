@@ -11,7 +11,7 @@ from flask import Blueprint, jsonify, render_template, request, send_file, Respo
 import requests
 
 from bazi_calculator import paipan, get_shishen
-from ziwei_calculator import ziwei_paipan, plate_to_dict as ziwei_plate_to_dict, get_horoscope, detect_patterns
+from ziwei_calculator import ziwei_paipan, plate_to_dict as ziwei_plate_to_dict, get_horoscope, detect_patterns, year_gz
 from utils.auth import check_password, check_rate_limit, check_conv_rate_limit, check_global_ip_limit, WEB_PASSWORD, ADMIN_TOKEN
 from utils.tier import resolve_user_from_request, get_rate_limit, TIER_FREE
 from utils.cache import _make_cache_key, _cache_get, _make_ziwei_cache_key, _cache_set
@@ -388,8 +388,6 @@ def api_ziwei_analyze_yearly():
             '壬': {'化禄': '天梁', '化权': '紫微', '化科': '左辅', '化忌': '武曲'},
             '癸': {'化禄': '破军', '化权': '巨门', '化科': '太阴', '化忌': '贪狼'},
         }
-        GAN = '甲乙丙丁戊己庚辛壬癸'
-        ZHI = '子丑寅卯辰巳午未申酉戌亥'
         import datetime as _dt
         now_year = _dt.date.today().year
         birth_str = plate_dict.get('input', {}).get('birth_datetime', '')
@@ -431,10 +429,9 @@ def api_ziwei_analyze_yearly():
 
         liunian_rows = []
         for offset, label in [(-1, f'{now_year-1}年'), (0, f'{now_year}年（当前）'), (1, f'{now_year+1}年')]:
-            yg = GAN[(now_year + offset - 4) % 10]
-            yz = ZHI[(now_year + offset - 4) % 12]
-            yf = GAN_SIHUA.get(yg, {})
-            liunian_rows.append(f"| {label} | {yg}{yz} | {'、'.join(f'{mu}→{star}' for mu, star in yf.items())} |")
+            _gz = year_gz(now_year + offset)  # 引擎注入，禁自算（TODO-GZ-LIUNIAN）
+            yf = GAN_SIHUA.get(_gz[0], {})
+            liunian_rows.append(f"| {label} | {_gz} | {'、'.join(f'{mu}→{star}' for mu, star in yf.items())} |")
 
         # 流年聚焦
         liuyao = horo.get('liuyao', {})
