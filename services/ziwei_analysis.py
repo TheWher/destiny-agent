@@ -53,7 +53,9 @@ def _load_ziwei_system_prompt() -> str:
                 lines.append("\n**六吉**：" + "、".join(f"{k}({v.get('meaning','')})" for k, v in aus.items()))
                 lines.append("**六煞**：" + "、".join(f"{k}({v.get('meaning','')})" for k, v in mal.items()))
             content += "\n".join(lines)
-    # 注：ziwei_star_palace.json 不在此处加载，由 _build_ziwei_user_message 按需检索
+    # 注：ziwei_star_palace.json 不在此文件注入。_build_ziwei_user_message 按需检索的是
+    # fuzuo/qawenlun/fu/geju/geju_dict/juan3/classics 七源（2026-09-09 校准）；
+    # star_palace（星×宫 41KB 全量）走 kb_retrieve 工具链由 LLM 按需查，避免 prompt 撑爆。
 
     # 追加四化参考（精简表）
     hua_kb = _load_json_kb("ziwei_hua.json")

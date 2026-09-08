@@ -225,7 +225,8 @@ def _retrieve_kb_lexical_str(query_keywords: list[str], kb_name: str, top_k: int
     # ziwei_star_palace.json：{星曜名: {宫位名: "解释"}}
     if kb_name == "ziwei_star_palace.json":
         return _format_star_palace(_match_star_palace(kb, query_keywords, top_k))
-    # ziwei_classics.json：古籍引用（generic 转发）
+    # ziwei_classics.json：str 出口 generic 转发（与 classics_full 同走 _format_generic，
+    # classics_full 未登记 dispatch_allowlist 即不受理）；hits 出口才做条目级 _match_classics 供注入层 join
     if kb_name == "ziwei_classics.json":
         return _format_generic(_match_generic(kb, query_keywords, top_k))
     # ziwei_qawenlun.json：诸星问答论（按 star 字段精确匹配）

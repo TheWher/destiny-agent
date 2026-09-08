@@ -55,7 +55,7 @@
 - **label a11y 提示**（templates/ziwei.html，8944111）：年月日时分输入框 label 补 for 关联（提示级）。
 - **模型名错拼**（config.local.py）：deepseek-v4-flask → deepseek-v4-flash（flask 是 Python 框架名，DeepSeek API 400）。gitignored，服务器需手动改。
 - **报告页鉴权头缺失**（static/ziwei-verify.js，b071bdb）：验盘/解读/sessions 请求只带 Content-Type 没带登录 token → 后端当未登录 → 403 need_password。c2bff23 只给 app.js 补了 token，报告页漏网。修：_sessHdrs 统一补 Authorization。教训：鉴权头覆盖要逐端点核对。
-- **JWT_SECRET 安全洞**（建议服务器补）：config.local.py 无 JWT_SECRET 时走硬编码兜底，看过代码可伪造 token。生成随机 secret 写入服务器 config.local.py（gitignored）。
+- **✅ JWT_SECRET 安全洞已销（2026-09-09 代码层加固）**：已知常量兜底废除（旧常量入过 git=伪造面）。解析序现为 env → config.local.py → 持久化随机密钥 data/jwt_secret.key（gitignored，重启/多进程 token 不失效；FS 不可写降级进程内随机）。test_jwt_secret.py 6 条回归锁死。服务器仍可在 config.local.py 显式设 JWT_SECRET（优先级最高，显式设的无需改动）。
 
 ### 加强审查层（2026-08-04 凌晨，King 定"加强审查"后全量实现）
 

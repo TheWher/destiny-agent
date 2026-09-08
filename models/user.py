@@ -119,22 +119,49 @@ def verify_password(password: str, hash_str: str) -> bool:
 # ------------------------------------------------------------
 # JWT (HMAC-SHA256, sym, no library needed)
 # ------------------------------------------------------------
-_JWT_SECRET = os.environ.get("JWT_SECRET")
-if not _JWT_SECRET:
-    _CONFIG_LOCAL = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.local.py")
-    if os.path.exists(_CONFIG_LOCAL):
+# 密钥解析序：环境变量 → config.local.py → 持久化随机密钥（data/jwt_secret.key，gitignored）。
+# 2026-09-09 加固：废除已知常量回退（旧常量入过 git，知道仓库即可伪造 token——
+# DEPLOY_CHECKLIST 安全洞）。持久化保证重启/多进程 token 不失效；文件系统不可写时
+# 仅剩进程内随机密钥（每次重启全部 token 失效，降级可用不降级伪造面）。
+_JWT_ALGO = "HS256"
+_JWT_EXP_HOURS = 72  # 3 days
+_JWT_KEY_FILE = os.environ.get("JWT_KEY_FILE") or os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "data", "jwt_secret.key")
+_CONFIG_LOCAL = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.local.py")
+
+
+def _resolve_jwt_secret() -> str:
+    """按 解析序 求密钥。禁止已知常量兜底（伪造面）。"""
+    secret = os.environ.get("JWT_SECRET", "")
+    if not secret and os.path.exists(_CONFIG_LOCAL):
         try:
             import importlib.util as _iu
             _spec = _iu.spec_from_file_location("config_local", _CONFIG_LOCAL)
             _cfg = _iu.module_from_spec(_spec)
             _spec.loader.exec_module(_cfg)
-            _JWT_SECRET = getattr(_cfg, "JWT_SECRET", "")
+            secret = getattr(_cfg, "JWT_SECRET", "")
         except Exception:
             pass
-    if not _JWT_SECRET:
-        _JWT_SECRET = "dev-secret-change-in-production-@2026"
-_JWT_ALGO = "HS256"
-_JWT_EXP_HOURS = 72  # 3 days
+    if not secret:
+        import secrets as _secrets
+        try:
+            if os.path.exists(_JWT_KEY_FILE):
+                with open(_JWT_KEY_FILE, encoding="utf-8") as _kf:
+                    secret = _kf.read().strip()
+            if not secret:
+                secret = _secrets.token_hex(32)
+                os.makedirs(os.path.dirname(_JWT_KEY_FILE), exist_ok=True)
+                with open(_JWT_KEY_FILE, "w", encoding="utf-8") as _kf:
+                    _kf.write(secret)
+                print("[JWT] 已生成并持久化随机 JWT_SECRET ->", _JWT_KEY_FILE,
+                      "（生产建议在 config.local.py 显式设置 JWT_SECRET）")
+        except OSError:
+            secret = _secrets.token_hex(32)
+            print("[JWT] 警告：密钥文件不可写，使用进程内随机 JWT_SECRET（重启后所有登录态失效）")
+    return secret
+
+
+_JWT_SECRET = _resolve_jwt_secret()
 
 
 def _b64url_encode(data: bytes) -> str:

@@ -13,9 +13,9 @@
 - 落地：`_retrieve_*` 家族收敛成后端概念，embedding 是换后端，dispatch 匹配逻辑零改动
 - 好处：评测时间窗只卡“后端替换”一个点，pair 池三层替换前后跑同一套工具调用，对比条件天然干净
 
-**文档债（待修）：**
-- `services/ziwei_analysis.py:54` 注释“ziwei_star_palace.json 不在此处加载，由 _build_ziwei_user_message 按需检索”是过时注释，与实现矛盾：`_build_ziwei_user_message` 实际只检索 fuzuo + classics，star_palace 走 kb_retrieve 工具链。照注释找注入会扑空，需删除或改写。
-- `services/kb_loader.py:123` 注释把 classics 与 classics_full 并列“古籍引用”，含糊但不全错（dispatch 确实共用 _retrieve_classics），真问题是 schema 未登记 full。建议改为“classics 系共用 _retrieve_classics，full 未登记”。
+**文档债（2026-09-09 清偿两条注释，剩数据拆字段两项待做）：**
+- ✅ `services/ziwei_analysis.py:56` 注释已按 2026-09-09 实现真值改写（七源注入清单 + star_palace 走工具链）
+- ✅ `services/kb_loader.py:229` 注释已改写（str 出口 generic 转发、classics_full 未登记 allowlist、hits 出口条目级供 join）
 - ziwei_classics.json 真伪分层已核：14 条干净真引文 / 3 条混合（紫微独坐、巨日同宫、杀破狼格）/ 23 条纯转述（含 13 条单星条目书名号挂现代白话）。计划拆字段：引文/按语/来源真伪标记，外层“格局名→条目” key 形态不动（评测 target 依赖此结构，零返工）。
 - classics_full 75 段 source 标注（gusuifu/quanji/quanshu）实为主题标签非原文出处，全库零整篇原文。source 降级排后（死数据不影响用户），第一优先级是 classics.json 引文标记。
 
