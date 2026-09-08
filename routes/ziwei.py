@@ -278,11 +278,13 @@ def api_ziwei_horoscope():
         gender = data["gender"]
         target_year = int(data.get("target_year", 2025))
         is_lunar = data.get("is_lunar", False)
+        # 前端流年钻取 12 年窗起点（缺省引擎按 target_year 所在 12 年段取）
+        grid_start = int(data["grid_start"]) if data.get("grid_start") is not None else None
     except (ValueError, TypeError, KeyError) as e:
         return jsonify({"error": f"参数错误: {e}"}), 400
 
     try:
-        result = get_horoscope(year, month, day, hour, gender, target_year, is_lunar)
+        result = get_horoscope(year, month, day, hour, gender, target_year, is_lunar, grid_start)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": f"流年计算失败: {str(e)}"}), 500
