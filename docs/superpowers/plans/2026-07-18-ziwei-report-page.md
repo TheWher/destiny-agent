@@ -1,5 +1,7 @@
 # 紫微报告页 Implementation Plan
 
+> **状态（2026-09-09 补记）：已上线——templates/ziwei-report.html 实装（含验盘系统 ziwei-verify.js）；checkbox 未逐项回填，进度以 CHANGELOG 为准（2026-09-09 核对）。**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 将紫微斗数拆分为表单页和报告页。表单页只负责输入+会话选择，报告页输出水墨风十二宫Grid+命盘概览+分析+追问

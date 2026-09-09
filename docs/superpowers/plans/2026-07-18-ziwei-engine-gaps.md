@@ -1,5 +1,7 @@
 # 紫微引擎缺口补齐 Implementation Plan
 
+> **状态（2026-09-09 补记）：已上线——来因宫/格局 breaking/流年流曜等引擎缺口已补（见 docs/ziwei-mutual-verification.md 各 TODO 结账段）；checkbox 未逐项回填，进度以 CHANGELOG 为准。**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 纯 Python 实现宫干飞四化、大限活盘、流月流日三项计算，注入 _build_ziwei_user_message

@@ -1,5 +1,7 @@
 # 多体系交叉：八字→紫微 Implementation Plan
 
+> **状态（2026-09-09 补记）：已上线——ziwei_analysis 八字交叉参考段实装；checkbox 未逐项回填，进度以 CHANGELOG 为准（2026-09-09 核对）。**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 紫微 AI 解读时，后端自动调用八字排盘，将日主/喜用/强弱注入 user message，实现交叉引用

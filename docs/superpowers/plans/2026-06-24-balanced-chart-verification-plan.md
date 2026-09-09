@@ -1,5 +1,7 @@
 # 均衡命局验盘命中率提升 实施计划
 
+> **状态（2026-09-09 补记）：均衡命局验盘战役——8 任务全部 complete（.superpowers/sdd/progress.md 账本为准，commit 链 55eb133..a5b0fec）；本文 checkbox 未逐项回填，进度以 SDD 账本+CHANGELOG 为准。**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将均衡命局（极端度≤1）验盘命中率从38%提升至55%+，通过后端注入流年干支-西历对照表 + Agent自适应降级

@@ -1,5 +1,7 @@
 # 多智能体编排 Implementation Plan
 
+> **状态（2026-09-09 补记）：已上线——services/orchestrator.py + plugin_manager.py 实装（pytest test_orchestrator/test_plugin_manager 常驻回归）；checkbox 未逐项回填，进度以 CHANGELOG 为准。**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将紫微单 Agent(612行)拆为 3 专项 Agent(格局/四化/宫位联动) + 1 合成 Agent，并行调用后合成最终报告

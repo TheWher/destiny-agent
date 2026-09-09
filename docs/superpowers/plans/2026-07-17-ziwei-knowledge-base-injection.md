@@ -1,5 +1,7 @@
 # 紫微知识库注入 Implementation Plan
 
+> **状态（2026-09-09 补记）：已上线——kb_inject.join_classics_str 同源注入实装（2026-09-09 起 str 出口亦真伪分层）；checkbox 未逐项回填，进度以 CHANGELOG 为准。**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将中州派辅佐煞曜讲义注入知识库，实现选择性注入+ KB 引用规则

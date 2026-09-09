@@ -1,5 +1,7 @@
 # 推理可视化 Implementation Plan
 
+> **状态（2026-09-09 补记）：已上线——「推理依据」段在 services prompt 组装中实装；本文 checkbox 未逐项回填，进度以 CHANGELOG 为准（2026-09-09 核对）。**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让紫微 Agent 输出的分析文本中，每个结论附带可展开/折叠的推理路径
