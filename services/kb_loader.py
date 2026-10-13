@@ -231,8 +231,6 @@ def _retrieve_kb_lexical_str(query_keywords: list[str], kb_name: str, top_k: int
     # classics_full 未登记 dispatch_allowlist，不受影响。
     if kb_name == "ziwei_classics.json":
         return _format_classics_truth(kb, query_keywords, top_k)
-    if kb_name == "ziwei_classics.json":
-        return _format_generic(_match_generic(kb, query_keywords, top_k))
     # ziwei_qawenlun.json：诸星问答论（按 star 字段精确匹配）
     if kb_name == "ziwei_qawenlun.json":
         return _format_qawenlun(_match_qawenlun(kb, query_keywords, top_k))
@@ -515,11 +513,9 @@ def _format_classics_truth(kb: dict, query_keywords: list[str], top_k: int) -> s
     拿到引文按语混写串、转述可被当原文引用——假出处要在所有出口结构上堵死。
     sidecar 缺条目时显式标「出处未标注」，不静默裸奔。
     """
-    try:
-        from services.kb_inject import _load_annotations, _render_block
-        annotations = _load_annotations()
-    except Exception:
-        annotations = {}
+    # 函数内 import：kb_inject 顶层引 kb_loader，lazy 调用点破循环依赖
+    from services.kb_inject import _load_annotations, _render_block
+    annotations = _load_annotations()
     parts = []
     for _, name, text in _match_classics(kb, query_keywords, top_k):
         a = annotations.get(name)

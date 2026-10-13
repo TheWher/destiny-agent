@@ -125,7 +125,7 @@ def verify_password(password: str, hash_str: str) -> bool:
 # 仅剩进程内随机密钥（每次重启全部 token 失效，降级可用不降级伪造面）。
 _JWT_ALGO = "HS256"
 _JWT_EXP_HOURS = 72  # 3 days
-_JWT_KEY_FILE = os.environ.get("JWT_KEY_FILE") or os.path.join(
+_JWT_KEY_FILE = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "data", "jwt_secret.key")
 _CONFIG_LOCAL = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.local.py")
 

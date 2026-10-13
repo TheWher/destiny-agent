@@ -24,9 +24,6 @@ def _resolve(monkeypatch, tmp_path, env_secret="", use_config=False, config_secr
     monkeypatch.setattr(mu, "_CONFIG_LOCAL", str(cfg_path) if use_config else str(tmp_path / "absent.py"))
     monkeypatch.setenv("JWT_SECRET", env_secret)
     if break_makedirs:
-        import builtins
-        real_makedirs = os.makedirs
-
         def boom(*a, **k):
             raise OSError("read-only fs")
         monkeypatch.setattr(os, "makedirs", boom)
