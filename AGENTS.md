@@ -35,10 +35,11 @@ templates/  ← Jinja2 + 内联 JS。JS >200 行应抽到 static/
 | `services/llm_client.py` | ~160 | API 调用 + 三层 Key 回退 |
 
 **已知技术债**：
-- 146KB 知识库每次全量拼接 → 计划改为按需检索
-- 八字推理链在 Prompt 中（9 级） → 考虑剥离到代码层
+- ~~146KB 知识库每次全量拼接~~ → 已解决（kb_loader 按需检索；八字侧注入核心表 6.6KB、紫微侧 7 源按需，2026-09-09 核实）
+- 八字推理链在 Prompt 中（9 级，~123KB agent 定义） → 考虑剥离到代码层（架构级，未动）
 - 紫微验盘反馈 < 10 条 → 聚合分析暂无统计意义（命中率噪音大）
-- 前端多个页面有重复的 HTML/CSS 片段
+- 前端多个页面有重复的 HTML/CSS 片段（ziwei.html/ziwei-report.html 流年钻取 JS ~40 行×2 拷贝，候选抽 static/）
+- iztro-py 钉 0.3.5：0.4/0.5 有上游修复但安星年界改农历与项目立春口径分裂，待拍板（docs/维护_iztro升级评估_20260909.md）
 
 **决策记录**：见 `docs/adr/`（5 条 ADR）
 **变更记录**：见 `CHANGELOG.md`

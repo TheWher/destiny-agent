@@ -1072,7 +1072,7 @@ function updateFocusPills(){
   const fy = $('fp-year'), fm = $('fp-month'), fd = $('fp-day');
   if(scope.yearly){ fy.classList.add('active'); $('fpv-year').textContent = scope.yearly.year+' '+scope.yearly.gz; }
   else { fy.classList.remove('active'); $('fpv-year').textContent = '—'; }
-  if(scope.monthly){ fm.classList.add('active'); $('fpv-month').textContent = scope.monthly.month+'月 '+scope.monthly.gz[1]; }
+  if(scope.monthly){ fm.classList.add('active'); $('fpv-month').textContent = scope.monthly.month+'月 '+((scope.monthly.gz||'').slice(-1)||'—'); }
   else { fm.classList.remove('active'); $('fpv-month').textContent = '—'; }
   document.querySelectorAll('#drill-year-grid .drill-cell').forEach(c => {
     c.classList.remove('active');
@@ -1331,7 +1331,7 @@ function updateScopeStatus(){
   let html = '';
   if(scope.decade) html += '<span class="ss-chip decade">大限 '+scope.decade.pName+'</span>';
   if(scope.yearly) html += '<span class="ss-chip yearly">流年 '+scope.yearly.gz+'</span>';
-  if(scope.monthly) html += '<span class="ss-chip monthly">流月 '+scope.monthly.gz[1]+'</span>';
+  if(scope.monthly) html += '<span class="ss-chip monthly">流月 '+((scope.monthly.gz||'').slice(-1)||'—')+'</span>';
   chips.innerHTML = html;
 }
 function clearAllScope(){

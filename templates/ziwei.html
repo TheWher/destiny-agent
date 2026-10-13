@@ -1389,7 +1389,7 @@ function updateFocusPills(){
   const fy=$('fp-year'),fm=$('fp-month');
   if(scope.yearly){fy.classList.add('active');$('fpv-year').textContent=scope.yearly.year+' '+scope.yearly.gz;}
   else{fy.classList.remove('active');$('fpv-year').textContent='—';}
-  if(scope.monthly){fm.classList.add('active');$('fpv-month').textContent=scope.monthly.month+'月 '+scope.monthly.gz[1];}
+  if(scope.monthly){fm.classList.add('active');$('fpv-month').textContent=scope.monthly.month+'月 '+((scope.monthly.gz||'').slice(-1)||'—');}
   else{fm.classList.remove('active');$('fpv-month').textContent='—';}
   document.querySelectorAll('#drill-year-grid .drill-cell').forEach(c=>{
     c.classList.remove('active');
