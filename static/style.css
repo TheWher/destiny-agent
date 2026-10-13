@@ -902,3 +902,6 @@ canvas.chart-box { border-radius: 12px; background: rgba(0,0,0,.2); }
         .ziwei-mutagen-line .mutagen-badge.mu-ji{background:rgba(198,40,40,.12);color:#c62828}
         .ziwei-drawer-body .ziwei-loading{text-align:center;padding:60px 20px;color:var(--text-muted)}
         @media(max-width:860px){.ziwei-drawer{width:100vw}.ziwei-grid .ziwei-cell{min-height:58px;padding:5px 3px;font-size:.64em}.ziwei-grid .ziwei-cell .star-row{font-size:.78em}}
+
+/* 流曜加载指示（static/ziwei-horoscope.js 引用；原内联 animation 一直缺 keyframes，2026-09-09 补） */
+@keyframes blink { 0%, 100% { opacity: .2; } 50% { opacity: 1; } }
