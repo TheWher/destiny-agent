@@ -77,7 +77,14 @@ def _call_api(system_prompt: str, messages: list[dict], max_tokens: int,
     if stop_sequences:
         payload["stop_sequences"] = stop_sequences
 
-    for attempt in range(2):
+    # 兜底轮（GLM/bigmodel 兼容层实证 2026-09-09）：带 stop_sequences 时偶发只回 thinking
+    # 块无 text 块（且无视 thinking:disabled），非确定性，产线反复踩中。第 3 轮去掉
+    # stop_sequences 重试，成功后客户端按序列截断——与服务端截停等价语义，对 DeepSeek 透明。
+    use_stop = bool(stop_sequences)
+    attempts = 3 if use_stop else 2
+    for attempt in range(attempts):
+        if attempt == 2 and use_stop:
+            payload.pop("stop_sequences", None)
         try:
             resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
             if resp.status_code != 200:
@@ -91,6 +98,10 @@ def _call_api(system_prompt: str, messages: list[dict], max_tokens: int,
                     text += block["text"]
 
             if text:
+                if attempt == 2 and use_stop:
+                    for _s in stop_sequences:
+                        if _s in text:
+                            text = text.split(_s)[0]
                 return {
                     "success": True,
                     "text": text,
@@ -98,21 +109,21 @@ def _call_api(system_prompt: str, messages: list[dict], max_tokens: int,
                     "usage": data.get("usage", {}),
                 }
 
-            if attempt == 0:
+            if attempt < attempts - 1:
                 time.sleep(3)
                 continue
 
             usage = data.get("usage", {})
             stop_reason = data.get("stop_reason", "unknown")
-            return {"success": False, "error": f"API 返回空内容（stop={stop_reason}），已重试1次仍失败"}
+            return {"success": False, "error": f"API 返回空内容（stop={stop_reason}），已重试{attempts - 1}次仍失败"}
 
         except requests.Timeout:
-            if attempt == 0:
+            if attempt < attempts - 1:
                 time.sleep(3)
                 continue
             return {"success": False, "error": f"API 调用超时（{timeout}秒），已重试仍失败"}
         except Exception as e:
-            if attempt == 0:
+            if attempt < attempts - 1:
                 time.sleep(3)
                 continue
             return {"success": False, "error": f"API 调用失败: {str(e)}"}
