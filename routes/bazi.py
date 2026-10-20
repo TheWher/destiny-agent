@@ -76,6 +76,9 @@ def api_paipan():
         plate = paipan(year, month, day, hour, minute, gender, longitude, location,
                        apply_solar_correction=use_solar)
         result = plate_to_dict(plate)
+        # 前端密码前置弹窗用：服务器配置了访问密码时，点「深度分析」前即可收集密码，
+        # 免去 403 往返空窗（2026-09-09 UX 审计）；已登录用户免密，该标志仅表示「可能需要」
+        result["password_required"] = bool(WEB_PASSWORD)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": f"排盘计算失败: {str(e)}"}), 500

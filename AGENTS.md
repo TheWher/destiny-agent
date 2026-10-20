@@ -309,7 +309,7 @@ analysis_service.py
 - **唯一可靠重启方式**：Disable → 等几秒 → Enable（Reload 不够）
 - **禁止 CSP 头**：`@app.after_request` 设 CSP 会破坏 WSGI 代理层
 - **禁止外部 CDN**：`cdn.jsdelivr.net` 等被拦截，所有静态资源本地化
-- **API Key**：免费账户无环境变量 UI，需手动上传 `config.local.py` 到 `/home/thewher/mysite/`
+- **API Key**：免费账户无环境变量 UI，需手动上传 `config.local.py` 到 `~/destiny-agent/`（项目根，与 app.py 同级；引擎按相对路径读取）
 - **文件更新**：在 Files 页面直接上传覆盖，或 Bash console 中 `git clone` 后手动补充 `config.local.py`
 
 ### Render（备用）

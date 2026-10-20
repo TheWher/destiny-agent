@@ -221,10 +221,12 @@ function restoreHistory(id){
     const e = loadHistory().find(e=>e.id===id); if(!e) return;
     plateData = e.plate; analysisText = e.analysis;
     if(e.analysis) {
-        if (e.conversationMessages && Array.isArray(e.conversationMessages)) {
+        if (e.conversationMessages && Array.isArray(e.conversationMessages) && e.conversationMessages.length) {
+            // 2026-09-09：仅当历史条目真有对话记录时恢复；不再合成 system:''/user:'' 假上下文——
+            // 空 content 消息会被严格端点（GLM/Anthropic 系）400，且无 system 的续接质量崩坏
             conversationMessages = [{role:'system',content:''}, ...e.conversationMessages]; saveConversation();
         } else {
-            conversationMessages = [{role:'system',content:''},{role:'user',content:''},{role:'assistant',content:e.analysis}];saveConversation();
+            conversationMessages = null; clearConversation();
         }
     }
     elResultSection.classList.remove('hidden'); renderResult(e.plate);
@@ -1340,7 +1342,17 @@ document.addEventListener('visibilitychange', () => {
     if (saved && savedPlate) {
         try {
             const sd = JSON.parse(savedPlate), inp = sd.input;
-            if (inp && inp.birth_datetime && inp.birth_datetime.startsWith(`${elYear.value}-${String(elMonth.value).padStart(2, '0')}-${String(elDay.value).padStart(2, '0')} ${String(elHour.value).padStart(2, '0')}`) && inp.gender === document.querySelector('input[name="gender"]:checked').value) {
+            if (inp && inp.birth_datetime) {
+                // 2026-09-09：废除「表单值与存档生日严格相等才恢复」守卫——刷新后表单是默认值，
+                // 守卫恒假 → 解读+追问上下文全被清掉（恢复路径自己删自己的数据）。改为无条件
+                // 恢复并把表单同步成存档生日，保存的解读即上一次的解读。
+                const _bm = inp.birth_datetime.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s(\d{1,2}):(\d{2})/);
+                if (_bm) {
+                    elYear.value = parseInt(_bm[1], 10); elMonth.value = parseInt(_bm[2], 10); elDay.value = parseInt(_bm[3], 10);
+                    elHour.value = parseInt(_bm[4], 10); elMinute.value = parseInt(_bm[5], 10);
+                    const _g = document.querySelector('input[name="gender"][value="' + (inp.gender || '') + '"]');
+                    if (_g) _g.checked = true;
+                }
                 plateData = sd; analysisText = saved;
                 renderResult(plateData);
                 elResultSection.classList.remove('hidden');
@@ -1357,10 +1369,6 @@ document.addEventListener('visibilitychange', () => {
                 if (loadConversation()) {
                     elAnalysisChat.classList.remove('hidden');
                 }
-            } else {
-                localStorage.removeItem('bazi_analysis');
-                localStorage.removeItem('bazi_plate');
-                clearConversation();
             }
         } catch(e) {}
     }

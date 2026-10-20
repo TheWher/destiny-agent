@@ -71,9 +71,10 @@ def _call_api(system_prompt: str, messages: list[dict], max_tokens: int,
         "max_tokens": max_tokens,
         "temperature": temperature,
         "thinking": {"type": "disabled"},
-        "system": system_prompt,
         "messages": messages,
     }
+    if system_prompt:
+        payload["system"] = system_prompt  # 空 system 不下发（严格端点空串 400 面）
     if stop_sequences:
         payload["stop_sequences"] = stop_sequences
 

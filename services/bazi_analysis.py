@@ -899,66 +899,22 @@ def continue_analysis(messages: list[dict], user_reply: str, timeout: int = 600)
     if not API_CONFIG.get("api_key"):
         return {"success": False, "error": "未配置 API Key"}
 
-    url = f"{API_CONFIG['base_url']}/v1/messages"
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": API_CONFIG["api_key"],
-        "anthropic-version": "2023-06-01",
-    }
-
-    # 确保 messages[0] 是 system（如果不是就插入）
+    # system 提取到 payload.system，其余按序；空 content 消息过滤（严格端点 400 面）
     api_messages = []
     system_msg = None
     for m in messages:
-        if m["role"] == "system":
+        if m.get("role") == "system":
             system_msg = m
-        else:
+        elif (m.get("content") or "").strip():
             api_messages.append({"role": m["role"], "content": m["content"]})
+    if user_reply and user_reply.strip():
+        api_messages.append({"role": "user", "content": user_reply})
 
-    # 添加用户的新回复
-    api_messages.append({"role": "user", "content": user_reply})
+    # 2026-09-09 起委托 llm_client 单一来源（原内联 HTTP 循环无 GLM 空响应兜底轮，
+    # 是 _call_api 副本同族问题——stop/empty 怪癖在追问路径复发的口子）
+    result = _call_api(system_msg["content"] if system_msg else "",
+                       api_messages, 16384, 0.3, timeout)
+    if result.get("success"):
+        return {"success": True, "analysis": result["text"]}
+    return {"success": False, "error": result.get("error", "未知错误")}
 
-    payload = {
-        "model": API_CONFIG["model"],
-        "max_tokens": 16384,
-        "temperature": 0.3,
-        "thinking": {"type": "disabled"},
-        "system": system_msg["content"] if system_msg else "",
-        "messages": api_messages,
-    }
-
-    for attempt in range(2):
-        try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
-            if resp.status_code != 200:
-                return {"success": False, "error": f"API 返回错误 ({resp.status_code}): {resp.text[:300]}"}
-
-            data = resp.json()
-            analysis_text = ""
-            for block in data.get("content", []):
-                if block.get("type") == "text":
-                    analysis_text += block["text"]
-
-            if analysis_text:
-                return {"success": True, "analysis": analysis_text}
-
-            if attempt == 0:
-                time.sleep(3)
-                continue
-
-            usage = data.get("usage", {})
-            return {"success": False, "error": f"API 返回空内容，已重试1次仍失败，请再试"}
-
-        except requests.Timeout:
-            # 超时不重试——PA/Browser 网关也有超时，重试只会让总时间更长
-            return {"success": False, "error": f"API 调用超时（{timeout}秒），DeepSeek 生成可能卡住，请刷新重试"}
-        except Exception as e:
-            if attempt == 0:
-                time.sleep(3)
-                continue
-            return {"success": False, "error": f"API 调用失败: {str(e)}"}
-
-    return {"success": False, "error": "API 调用失败：所有重试均未成功"}
-
-
-# ============================================================
