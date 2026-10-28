@@ -8,7 +8,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.1-black?logo=flask)](https://flask.palletsprojects.com/)
-[![DeepSeek](https://img.shields.io/badge/AI-DeepSeek%20v4--pro-purple)](https://deepseek.com)
+[![AI](https://img.shields.io/badge/AI-GLM--5.3%20%7C%20DeepSeek-5b6ee1)](https://open.bigmodel.cn)
 [![iztro-py](https://img.shields.io/badge/紫微-iztro--py-7c4dff)](https://pypi.org/project/iztro-py/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Deploy](https://img.shields.io/badge/Deploy-PythonAnywhere-orange)](https://thewher.pythonanywhere.com)
@@ -32,7 +32,7 @@
 ### 🧠 AI 深度分析
 - **八字**：梁湘润体系 9 级递进推理链 · 42 核心概念 · 13 条盲测错误模式
 - **紫微**：10 步强制推理链 · 四层四化权重（15 条互涉）· 24 格局三列核验 · 破格五层穿透
-- **交叉验证**：紫微分析自动排八字盘 + 调八字 Agent 独立分析，结论注入紫微 Prompt
+- **双盘互证**：紫微分析自动排八字盘 + 独立八字预分析，结论交叉比对注入，报告页亮互证徽章
 - 双 Agent 定义文件：八字 120KB + 紫微 48KB
 
 </td>
@@ -43,6 +43,13 @@
 - **紫微**：6 级信号优先级表（S~E）· stop_sequences 截停 · 逐条用户确认面板
 - 反馈保存 → 聚合分析脚本 → 错误模式发现 → Prompt 注入迭代
 - 反馈带盘指纹 + 错误原因标签 + 来源标记 · 假阳性/假阴性分化统计
+
+### 🛡️ 可信度设计（差异化核心）
+- **双盘互证**：每次紫微解读后台自动排八字盘并独立预分析，结论交叉比对注入——报告页亮 🧭 双盘互证版徽章
+- **断语古籍核验**：引用按「原文 / 转述」分级标注，出处与知识库同源 join，假出处从结构上杜绝；语料含《紫微斗数全书》明刻本数据层 10.2 万字（识典官方数据）+ 207 篇整理库
+- **干支铁律**：前端/服务层禁止按公式自算干支，一律引擎注入（立春/农历双口径分治），机检尺守护清零判据
+- **来因宫（钦天派）**：锚位表 + 盘面映射，双锚校验尺断言锁定
+- **格局核验**：引擎判定 + 破格/受损/常见误解显式标注（✅⚠️❌），词典与引擎双写对齐
 
 ### 📊 可视化 & 交互
 - 五行环图 / 十二长生轮盘 / 大运环图
@@ -69,23 +76,40 @@ python app.py          # → http://localhost:5000
 配置 API Key（三选一：环境变量 / `~/.claude/settings.json` / `config.local.py`）：
 
 ```python
-# config.local.py（不提交 Git）
+# config.local.py（不提交 Git）—— 任何 Anthropic 兼容端点均可
 API_CONFIG = {
-    "base_url": "https://api.deepseek.com/anthropic",
-    "model": "deepseek-v4-pro",
-    "api_key": "sk-...",
+    "base_url": "https://open.bigmodel.cn/api/anthropic",  # 智谱 GLM（当前线上）
+    "model": "GLM-5.3",
+    "api_key": "your-key",
 }
+# DeepSeek 同样可用：base_url=https://api.deepseek.com/anthropic, model=deepseek-v4-pro
 WEB_PASSWORD = "your-password"    # 可选，保护深度分析
 ADMIN_TOKEN = "your-admin-token"  # 可选，保护反馈报告端点
+JWT_SECRET = "random-64-hex"      # 可选；不设则自动生成持久化随机密钥（data/jwt_secret.key）
 ```
 
 ```bash
-# 测试
-python test_paipan.py --smoke      # 八字冒烟测试
-python test_paipan.py              # 24 条全量
-python test_ziwei.py               # 紫微测试
-python scripts/evaluate_ziwei_verify.py  # 验盘反馈聚合（默认写 data/reports/report_cache.json）
+# 测试（pytest 常驻回归，当前基线 159 绿）
+python -m pytest -q
+
+# 机检尺（口径/纪律守护，改对应层后必跑）
+python scripts/check_ganzhi.py            # 干支自算清零判据（前端/服务层禁自算，一律引擎注入）
+python scripts/verify_laiyin_anchors.py   # 来因宫双锚校验尺
+python scripts/verify_geju_mingzhu.py     # 日月系格局口径尺（6 盘 19 断言）
+
+# 验盘反馈聚合
+python scripts/evaluate_ziwei_verify.py  # 默认写 data/reports/report_cache.json
 ```
+
+---
+
+## 🚀 部署（PythonAnywhere）
+
+- 仓库路径 `~/destiny-agent`；`config.local.py` 不走 Git，需手动上传到项目根（与 `app.py` 同级）
+- 重启唯一可靠方式：Web 面板 **Disable → 等 3 秒 → Enable**（Reload 不够）
+- 依赖用 `requirements-prod.txt`（免费档 ~6MB；**勿装 sentence-transformers**，会拉 500MB torch 超配额）
+- 静态资源版本号取 git 短哈希自动破缓存；`/` 为落地页，应用在 `/app` 与 `/ziwei`
+- 详细清单见 [DEPLOY_CHECKLIST.md](DEPLOY_CHECKLIST.md)
 
 ---
 
@@ -93,29 +117,34 @@ python scripts/evaluate_ziwei_verify.py  # 验盘反馈聚合（默认写 data/r
 
 ```
 app.py (20 行入口)
-  └── routes/          # Flask 蓝图 — 页面 + API
-  │   ├── pages.py      # 页面路由（/ /app /ziwei /report …）
-  │   ├── bazi.py       # 八字 API（/api/paipan /api/analyze …）
-  │   ├── ziwei.py      # 紫微 API（/api/ziwei/*）
-  │   └── charts.py     # 图表 API（/api/chart/*）
-  └── services/        # 业务逻辑 — LLM 分析管道
-  │   ├── llm_client.py      # API 调用 + 三层 Key 回退 + SSE 流式
-  │   ├── kb_loader.py       # 知识库加载 + 五行常量
-  │   ├── bazi_analysis.py   # 八字分析全管道
-  │   └── ziwei_analysis.py  # 紫微分析全管道（含验盘）
-  └── utils/           # 工具函数
-      ├── auth.py       # 密码保护 + 限流
-      ├── cache.py      # 分析结果缓存
-      ├── feedback.py   # 反馈日志保存
-      ├── geo.py        # 地理编码
-      └── plate.py      # 命盘序列化
+  └── routes/              # Flask 蓝图 — 只做请求-响应
+  │   ├── pages.py          # 页面路由（/ 落地页 · /app 八字 · /ziwei 紫微 · /ziwei/report/<sid> 分享报告）
+  │   ├── bazi.py           # 八字 API
+  │   ├── ziwei.py          # 紫微 API（含 share/ 会话快照）
+  │   ├── auth.py           # 注册/登录（JWT）+ 管理后台
+  │   ├── payment.py        # 订单/邀请码开 Pro
+  │   ├── events.py         # 埋点
+  │   └── charts.py         # 图表 API
+  └── services/            # 业务逻辑
+  │   ├── orchestrator.py    # Tool/Capability/Skill 编排 + Function Calling 循环
+  │   ├── plugin_manager.py  # 插件六态生命周期 + 沙箱
+  │   ├── llm_client.py      # LLM 调用（Anthropic 兼容端点可换）+ 兜底轮 + SSE
+  │   ├── kb_loader.py       # 知识库检索（lexical/embedding 双后端）
+  │   ├── kb_inject.py       # 注入层：出处同源 join，假出处结构上杜绝
+  │   ├── bazi_analysis.py   # 八字分析全管道（含验盘/信号对照）
+  │   └── ziwei_analysis.py  # 紫微分析全管道（含验盘/修正循环）
+  └── models/user.py       # SQLite：用户/订单/埋点（PBKDF2 + JWT，零外部依赖）
+  └── utils/               # 纯工具（auth 限流/cache/feedback/geo/plate/tier）
+  └── knowledge_base/      # 24 结构化 JSON + obsidian 207 篇 + SDZJ0170 刻本数据层 10.2 万字
+  └── bazi_calculator.py   # 八字引擎（sxtwl + Meeus 回退）
+  └── ziwei_calculator.py  # 紫微引擎（iztro-py 封装 + 格局判定 + 来因宫）
 ```
 
 | 层 | 技术 |
 |:---:|---|
 | **后端** | `Flask 3.1` · `requests` · `zhdate` · `iztro-py` |
 | **前端** | 原生 JS · 零框架 · CSS Variables 水墨设计系统 · 桌面分栏 · 移动端自适应 |
-| **AI** | `DeepSeek v4-pro` · Anthropic 兼容端点 · stop_sequences 截停 |
+| **AI** | `GLM-5.3` / `DeepSeek v4-pro`（Anthropic 兼容端点可换） · stop_sequences 截停 + 空响应兜底轮 · prompt 缓存命中 |
 | **排盘** | sxtwl C++ (八字) · Meeus 回退 · iztro-py (紫微) |
 | **流式** | SSE (Server-Sent Events) · ReadableStream |
 | **部署** | PythonAnywhere · Render 备用 |
