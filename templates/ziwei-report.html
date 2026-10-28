@@ -807,7 +807,7 @@ const SIHUA = {'化禄':'禄','化权':'权','化科':'科','化忌':'忌'};
 
 function currentAge(){
   const y = new Date().getFullYear();
-  return y - (parseInt(document.querySelector('.info-bar .value')?.textContent?.split('-')[0]) || 2005);
+  return y - (parseInt(document.querySelector('.info-bar .value')?.textContent?.split('-')[0]) || 1990);
 }
 
 function renderGrid(plate){

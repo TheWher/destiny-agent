@@ -175,7 +175,7 @@ const GLOSSARY = {
 '伏吟':'大运流年干支和原局某柱一模一样——好事坏事都加倍','反吟':'大运流年干支和原局某柱天克地冲——猛烈变动',
 '纳音':'每组干支对应的五行音律属性，如\"乙酉\"纳音为\"泉中水\"',
 '胎元命宫身宫':'胎元=受胎月份，命宫=安命之宫，身宫=安身之宫——三个辅助参考点',
-'真太阳时':'根据出生地经度校正后的真实太阳时间——东莞(113.75°E)比北京时间晚约25分钟，时辰临近边界时特别重要'
+'真太阳时':'根据出生地经度校正后的真实太阳时间——兰州(103.82°E)比北京时间晚约65分钟，时辰临近边界时特别重要'
 };
 
 // ========== 命例历史管理 ==========
@@ -574,7 +574,7 @@ async function renderCharts(data) {
         const drDom = document.getElementById('chart-dayun-ring');
         if (drDom) {
             // 计算当前年龄
-            const birthYr = parseInt(elYear.value) || 2005;
+            const birthYr = parseInt(elYear.value) || 1990;
             const now = new Date();
             let currentAge = now.getFullYear() - birthYr;
             if (now.getMonth() < parseInt(elMonth.value)-1 || (now.getMonth() === parseInt(elMonth.value)-1 && now.getDate() < parseInt(elDay.value))) {
@@ -1440,7 +1440,7 @@ function renderXuetang(){
         '华盖': '主孤高清高、才情、宗教玄学缘分。\"华盖逢空，偏宜僧道\"',
         '纳音': '每组干支对应的五行音律属性——如乙酉纳音\"泉中水\"。共30组纳音',
         '胎元命宫身宫': '胎元=受胎月份（月柱天干+1，地支+3）；命宫=安命之宫；身宫=安身之宫。三者辅助参考',
-        '真太阳时': '根据出生地经度校正后的真实太阳时间。东莞(113.75°E)比北京时间晚约25分钟，时辰临近边界时校正可能换时柱',
+        '真太阳时': '根据出生地经度校正后的真实太阳时间。兰州(103.82°E)比北京时间晚约65分钟，时辰临近边界时校正可能换时柱',
     };
     const cats = {}; catOrder.forEach(c => cats[c] = []);
     Object.entries(GLOSSARY).forEach(([term, desc]) => {
