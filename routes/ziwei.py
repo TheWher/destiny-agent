@@ -557,6 +557,16 @@ def api_ziwei_analyze():
         }
         if result.get("verification"):
             response_data["verification"] = result["verification"]
+        # 双盘互证显性化（2026-09-09）：bazi_ref 携带独立八字预分析时，解读即互证产物——
+        # 把锚点回传前端渲染徽章，用户看得见才构成卖点
+        if bazi_ref and bazi_ref.get("bazi_analysis"):
+            response_data["cross_validated"] = True
+            response_data["bazi_anchor"] = {
+                "rizhu": bazi_ref.get("rizhu", ""),
+                "sizhu": " ".join(p["gz"] for p in bazi_ref.get("pillars", [])),
+                "wuxing": bazi_ref.get("wuxing", {}),
+                "qiyun": bazi_ref.get("qiyun", ""),
+            }
         if cache_key:
             _cache_set(cache_key, response_data)
         return jsonify(response_data)

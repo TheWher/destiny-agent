@@ -550,6 +550,12 @@
   <!-- 分析 -->
   <div class="analysis-area" id="analysis">
     <h2>📜 命盘解读</h2>
+    <div id="trust-bar" style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:10.5px;color:var(--ink-soft,#888);border:1px solid var(--line-faint,#eee);border-radius:4px;padding:7px 12px;margin-bottom:12px;background:var(--paper-soft,#faf9f6)">
+      <span title="排盘引擎与本站 JS 渲染、人工三方互证（2026-08 方法论）">⚡ 排盘引擎互证</span>
+      <span title="断语引用经古籍语料核验，标注 原文/转述 状态，假出处结构上杜绝">📚 断语古籍核验</span>
+      <span title="干支全部由引擎注入，禁止前端/LLM 自算（立春/农历双口径）">🔒 干支引擎注入</span>
+      <span id="cross-badge" style="display:none;color:var(--vermillion,#c1432f);font-weight:700" title="本解读由八字与紫微双盘独立分析交叉比对产出">🧭 双盘互证版</span>
+    </div>
     <div class="analysis-text" id="analysis-text">
       <div class="skeleton-line"></div>
       <div class="skeleton-line"></div>
@@ -1407,6 +1413,7 @@ async function startAnalysis(plate, password){
       const d = await r.json();
       if(d.success && d.analysis){
         sessionStorage.setItem('ziwei_pw', pw || '');
+        if(d.cross_validated && d.bazi_anchor) renderCrossBadge(d.bazi_anchor);
         if(d.verification || d.analysis.includes('## 命盘验证') || d.analysis.includes('验盘环节')){
           renderVerification(d.analysis);
           // 验盘状态持久化：system 标记让刷新后能恢复验盘交互（确认解读后会覆盖此标记）
@@ -1437,7 +1444,21 @@ async function startAnalysis(plate, password){
 
 
 
+// 双盘互证徽章：八字锚点详情（2026-09-09 B1 显性化）
+function renderCrossBadge(anchor){
+  if(!anchor){
+    try { anchor = JSON.parse(sessionStorage.getItem('ziwei_cross_anchor') || 'null'); } catch(e) {}
+  }
+  const el = document.getElementById('cross-badge');
+  if(!el || !anchor) return;
+  try { sessionStorage.setItem('ziwei_cross_anchor', JSON.stringify(anchor)); } catch(e) {}
+  el.style.display = 'inline';
+  el.title = '本解读由八字与紫微双盘独立分析交叉比对产出——八字锚点：'
+    + (anchor.sizhu || anchor.rizhu || '')
+    + (anchor.qiyun ? '，' + anchor.qiyun : '');
+}
 function renderAnalysis(messages){
+  renderCrossBadge();
   const aiMsg = messages.filter(m => m.role==='assistant');
   let html = aiMsg.map(m => formatText(m.content)).join('\n<hr style="border:none;border-top:1px dashed var(--line-faint);margin:12px 0">\n');
   $('analysis-text').innerHTML = html;
@@ -1566,6 +1587,7 @@ async function sendChat(){
     if(!res.ok){ var _hd2=await handleApiError(res); if(_hd2){chatArea.innerHTML+='<div style="color:var(--vermillion);font-size:11px">已达使用限额</div>';input.disabled=false;$('btn-chat').disabled=false;return;} chatArea.innerHTML += '<div style="color:var(--vermillion);font-size:11px">请求失败: HTTP '+res.status+'</div>'; input.disabled = false; $('btn-chat').disabled = false; return; }
     const d = await res.json();
     if(d.success){
+      renderCrossBadge();
       chatArea.innerHTML += `<div class="chat-msg agent"><div class="who">Agent</div>${formatText(d.analysis)}</div>`;
       renderSuggestions(d.suggestions);
       // 滚动到最新追问下方（输入框沉底后，用户视线应落在最新回复）
